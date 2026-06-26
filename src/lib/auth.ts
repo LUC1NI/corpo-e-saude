@@ -79,3 +79,18 @@ export async function requireUsuario(papeis?: Papel[]): Promise<UsuarioAtual> {
 
   return usuario;
 }
+
+/**
+ * Versão para Server Actions: valida o papel e LANÇA em vez de redirecionar.
+ * Use no início de toda mutação para garantir autorização no servidor.
+ */
+export async function assertPapel(papeis: Papel[]): Promise<UsuarioAtual> {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || !usuario.ativo) {
+    throw new Error("Não autenticado.");
+  }
+  if (!papeis.includes(usuario.papel)) {
+    throw new Error("Sem permissão para esta ação.");
+  }
+  return usuario;
+}

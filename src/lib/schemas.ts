@@ -85,3 +85,49 @@ export const horarioSchema = z
   });
 
 export type HorarioInput = z.infer<typeof horarioSchema>;
+
+// ---------------------------------------------------------------------------
+// Anamnese (uma por aluno)
+// ---------------------------------------------------------------------------
+export const anamneseSchema = z.object({
+  historico_saude: opcional(z.string()),
+  lesoes_restricoes: opcional(z.string()),
+  medicacao: opcional(z.string()),
+  objetivos: opcional(z.string()),
+  rotina_disponibilidade: opcional(z.string()),
+  nivel_atividade: opcional(z.string()),
+});
+
+export type AnamneseInput = z.infer<typeof anamneseSchema>;
+
+// ---------------------------------------------------------------------------
+// Avaliação física (histórico)
+// ---------------------------------------------------------------------------
+const numeroOpcional = z.preprocess(
+  (v) => (v === "" || v === null || v === undefined ? undefined : v),
+  z.coerce.number().positive().optional(),
+);
+
+export const avaliacaoSchema = z.object({
+  data: z.string().min(1, "Informe a data."),
+  peso: numeroOpcional, // kg
+  altura: numeroOpcional, // metros
+  percentual_gordura: numeroOpcional,
+  observacoes: opcional(z.string()),
+  // Medidas (cm) — viram um JSON em `medidas`.
+  cintura: numeroOpcional,
+  quadril: numeroOpcional,
+  braco: numeroOpcional,
+  coxa: numeroOpcional,
+  peitoral: numeroOpcional,
+});
+
+export type AvaliacaoInput = z.infer<typeof avaliacaoSchema>;
+
+export const MEDIDAS_CAMPOS = [
+  { chave: "cintura", rotulo: "Cintura" },
+  { chave: "quadril", rotulo: "Quadril" },
+  { chave: "braco", rotulo: "Braço" },
+  { chave: "coxa", rotulo: "Coxa" },
+  { chave: "peitoral", rotulo: "Peitoral" },
+] as const;

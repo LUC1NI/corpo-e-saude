@@ -67,6 +67,34 @@ export interface Pagamento {
   criado_em: string;
 }
 
+export interface Anamnese {
+  id: string;
+  aluno_id: string;
+  historico_saude: string | null;
+  lesoes_restricoes: string | null;
+  medicacao: string | null;
+  objetivos: string | null;
+  rotina_disponibilidade: string | null;
+  nivel_atividade: string | null;
+  criado_por: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface AvaliacaoFisica {
+  id: string;
+  aluno_id: string;
+  data: string;
+  peso: number | null;
+  altura: number | null;
+  percentual_gordura: number | null;
+  imc: number | null;
+  medidas: Record<string, number> | null;
+  observacoes: string | null;
+  criado_por: string | null;
+  criado_em: string;
+}
+
 export interface Horario {
   id: string;
   professor_id: string;

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { AcompanhamentoCards } from "@/components/acompanhamento/acompanhamento-cards";
 import {
   Card,
   CardContent,
@@ -20,7 +21,13 @@ import { requireUsuario } from "@/lib/auth";
 import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
 import { formatBRL, formatData } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
-import type { Aluno, Periodicidade, StatusPagamento as TStatusPagamento } from "@/lib/tipos";
+import type {
+  Aluno,
+  Anamnese,
+  AvaliacaoFisica,
+  Periodicidade,
+  StatusPagamento as TStatusPagamento,
+} from "@/lib/tipos";
 
 import { AlunoForm } from "../aluno-form";
 import { GerarAcesso } from "../gerar-acesso";
@@ -53,6 +60,8 @@ export default async function AlunoDetalhePage({
     { data: planosData },
     { data: matriculaData },
     { data: pagamentosData },
+    { data: anamneseData },
+    { data: avaliacoesData },
   ] = await Promise.all([
     supabase.from("alunos").select("*").eq("id", id).maybeSingle(),
     supabase.from("professores").select("id, nome").eq("ativo", true).order("nome"),
@@ -77,6 +86,12 @@ export default async function AlunoDetalhePage({
       .eq("aluno_id", id)
       .order("vencimento", { ascending: false })
       .limit(12),
+    supabase.from("anamneses").select("*").eq("aluno_id", id).maybeSingle(),
+    supabase
+      .from("avaliacoes_fisicas")
+      .select("*")
+      .eq("aluno_id", id)
+      .order("data", { ascending: false }),
   ]);
 
   if (!alunoData) notFound();
@@ -89,6 +104,8 @@ export default async function AlunoDetalhePage({
     periodicidade: Periodicidade;
   }[];
   const pagamentos = (pagamentosData ?? []) as PagamentoAluno[];
+  const anamnese = (anamneseData as Anamnese | null) ?? null;
+  const avaliacoes = (avaliacoesData ?? []) as AvaliacaoFisica[];
 
   let matricula: MatriculaAtiva | null = null;
   if (matriculaData) {
@@ -207,6 +224,12 @@ export default async function AlunoDetalhePage({
             />
           </CardContent>
         </Card>
+
+        <AcompanhamentoCards
+          alunoId={aluno.id}
+          anamnese={anamnese}
+          avaliacoes={avaliacoes}
+        />
       </div>
     </>
   );

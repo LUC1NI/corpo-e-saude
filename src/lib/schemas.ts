@@ -40,3 +40,28 @@ export const planoSchema = z.object({
 });
 
 export type PlanoInput = z.infer<typeof planoSchema>;
+
+// ---------------------------------------------------------------------------
+// Matrícula
+// ---------------------------------------------------------------------------
+export const matriculaSchema = z.object({
+  plano_id: z.string().uuid("Selecione um plano."),
+  data_inicio: z.string().min(1, "Informe a data de início."),
+  renovacao_automatica: z.boolean().default(true),
+});
+
+export type MatriculaInput = z.infer<typeof matriculaSchema>;
+
+// ---------------------------------------------------------------------------
+// Despesa
+// ---------------------------------------------------------------------------
+export const despesaSchema = z.object({
+  descricao: z.string().trim().min(2, "Informe a descrição."),
+  categoria_id: opcional(z.string().uuid()),
+  valor: z.coerce
+    .number({ message: "Informe um valor." })
+    .positive("O valor deve ser maior que zero."),
+  data: z.string().min(1, "Informe a data."),
+});
+
+export type DespesaInput = z.infer<typeof despesaSchema>;

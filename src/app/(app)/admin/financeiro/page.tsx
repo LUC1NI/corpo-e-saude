@@ -40,6 +40,15 @@ interface PagamentoAberto {
   alunos: { nome: string } | null;
 }
 
+interface RecebidoItem {
+  id: string;
+  competencia: string;
+  valor: number;
+  data_pagamento: string | null;
+  forma_pagamento: string | null;
+  alunos: { nome: string } | null;
+}
+
 interface DespesaItem {
   id: string;
   descricao: string;
@@ -56,6 +65,7 @@ export default async function FinanceiroPage() {
 
   const [
     { data: abertosData },
+    { data: recebidosData },
     { data: mesData },
     { data: despesasData },
     { data: categoriasData },
@@ -66,6 +76,14 @@ export default async function FinanceiroPage() {
       .in("status", ["pendente", "vencido"])
       .order("vencimento")
       .limit(100),
+    supabase
+      .from("pagamentos")
+      .select(
+        "id, competencia, valor, data_pagamento, forma_pagamento, alunos(nome)",
+      )
+      .eq("status", "pago")
+      .order("data_pagamento", { ascending: false })
+      .limit(20),
     supabase
       .from("pagamentos")
       .select("valor, status")
@@ -79,6 +97,7 @@ export default async function FinanceiroPage() {
   ]);
 
   const abertos = (abertosData ?? []) as unknown as PagamentoAberto[];
+  const recebidos = (recebidosData ?? []) as unknown as RecebidoItem[];
   const mes = (mesData ?? []) as { valor: number; status: TStatusPagamento }[];
   const despesas = (despesasData ?? []) as unknown as DespesaItem[];
   const categorias = (categoriasData ?? []) as { id: string; nome: string }[];
@@ -136,8 +155,8 @@ export default async function FinanceiroPage() {
         {abertos.length === 0 ? (
           <PageEmpty
             icone={CheckCircle2}
-            titulo="Tudo em dia"
-            descricao="Nenhuma mensalidade pendente no momento."
+            titulo="Nenhuma mensalidade em aberto"
+            descricao="As cobranças aparecem aqui quando você matricula um aluno (em Alunos) ou roda “Gerar cobranças”. Confirme cada recebimento pelo botão Confirmar."
           />
         ) : (
           <Table>
@@ -180,6 +199,46 @@ export default async function FinanceiroPage() {
                   </TableRow>
                 );
               })}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
+
+      <Card className="mt-6 overflow-hidden p-0">
+        <CardHeader className="p-5">
+          <CardTitle>Recebimentos recentes</CardTitle>
+        </CardHeader>
+        {recebidos.length === 0 ? (
+          <PageEmpty
+            icone={Wallet}
+            titulo="Nenhum recebimento ainda"
+            descricao="Os pagamentos confirmados aparecem aqui com a forma de pagamento."
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Aluno</TableHead>
+                <TableHead>Competência</TableHead>
+                <TableHead>Pago em</TableHead>
+                <TableHead>Forma</TableHead>
+                <TableHead>Valor</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {recebidos.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">
+                    {p.alunos?.nome ?? "—"}
+                  </TableCell>
+                  <TableCell>{rotuloCompetencia(p.competencia)}</TableCell>
+                  <TableCell>
+                    {p.data_pagamento ? formatData(p.data_pagamento) : "—"}
+                  </TableCell>
+                  <TableCell>{p.forma_pagamento ?? "—"}</TableCell>
+                  <TableCell>{formatBRL(p.valor)}</TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         )}

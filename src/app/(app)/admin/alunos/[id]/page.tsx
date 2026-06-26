@@ -6,14 +6,36 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { PageHeader } from "@/components/ui-extra/page-header";
+import { StatusPagamento } from "@/components/ui-extra/status-badge";
 import { requireUsuario } from "@/lib/auth";
+import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
+import { formatBRL, formatData } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
-import type { Aluno, Periodicidade } from "@/lib/tipos";
+import type { Aluno, Periodicidade, StatusPagamento as TStatusPagamento } from "@/lib/tipos";
 
 import { AlunoForm } from "../aluno-form";
 import { GerarAcesso } from "../gerar-acesso";
 import { MatriculaCard, type MatriculaAtiva } from "../matricula-card";
+import { BaixaButton } from "../../financeiro/baixa-button";
+
+interface PagamentoAluno {
+  id: string;
+  competencia: string;
+  vencimento: string;
+  valor: number;
+  status: TStatusPagamento;
+  data_pagamento: string | null;
+  forma_pagamento: string | null;
+}
 
 export default async function AlunoDetalhePage({
   params,
@@ -22,26 +44,40 @@ export default async function AlunoDetalhePage({
 }) {
   await requireUsuario(["admin"]);
   const { id } = await params;
+  const hoje = hojeISO();
 
   const supabase = await createClient();
-  const [{ data: alunoData }, { data: professoresData }, { data: planosData }, { data: matriculaData }] =
-    await Promise.all([
-      supabase.from("alunos").select("*").eq("id", id).maybeSingle(),
-      supabase.from("professores").select("id, nome").eq("ativo", true).order("nome"),
-      supabase
-        .from("planos")
-        .select("id, nome, valor, periodicidade")
-        .eq("ativo", true)
-        .order("nome"),
-      supabase
-        .from("matriculas")
-        .select(
-          "id, data_proxima_cobranca, renovacao_automatica, planos(nome, valor, periodicidade)",
-        )
-        .eq("aluno_id", id)
-        .eq("status", "ativa")
-        .maybeSingle(),
-    ]);
+  const [
+    { data: alunoData },
+    { data: professoresData },
+    { data: planosData },
+    { data: matriculaData },
+    { data: pagamentosData },
+  ] = await Promise.all([
+    supabase.from("alunos").select("*").eq("id", id).maybeSingle(),
+    supabase.from("professores").select("id, nome").eq("ativo", true).order("nome"),
+    supabase
+      .from("planos")
+      .select("id, nome, valor, periodicidade")
+      .eq("ativo", true)
+      .order("nome"),
+    supabase
+      .from("matriculas")
+      .select(
+        "id, data_proxima_cobranca, renovacao_automatica, planos(nome, valor, periodicidade)",
+      )
+      .eq("aluno_id", id)
+      .eq("status", "ativa")
+      .maybeSingle(),
+    supabase
+      .from("pagamentos")
+      .select(
+        "id, competencia, vencimento, valor, status, data_pagamento, forma_pagamento",
+      )
+      .eq("aluno_id", id)
+      .order("vencimento", { ascending: false })
+      .limit(12),
+  ]);
 
   if (!alunoData) notFound();
   const aluno = alunoData as Aluno;
@@ -52,6 +88,7 @@ export default async function AlunoDetalhePage({
     valor: number;
     periodicidade: Periodicidade;
   }[];
+  const pagamentos = (pagamentosData ?? []) as PagamentoAluno[];
 
   let matricula: MatriculaAtiva | null = null;
   if (matriculaData) {
@@ -82,6 +119,59 @@ export default async function AlunoDetalhePage({
           <CardContent>
             <MatriculaCard alunoId={aluno.id} planos={planos} matricula={matricula} />
           </CardContent>
+        </Card>
+
+        <Card className="overflow-hidden p-0">
+          <CardHeader className="p-5">
+            <CardTitle>Histórico de pagamentos</CardTitle>
+          </CardHeader>
+          {pagamentos.length === 0 ? (
+            <p className="px-5 pb-5 text-sm text-muted-foreground">
+              Nenhuma cobrança gerada. Matricule o aluno para gerar a primeira
+              mensalidade.
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Competência</TableHead>
+                  <TableHead>Vencimento</TableHead>
+                  <TableHead>Valor</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pagamentos.map((p) => {
+                  const status: TStatusPagamento =
+                    p.status === "pendente" && p.vencimento < hoje
+                      ? "vencido"
+                      : p.status;
+                  return (
+                    <TableRow key={p.id}>
+                      <TableCell>{rotuloCompetencia(p.competencia)}</TableCell>
+                      <TableCell>{formatData(p.vencimento)}</TableCell>
+                      <TableCell>{formatBRL(p.valor)}</TableCell>
+                      <TableCell>
+                        <StatusPagamento status={status} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {p.status === "pago" ? (
+                          <span className="text-xs text-muted-foreground">
+                            {p.forma_pagamento
+                              ? `Pago · ${p.forma_pagamento}`
+                              : "Pago"}
+                          </span>
+                        ) : (
+                          <BaixaButton pagamentoId={p.id} />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
         </Card>
 
         <Card>

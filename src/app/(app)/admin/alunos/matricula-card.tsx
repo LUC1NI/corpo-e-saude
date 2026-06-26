@@ -136,7 +136,13 @@ export function MatriculaCard({
     <div className="max-w-xl space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <CampoForm label="Plano" obrigatorio>
-          <Select value={planoId} onValueChange={(v) => setPlanoId(v ?? "")}>
+          <Select
+            value={planoId}
+            onValueChange={(v) => setPlanoId(v ?? "")}
+            items={Object.fromEntries(
+              planos.map((p) => [p.id, `${p.nome} — ${formatBRL(p.valor)}`]),
+            )}
+          >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Selecione um plano" />
             </SelectTrigger>

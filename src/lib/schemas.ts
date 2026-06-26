@@ -65,3 +65,23 @@ export const despesaSchema = z.object({
 });
 
 export type DespesaInput = z.infer<typeof despesaSchema>;
+
+// ---------------------------------------------------------------------------
+// Horário (grade do professor)
+// ---------------------------------------------------------------------------
+export const horarioSchema = z
+  .object({
+    dia_semana: z.coerce.number().int().min(0).max(6),
+    hora_inicio: z.string().regex(/^\d{2}:\d{2}$/, "Hora inválida."),
+    hora_fim: z.string().regex(/^\d{2}:\d{2}$/, "Hora inválida."),
+    capacidade: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined ? undefined : v),
+      z.coerce.number().int().positive().optional(),
+    ),
+  })
+  .refine((d) => d.hora_fim > d.hora_inicio, {
+    message: "O fim deve ser depois do início.",
+    path: ["hora_fim"],
+  });
+
+export type HorarioInput = z.infer<typeof horarioSchema>;

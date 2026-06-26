@@ -113,7 +113,11 @@ export function AlunoForm({
             control={control}
             name="tipo"
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                items={{ presencial: "Presencial", online: "Online" }}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -138,6 +142,10 @@ export function AlunoForm({
                 onValueChange={(v) =>
                   field.onChange(v === SEM_PROFESSOR ? undefined : v)
                 }
+                items={{
+                  [SEM_PROFESSOR]: "Sem professor",
+                  ...Object.fromEntries(professores.map((p) => [p.id, p.nome])),
+                }}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecione" />
@@ -160,7 +168,11 @@ export function AlunoForm({
             control={control}
             name="status"
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                items={{ ativo: "Ativo", inativo: "Inativo" }}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>

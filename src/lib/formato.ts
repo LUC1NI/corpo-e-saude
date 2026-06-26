@@ -1,3 +1,5 @@
+import { parseISO } from "date-fns";
+
 /** Iniciais a partir de um nome (até 2 letras), para avatares. */
 export function iniciais(nome: string): string {
   const partes = nome.trim().split(/\s+/).filter(Boolean);
@@ -22,10 +24,15 @@ const fmtDataCurta = new Intl.DateTimeFormat("pt-BR", {
   year: "numeric",
 });
 
+// Usa parseISO para que "yyyy-MM-dd" seja lido como data LOCAL (e não UTC,
+// o que deslocaria um dia em fusos negativos como o do Brasil).
+function paraData(data: Date | string): Date {
+  return typeof data === "string" ? parseISO(data) : data;
+}
+
 /** Formata uma data (Date ou ISO) como dd/mm/aaaa. */
 export function formatData(data: Date | string): string {
-  const d = typeof data === "string" ? new Date(data) : data;
-  return fmtDataCurta.format(d);
+  return fmtDataCurta.format(paraData(data));
 }
 
 const fmtDataExtenso = new Intl.DateTimeFormat("pt-BR", {
@@ -37,6 +44,5 @@ const fmtDataExtenso = new Intl.DateTimeFormat("pt-BR", {
 
 /** Ex.: "quinta-feira, 25 de junho de 2026". */
 export function formatDataExtenso(data: Date | string): string {
-  const d = typeof data === "string" ? new Date(data) : data;
-  return fmtDataExtenso.format(d);
+  return fmtDataExtenso.format(paraData(data));
 }

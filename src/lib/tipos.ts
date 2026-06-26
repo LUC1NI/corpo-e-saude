@@ -67,6 +67,50 @@ export interface Pagamento {
   criado_em: string;
 }
 
+export interface Horario {
+  id: string;
+  professor_id: string;
+  dia_semana: number; // 0 = domingo .. 6 = sábado
+  hora_inicio: string;
+  hora_fim: string;
+  capacidade: number | null;
+  criado_em: string;
+}
+
+export interface Presenca {
+  id: string;
+  aluno_id: string;
+  professor_id: string | null;
+  data: string;
+  hora: string | null;
+  criado_em: string;
+}
+
+export const DIAS_SEMANA = [
+  "Domingo",
+  "Segunda",
+  "Terça",
+  "Quarta",
+  "Quinta",
+  "Sexta",
+  "Sábado",
+] as const;
+
+export const DIAS_SEMANA_CURTO = [
+  "Dom",
+  "Seg",
+  "Ter",
+  "Qua",
+  "Qui",
+  "Sex",
+  "Sáb",
+] as const;
+
+/** "HH:MM:SS" -> "HH:MM". */
+export function horaCurta(hora: string): string {
+  return hora.slice(0, 5);
+}
+
 export interface CategoriaDespesa {
   id: string;
   nome: string;

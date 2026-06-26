@@ -67,6 +67,10 @@ export function DespesaForm({
         <Select
           value={categoriaId}
           onValueChange={(v) => setCategoriaId(v ?? SEM_CATEGORIA)}
+          items={{
+            [SEM_CATEGORIA]: "Sem categoria",
+            ...Object.fromEntries(categorias.map((c) => [c.id, c.nome])),
+          }}
         >
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Categoria" />

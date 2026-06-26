@@ -95,7 +95,16 @@ export function PlanoForm({
             control={control}
             name="periodicidade"
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                items={{
+                  mensal: "Mensal",
+                  trimestral: "Trimestral",
+                  semestral: "Semestral",
+                  anual: "Anual",
+                }}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>

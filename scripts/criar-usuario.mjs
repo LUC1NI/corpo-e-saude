@@ -73,7 +73,7 @@ async function main() {
     email,
     password: senha,
     email_confirm: true,
-    user_metadata: { senha_provisoria: provisoria },
+    user_metadata: { senha_provisoria: provisoria, nome: nome ?? null },
   });
   if (errAuth) throw errAuth;
   const userId = criado.user.id;

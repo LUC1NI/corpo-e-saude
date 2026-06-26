@@ -7,6 +7,7 @@ export type Papel = "admin" | "professor" | "aluno";
 export interface UsuarioAtual {
   id: string;
   email: string;
+  nome: string;
   papel: Papel;
   ativo: boolean;
   /** Senha provisória ainda não trocada (primeiro acesso pendente). */
@@ -44,9 +45,13 @@ export async function getUsuarioAtual(): Promise<UsuarioAtual | null> {
 
   if (error || !data) return null;
 
+  const email = data.email as string;
+  const nomeMeta = user.user_metadata?.nome as string | undefined;
+
   return {
     id: data.id as string,
-    email: data.email as string,
+    email,
+    nome: nomeMeta?.trim() || email.split("@")[0] || "Usuário",
     papel: data.papel as Papel,
     ativo: data.ativo as boolean,
     senhaProvisoria: user.user_metadata?.senha_provisoria === true,

@@ -32,6 +32,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...mas versiona o arquivo de exemplo
+!.env.local.example
+
+# service worker gerado pelo Serwist (artefato de build)
+/public/sw.js
+/public/sw.js.map
+/public/swe-worker-*.js
 
 # vercel
 .vercel

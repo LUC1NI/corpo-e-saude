@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Artefatos de build do PWA (gerados pelo Serwist).
+    "public/sw.js",
+    "public/swe-worker-*.js",
+    // Service worker é transpilado pelo Serwist, não pelo lint do app.
+    "src/app/sw.ts",
   ]),
 ]);
 

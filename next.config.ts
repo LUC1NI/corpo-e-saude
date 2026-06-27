@@ -1,11 +1,49 @@
 import withSerwistInit from "@serwist/next";
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV !== "production";
+
+// Content-Security-Policy. 'unsafe-inline' em script/style é necessário para o
+// Next (scripts de hydration inline) sem nonce; 'unsafe-eval' só no dev (HMR).
+// img-src https: libera as mídias externas de exercício (ex.: Wikimedia).
+const csp = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "style-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  "worker-src 'self'",
+  "manifest-src 'self'",
+].join("; ");
+
+const securityHeaders = [
+  { key: "Content-Security-Policy", value: csp },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+  },
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
+  },
+];
+
 const nextConfig: NextConfig = {
   // Config vazia do Turbopack: o Serwist injeta config webpack (usada só
   // no `build --webpack`). Declarar `turbopack` evita o erro do `next dev`
   // por haver config webpack sem config turbopack.
   turbopack: {},
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
+  },
 };
 
 /**

@@ -1,7 +1,5 @@
 import {
-  Activity,
   CalendarCheck,
-  ClipboardList,
   Clock,
   CreditCard,
   Dumbbell,
@@ -27,8 +25,6 @@ export const navAdmin: ItemNav[] = [
   { titulo: "Alunos", href: "/admin/alunos", icone: Users },
   { titulo: "Planos", href: "/admin/planos", icone: CreditCard },
   { titulo: "Presença", href: "/admin/presenca", icone: CalendarCheck },
-  { titulo: "Anamnese", href: "/admin/anamnese", icone: ClipboardList },
-  { titulo: "Avaliação Física", href: "/admin/avaliacao", icone: Activity },
   { titulo: "Treinos", href: "/admin/treinos", icone: Dumbbell },
   { titulo: "Financeiro", href: "/admin/financeiro", icone: Wallet },
 ];
@@ -38,8 +34,6 @@ export const navProfessor: ItemNav[] = [
   { titulo: "Visão Geral", href: "/professor", icone: LayoutDashboard },
   { titulo: "Meus Alunos", href: "/professor/alunos", icone: Users },
   { titulo: "Presença", href: "/professor/presenca", icone: CalendarCheck },
-  { titulo: "Anamnese", href: "/professor/anamnese", icone: ClipboardList },
-  { titulo: "Avaliação Física", href: "/professor/avaliacao", icone: Activity },
   { titulo: "Treinos", href: "/professor/treinos", icone: Dumbbell },
   { titulo: "Horários", href: "/professor/horarios", icone: Clock },
 ];

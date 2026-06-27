@@ -4,10 +4,20 @@ import { revalidatePath } from "next/cache";
 
 import { assertPapel } from "@/lib/auth";
 import { falha, sucesso, type ResultadoAcao } from "@/lib/acoes";
+import { getProfessorAtual } from "@/lib/professor";
 import { alunoSchema, type AlunoInput } from "@/lib/schemas";
 import { gerarSenhaProvisoria } from "@/lib/senha";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+
+function revalidarListas(id?: string) {
+  revalidatePath("/admin/alunos");
+  revalidatePath("/professor/alunos");
+  if (id) {
+    revalidatePath(`/admin/alunos/${id}`);
+    revalidatePath(`/professor/alunos/${id}`);
+  }
+}
 
 function dadosAluno(input: AlunoInput) {
   return {
@@ -24,21 +34,29 @@ function dadosAluno(input: AlunoInput) {
 export async function criarAluno(
   input: AlunoInput,
 ): Promise<ResultadoAcao<{ id: string }>> {
-  await assertPapel(["admin"]);
+  const usuario = await assertPapel(["admin", "professor"]);
   const parsed = alunoSchema.safeParse(input);
   if (!parsed.success) {
     return falha(parsed.error.issues[0]?.message ?? "Dados inválidos.");
   }
 
+  const dados = dadosAluno(parsed.data);
+  // Professor só cadastra na própria carteira (ignora o que vier do client).
+  if (usuario.papel === "professor") {
+    const professor = await getProfessorAtual();
+    if (!professor) return falha("Perfil de professor não encontrado.");
+    dados.professor_id = professor.id;
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("alunos")
-    .insert(dadosAluno(parsed.data))
+    .insert(dados)
     .select("id")
     .single();
   if (error || !data) return falha("Não foi possível cadastrar o aluno.");
 
-  revalidatePath("/admin/alunos");
+  revalidarListas();
   return sucesso({ id: data.id as string });
 }
 
@@ -46,21 +64,25 @@ export async function atualizarAluno(
   id: string,
   input: AlunoInput,
 ): Promise<ResultadoAcao> {
-  await assertPapel(["admin"]);
+  const usuario = await assertPapel(["admin", "professor"]);
   const parsed = alunoSchema.safeParse(input);
   if (!parsed.success) {
     return falha(parsed.error.issues[0]?.message ?? "Dados inválidos.");
   }
 
+  const dados = dadosAluno(parsed.data);
+  // Professor não reatribui o aluno para outra carteira (e mantém o RLS ok).
+  if (usuario.papel === "professor") {
+    const professor = await getProfessorAtual();
+    if (!professor) return falha("Perfil de professor não encontrado.");
+    dados.professor_id = professor.id;
+  }
+
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("alunos")
-    .update(dadosAluno(parsed.data))
-    .eq("id", id);
+  const { error } = await supabase.from("alunos").update(dados).eq("id", id);
   if (error) return falha("Não foi possível salvar o aluno.");
 
-  revalidatePath("/admin/alunos");
-  revalidatePath(`/admin/alunos/${id}`);
+  revalidarListas(id);
   return sucesso();
 }
 
@@ -92,8 +114,10 @@ export async function alternarStatusAluno(
 export async function gerarAcessoAluno(
   alunoId: string,
 ): Promise<ResultadoAcao<{ senha: string; email: string }>> {
-  await assertPapel(["admin"]);
+  await assertPapel(["admin", "professor"]);
 
+  // SELECT com o client do usuário: o RLS já escopa o professor à própria
+  // carteira (aluno de outro professor retorna vazio → "não encontrado").
   const supabase = await createClient();
   const { data: aluno } = await supabase
     .from("alunos")
@@ -144,7 +168,6 @@ export async function gerarAcessoAluno(
     return falha("Não foi possível vincular o acesso ao aluno.");
   }
 
-  revalidatePath(`/admin/alunos/${alunoId}`);
-  revalidatePath("/admin/alunos");
+  revalidarListas(alunoId);
   return sucesso({ senha, email: aluno.email });
 }

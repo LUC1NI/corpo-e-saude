@@ -15,6 +15,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getExerciciosBiblioteca, getTreinosDoAluno } from "@/lib/treino";
 import type { Anamnese, Aluno, AvaliacaoFisica } from "@/lib/tipos";
 
+import { AlunoForm } from "../../../admin/alunos/aluno-form";
+import { GerarAcesso } from "../../../admin/alunos/gerar-acesso";
+
 export default async function ProfessorAlunoDetalhe({
   params,
 }: {
@@ -57,23 +60,39 @@ export default async function ProfessorAlunoDetalhe({
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Resumo</CardTitle>
+            <CardTitle>Acesso do aluno</CardTitle>
+            <CardDescription>
+              Gere o login do aluno (senha provisória trocada no 1º acesso).
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <dl className="grid gap-3 text-sm sm:grid-cols-3">
-              <div>
-                <dt className="text-muted-foreground">Tipo</dt>
-                <dd className="font-medium capitalize">{aluno.tipo}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Telefone</dt>
-                <dd className="font-medium">{aluno.telefone ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">E-mail</dt>
-                <dd className="font-medium">{aluno.email ?? "—"}</dd>
-              </div>
-            </dl>
+            <GerarAcesso
+              alunoId={aluno.id}
+              temAcesso={Boolean(aluno.usuario_id)}
+              email={aluno.email}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Dados do aluno</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AlunoForm
+              alunoId={aluno.id}
+              professores={[]}
+              mostrarProfessor={false}
+              destinoBase="/professor/alunos"
+              valoresIniciais={{
+                nome: aluno.nome,
+                email: aluno.email ?? "",
+                telefone: aluno.telefone ?? "",
+                data_nascimento: aluno.data_nascimento ?? "",
+                tipo: aluno.tipo,
+                status: aluno.status,
+              }}
+            />
           </CardContent>
         </Card>
 

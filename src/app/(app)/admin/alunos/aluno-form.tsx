@@ -29,10 +29,19 @@ export function AlunoForm({
   alunoId,
   valoresIniciais,
   professores,
+  mostrarProfessor = true,
+  destinoBase = "/admin/alunos",
+  hashAposCriar = "",
 }: {
   alunoId?: string;
   valoresIniciais?: Partial<AlunoInput>;
   professores: { id: string; nome: string }[];
+  /** Mostra o seletor de professor (só no admin). */
+  mostrarProfessor?: boolean;
+  /** Base das rotas de aluno (ex.: "/professor/alunos"). */
+  destinoBase?: string;
+  /** Âncora ao abrir o aluno recém-criado (ex.: "#anamnese"). */
+  hashAposCriar?: string;
 }) {
   const router = useRouter();
   const [salvando, setSalvando] = useState(false);
@@ -65,7 +74,9 @@ export function AlunoForm({
     if (res.ok) {
       toast.success(alunoId ? "Aluno atualizado." : "Aluno cadastrado.");
       const destino =
-        !alunoId && res.dados ? `/admin/alunos/${res.dados.id}` : "/admin/alunos";
+        !alunoId && res.dados
+          ? `${destinoBase}/${res.dados.id}${hashAposCriar}`
+          : destinoBase;
       router.push(destino);
       router.refresh();
     } else {
@@ -132,36 +143,38 @@ export function AlunoForm({
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <CampoForm label="Professor responsável" erro={errors.professor_id?.message}>
-          <Controller
-            control={control}
-            name="professor_id"
-            render={({ field }) => (
-              <Select
-                value={field.value ? String(field.value) : SEM_PROFESSOR}
-                onValueChange={(v) =>
-                  field.onChange(v === SEM_PROFESSOR ? undefined : v)
-                }
-                items={{
-                  [SEM_PROFESSOR]: "Sem professor",
-                  ...Object.fromEntries(professores.map((p) => [p.id, p.nome])),
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={SEM_PROFESSOR}>Sem professor</SelectItem>
-                  {professores.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </CampoForm>
+        {mostrarProfessor ? (
+          <CampoForm label="Professor responsável" erro={errors.professor_id?.message}>
+            <Controller
+              control={control}
+              name="professor_id"
+              render={({ field }) => (
+                <Select
+                  value={field.value ? String(field.value) : SEM_PROFESSOR}
+                  onValueChange={(v) =>
+                    field.onChange(v === SEM_PROFESSOR ? undefined : v)
+                  }
+                  items={{
+                    [SEM_PROFESSOR]: "Sem professor",
+                    ...Object.fromEntries(professores.map((p) => [p.id, p.nome])),
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SEM_PROFESSOR}>Sem professor</SelectItem>
+                    {professores.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </CampoForm>
+        ) : null}
 
         <CampoForm label="Status" erro={errors.status?.message}>
           <Controller
@@ -190,7 +203,7 @@ export function AlunoForm({
         <Button type="submit" disabled={salvando}>
           {salvando ? "Salvando…" : "Salvar aluno"}
         </Button>
-        <Link href="/admin/alunos" className={cn(buttonVariants({ variant: "ghost" }))}>
+        <Link href={destinoBase} className={cn(buttonVariants({ variant: "ghost" }))}>
           Cancelar
         </Link>
       </div>

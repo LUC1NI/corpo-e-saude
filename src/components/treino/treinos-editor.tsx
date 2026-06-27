@@ -33,6 +33,7 @@ import { CampoForm } from "@/components/ui-extra/campo-form";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { StatusBadge } from "@/components/ui-extra/status-badge";
 import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
+import { InputSugestoes } from "@/components/ui-extra/input-sugestoes";
 import { AplicarTemplate } from "@/components/treino/aplicar-template";
 import { BotaoExcluir } from "@/components/treino/botao-excluir";
 import { MidiaThumb } from "@/components/treino/midia-thumb";
@@ -56,7 +57,14 @@ import {
   type TreinoExercicioInput,
   type TreinoInput,
 } from "@/lib/schemas";
-import { DIAS_SEMANA_CURTO } from "@/lib/tipos";
+import {
+  CARGA_OPCOES,
+  DESCANSO_OPCOES,
+  DIAS_SEMANA_CURTO,
+  FOCOS_DIVISAO,
+  NOMES_DIVISAO,
+  REPETICOES_OPCOES,
+} from "@/lib/tipos";
 import type {
   DivisaoComExercicios,
   Exercicio,
@@ -224,10 +232,22 @@ function DivisaoDialog({
 
         <form id="form-divisao" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <CampoForm label="Nome" htmlFor="div-nome" obrigatorio erro={errors.nome?.message}>
-            <Input id="div-nome" {...register("nome")} placeholder="Ex.: A" />
+            <InputSugestoes
+              id="div-nome"
+              listId="dl-div-nome"
+              opcoes={NOMES_DIVISAO}
+              {...register("nome")}
+              placeholder="Ex.: A"
+            />
           </CampoForm>
           <CampoForm label="Foco" htmlFor="div-foco" erro={errors.foco?.message}>
-            <Input id="div-foco" {...register("foco")} placeholder="Ex.: Superior (opcional)" />
+            <InputSugestoes
+              id="div-foco"
+              listId="dl-div-foco"
+              opcoes={FOCOS_DIVISAO}
+              {...register("foco")}
+              placeholder="Escolha ou digite (opcional)"
+            />
           </CampoForm>
           <CampoForm
             label="Dias da semana"
@@ -355,13 +375,31 @@ function ExercicioDivisaoDialog({
               <Input id="te-series" type="number" min="1" {...register("series")} placeholder="Ex.: 3" />
             </CampoForm>
             <CampoForm label="Repetições" htmlFor="te-reps" erro={errors.repeticoes?.message}>
-              <Input id="te-reps" {...register("repeticoes")} placeholder="Ex.: 10-12" />
+              <InputSugestoes
+                id="te-reps"
+                listId="dl-reps"
+                opcoes={REPETICOES_OPCOES}
+                {...register("repeticoes")}
+                placeholder="Ex.: 10-12"
+              />
             </CampoForm>
             <CampoForm label="Carga" htmlFor="te-carga" erro={errors.carga?.message}>
-              <Input id="te-carga" {...register("carga")} placeholder="Ex.: 20 kg" />
+              <InputSugestoes
+                id="te-carga"
+                listId="dl-carga"
+                opcoes={CARGA_OPCOES}
+                {...register("carga")}
+                placeholder="Ex.: 20 kg"
+              />
             </CampoForm>
             <CampoForm label="Descanso" htmlFor="te-descanso" erro={errors.descanso?.message}>
-              <Input id="te-descanso" {...register("descanso")} placeholder="Ex.: 60s" />
+              <InputSugestoes
+                id="te-descanso"
+                listId="dl-descanso"
+                opcoes={DESCANSO_OPCOES}
+                {...register("descanso")}
+                placeholder="Ex.: 60s"
+              />
             </CampoForm>
           </div>
 

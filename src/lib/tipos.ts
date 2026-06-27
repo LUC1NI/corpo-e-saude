@@ -218,6 +218,73 @@ export type TreinoComTudo = Treino & {
   divisoes: DivisaoComExercicios[];
 };
 
+/** Equipamentos sugeridos (biblioteca de exercícios). */
+export const EQUIPAMENTOS = [
+  "Peso corporal",
+  "Barra",
+  "Halteres",
+  "Máquina",
+  "Cabo / Polia",
+  "Kettlebell",
+  "Elástico",
+  "Anilha",
+  "Banco",
+  "Corda",
+] as const;
+
+/** Nomes sugeridos para as divisões de treino. */
+export const NOMES_DIVISAO = ["A", "B", "C", "D", "E"] as const;
+
+/** Focos sugeridos para uma divisão. */
+export const FOCOS_DIVISAO = [
+  "Superior",
+  "Inferior",
+  "Peito",
+  "Costas",
+  "Pernas",
+  "Ombros",
+  "Braços",
+  "Push",
+  "Pull",
+  "Glúteos",
+  "Core / Abdômen",
+  "Cardio",
+  "Corpo inteiro",
+] as const;
+
+/** Repetições sugeridas na prescrição. */
+export const REPETICOES_OPCOES = [
+  "8",
+  "10",
+  "12",
+  "15",
+  "20",
+  "8-12",
+  "10-12",
+  "12-15",
+  "15-20",
+  "Até a falha",
+] as const;
+
+/** Descanso sugerido na prescrição. */
+export const DESCANSO_OPCOES = [
+  "30s",
+  "45s",
+  "60s",
+  "90s",
+  "120s",
+  "2min",
+  "3min",
+] as const;
+
+/** Carga sugerida (livre — kg variam por aluno). */
+export const CARGA_OPCOES = [
+  "Peso corporal",
+  "Leve",
+  "Moderada",
+  "Pesada",
+] as const;
+
 /** Grupos musculares sugeridos na biblioteca de exercícios. */
 export const GRUPOS_MUSCULARES = [
   "Peito",

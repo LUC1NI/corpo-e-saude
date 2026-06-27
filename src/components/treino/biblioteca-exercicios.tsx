@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { CampoForm } from "@/components/ui-extra/campo-form";
+import { InputSugestoes } from "@/components/ui-extra/input-sugestoes";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { BotaoExcluir } from "@/components/treino/botao-excluir";
@@ -32,9 +33,7 @@ import {
   excluirExercicio,
 } from "@/lib/acoes-treino";
 import { exercicioSchema, type ExercicioInput } from "@/lib/schemas";
-import { GRUPOS_MUSCULARES, type Exercicio } from "@/lib/tipos";
-
-const GRUPOS_DATALIST_ID = "grupos-musculares";
+import { EQUIPAMENTOS, GRUPOS_MUSCULARES, type Exercicio } from "@/lib/tipos";
 
 function ExercicioDialog({
   exercicio,
@@ -112,11 +111,12 @@ function ExercicioDialog({
               htmlFor="grupo_muscular"
               erro={errors.grupo_muscular?.message}
             >
-              <Input
+              <InputSugestoes
                 id="grupo_muscular"
-                list={GRUPOS_DATALIST_ID}
+                listId="dl-grupos"
+                opcoes={GRUPOS_MUSCULARES}
                 {...register("grupo_muscular")}
-                placeholder="Ex.: Peito"
+                placeholder="Escolha ou digite"
               />
             </CampoForm>
             <CampoForm
@@ -124,10 +124,12 @@ function ExercicioDialog({
               htmlFor="equipamento"
               erro={errors.equipamento?.message}
             >
-              <Input
+              <InputSugestoes
                 id="equipamento"
+                listId="dl-equip"
+                opcoes={EQUIPAMENTOS}
                 {...register("equipamento")}
-                placeholder="Ex.: Barra"
+                placeholder="Escolha ou digite"
               />
             </CampoForm>
           </div>
@@ -193,12 +195,6 @@ export function BibliotecaExercicios({
 
   return (
     <div className="space-y-4">
-      <datalist id={GRUPOS_DATALIST_ID}>
-        {GRUPOS_MUSCULARES.map((g) => (
-          <option key={g} value={g} />
-        ))}
-      </datalist>
-
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative sm:max-w-xs">
           <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />

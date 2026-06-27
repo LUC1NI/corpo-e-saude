@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "next build --webpack",
+  "crons": [
+    {
+      "path": "/api/cron/renovar",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}

@@ -6,14 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
@@ -164,30 +157,30 @@ export default async function PresencaPage({
             descricao="As presenças marcadas aparecem aqui."
           />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Aluno</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Horário</TableHead>
-                <TableHead className="text-right">Ação</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {historico.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">
-                    {p.alunos?.nome ?? "—"}
-                  </TableCell>
-                  <TableCell>{formatData(p.data)}</TableCell>
-                  <TableCell>{p.hora ? horaCurta(p.hora) : "—"}</TableCell>
-                  <TableCell className="text-right">
-                    <RemoverPresencaButton id={p.id} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="p-3 sm:p-0">
+            <TabelaResponsiva
+              dados={historico}
+              getKey={(p) => p.id}
+              colunas={[
+                {
+                  cabecalho: "Aluno",
+                  principal: true,
+                  celula: (p) => p.alunos?.nome ?? "—",
+                },
+                { cabecalho: "Data", celula: (p) => formatData(p.data) },
+                {
+                  cabecalho: "Horário",
+                  celula: (p) => (p.hora ? horaCurta(p.hora) : "—"),
+                },
+                {
+                  cabecalho: "Ação",
+                  alinhar: "right",
+                  semRotuloMobile: true,
+                  celula: (p) => <RemoverPresencaButton id={p.id} />,
+                },
+              ]}
+            />
+          </div>
         )}
       </Card>
     </>

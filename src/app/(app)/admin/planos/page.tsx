@@ -3,17 +3,10 @@ import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatusBadge } from "@/components/ui-extra/status-badge";
+import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { requireUsuario } from "@/lib/auth";
 import { formatBRL } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
@@ -57,48 +50,53 @@ export default async function PlanosPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Plano</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Periodicidade</TableHead>
-                <TableHead>Duração</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lista.map((plano) => (
-                <TableRow key={plano.id}>
-                  <TableCell className="font-medium">{plano.nome}</TableCell>
-                  <TableCell>{formatBRL(plano.valor)}</TableCell>
-                  <TableCell>
-                    {ROTULO_PERIODICIDADE[plano.periodicidade]}
-                  </TableCell>
-                  <TableCell>
-                    {plano.duracao_meses ? `${plano.duracao_meses} meses` : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge tom={plano.ativo ? "sucesso" : "neutro"}>
-                      {plano.ativo ? "Ativo" : "Inativo"}
+        <Card className="overflow-hidden p-0 sm:p-0">
+          <div className="p-3 sm:p-0">
+            <TabelaResponsiva
+              dados={lista}
+              getKey={(p) => p.id}
+              colunas={[
+                {
+                  cabecalho: "Plano",
+                  principal: true,
+                  celula: (p) => p.nome,
+                },
+                { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
+                {
+                  cabecalho: "Periodicidade",
+                  celula: (p) => ROTULO_PERIODICIDADE[p.periodicidade],
+                },
+                {
+                  cabecalho: "Duração",
+                  celula: (p) =>
+                    p.duracao_meses ? `${p.duracao_meses} meses` : "—",
+                },
+                {
+                  cabecalho: "Status",
+                  celula: (p) => (
+                    <StatusBadge tom={p.ativo ? "sucesso" : "neutro"}>
+                      {p.ativo ? "Ativo" : "Inativo"}
                     </StatusBadge>
-                  </TableCell>
-                  <TableCell className="text-right">
+                  ),
+                },
+                {
+                  cabecalho: "Ações",
+                  alinhar: "right",
+                  semRotuloMobile: true,
+                  celula: (p) => (
                     <Link
-                      href={`/admin/planos/${plano.id}`}
+                      href={`/admin/planos/${p.id}`}
                       className={cn(
                         buttonVariants({ variant: "ghost", size: "sm" }),
                       )}
                     >
                       Editar
                     </Link>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  ),
+                },
+              ]}
+            />
+          </div>
         </Card>
       )}
     </>

@@ -7,18 +7,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { StatusPagamento } from "@/components/ui-extra/status-badge";
+import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { requireUsuario } from "@/lib/auth";
 import { formatBRL, formatData } from "@/lib/formato";
 import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
@@ -159,48 +152,54 @@ export default async function FinanceiroPage() {
             descricao="As cobranças aparecem aqui quando você matricula um aluno (em Alunos) ou roda “Gerar cobranças”. Confirme cada recebimento pelo botão Confirmar."
           />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Aluno</TableHead>
-                <TableHead>Competência</TableHead>
-                <TableHead>Vencimento</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ação</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {abertos.map((p) => {
-                const status: TStatusPagamento =
-                  p.status === "pendente" && p.vencimento < hoje
-                    ? "vencido"
-                    : p.status;
-                return (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">
-                      {p.alunos?.nome ?? "—"}
-                    </TableCell>
-                    <TableCell>{rotuloCompetencia(p.competencia)}</TableCell>
-                    <TableCell
-                      className={
-                        status === "vencido" ? "text-destructive" : undefined
+          <div className="p-3 sm:p-0">
+            <TabelaResponsiva
+              dados={abertos}
+              getKey={(p) => p.id}
+              colunas={[
+                {
+                  cabecalho: "Aluno",
+                  principal: true,
+                  celula: (p) => p.alunos?.nome ?? "—",
+                },
+                {
+                  cabecalho: "Competência",
+                  celula: (p) => rotuloCompetencia(p.competencia),
+                },
+                {
+                  cabecalho: "Vencimento",
+                  celula: (p) => {
+                    const venc =
+                      p.status === "pendente" && p.vencimento < hoje;
+                    return (
+                      <span className={venc ? "text-destructive" : undefined}>
+                        {formatData(p.vencimento)}
+                      </span>
+                    );
+                  },
+                },
+                { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
+                {
+                  cabecalho: "Status",
+                  celula: (p) => (
+                    <StatusPagamento
+                      status={
+                        p.status === "pendente" && p.vencimento < hoje
+                          ? "vencido"
+                          : p.status
                       }
-                    >
-                      {formatData(p.vencimento)}
-                    </TableCell>
-                    <TableCell>{formatBRL(p.valor)}</TableCell>
-                    <TableCell>
-                      <StatusPagamento status={status} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <BaixaButton pagamentoId={p.id} />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                    />
+                  ),
+                },
+                {
+                  cabecalho: "Ação",
+                  alinhar: "right",
+                  semRotuloMobile: true,
+                  celula: (p) => <BaixaButton pagamentoId={p.id} />,
+                },
+              ]}
+            />
+          </div>
         )}
       </Card>
 
@@ -215,32 +214,30 @@ export default async function FinanceiroPage() {
             descricao="Os pagamentos confirmados aparecem aqui com a forma de pagamento."
           />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Aluno</TableHead>
-                <TableHead>Competência</TableHead>
-                <TableHead>Pago em</TableHead>
-                <TableHead>Forma</TableHead>
-                <TableHead>Valor</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recebidos.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">
-                    {p.alunos?.nome ?? "—"}
-                  </TableCell>
-                  <TableCell>{rotuloCompetencia(p.competencia)}</TableCell>
-                  <TableCell>
-                    {p.data_pagamento ? formatData(p.data_pagamento) : "—"}
-                  </TableCell>
-                  <TableCell>{p.forma_pagamento ?? "—"}</TableCell>
-                  <TableCell>{formatBRL(p.valor)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="p-3 sm:p-0">
+            <TabelaResponsiva
+              dados={recebidos}
+              getKey={(p) => p.id}
+              colunas={[
+                {
+                  cabecalho: "Aluno",
+                  principal: true,
+                  celula: (p) => p.alunos?.nome ?? "—",
+                },
+                {
+                  cabecalho: "Competência",
+                  celula: (p) => rotuloCompetencia(p.competencia),
+                },
+                {
+                  cabecalho: "Pago em",
+                  celula: (p) =>
+                    p.data_pagamento ? formatData(p.data_pagamento) : "—",
+                },
+                { cabecalho: "Forma", celula: (p) => p.forma_pagamento ?? "—" },
+                { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
+              ]}
+            />
+          </div>
         )}
       </Card>
 
@@ -256,33 +253,30 @@ export default async function FinanceiroPage() {
               Nenhuma despesa lançada ainda.
             </p>
           ) : (
-            <div className="overflow-hidden rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead className="text-right">Ação</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {despesas.map((d) => (
-                    <TableRow key={d.id}>
-                      <TableCell className="font-medium">
-                        {d.descricao}
-                      </TableCell>
-                      <TableCell>{d.categorias?.nome ?? "—"}</TableCell>
-                      <TableCell>{formatData(d.data)}</TableCell>
-                      <TableCell>{formatBRL(d.valor)}</TableCell>
-                      <TableCell className="text-right">
-                        <ExcluirDespesaButton id={d.id} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="overflow-hidden rounded-lg border p-3 sm:p-0">
+              <TabelaResponsiva
+                dados={despesas}
+                getKey={(d) => d.id}
+                colunas={[
+                  {
+                    cabecalho: "Descrição",
+                    principal: true,
+                    celula: (d) => d.descricao,
+                  },
+                  {
+                    cabecalho: "Categoria",
+                    celula: (d) => d.categorias?.nome ?? "—",
+                  },
+                  { cabecalho: "Data", celula: (d) => formatData(d.data) },
+                  { cabecalho: "Valor", celula: (d) => formatBRL(d.valor) },
+                  {
+                    cabecalho: "Ação",
+                    alinhar: "right",
+                    semRotuloMobile: true,
+                    celula: (d) => <ExcluirDespesaButton id={d.id} />,
+                  },
+                ]}
+              />
             </div>
           )}
         </CardContent>

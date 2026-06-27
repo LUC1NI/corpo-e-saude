@@ -1,17 +1,10 @@
 import { CalendarCheck } from "lucide-react";
 
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
+import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { requireUsuario } from "@/lib/auth";
 import { hojeISO } from "@/lib/financeiro";
 import { formatData } from "@/lib/formato";
@@ -73,28 +66,28 @@ export default async function AdminPresencaPage() {
             descricao="As presenças marcadas pelos professores aparecem aqui."
           />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Aluno</TableHead>
-                <TableHead>Professor</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Horário</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentes.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">
-                    {p.alunos?.nome ?? "—"}
-                  </TableCell>
-                  <TableCell>{p.professores?.nome ?? "—"}</TableCell>
-                  <TableCell>{formatData(p.data)}</TableCell>
-                  <TableCell>{p.hora ? horaCurta(p.hora) : "—"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="p-3 sm:p-0">
+            <TabelaResponsiva
+              dados={recentes}
+              getKey={(p) => p.id}
+              colunas={[
+                {
+                  cabecalho: "Aluno",
+                  principal: true,
+                  celula: (p) => p.alunos?.nome ?? "—",
+                },
+                {
+                  cabecalho: "Professor",
+                  celula: (p) => p.professores?.nome ?? "—",
+                },
+                { cabecalho: "Data", celula: (p) => formatData(p.data) },
+                {
+                  cabecalho: "Horário",
+                  celula: (p) => (p.hora ? horaCurta(p.hora) : "—"),
+                },
+              ]}
+            />
+          </div>
         )}
       </Card>
     </>

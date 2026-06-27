@@ -1,15 +1,8 @@
 import { format, parseISO } from "date-fns";
 import { LineChart as LineChartIcon } from "lucide-react";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
+import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { formatData } from "@/lib/formato";
 import { MEDIDAS_CAMPOS } from "@/lib/schemas";
 import type { AvaliacaoFisica } from "@/lib/tipos";
@@ -51,7 +44,7 @@ export function AvaliacoesSection({
         <PageEmpty
           icone={LineChartIcon}
           titulo="Sem dados de evolução"
-          descricao="Registre ao menos duas avaliações para ver o gráfico de evolução."
+          descricao="São necessárias ao menos duas avaliações para ver o gráfico de evolução."
         />
       )}
 
@@ -63,43 +56,50 @@ export function AvaliacoesSection({
       ) : null}
 
       {avaliacoes.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Peso</TableHead>
-                <TableHead>IMC</TableHead>
-                <TableHead>% Gord.</TableHead>
-                <TableHead>Medidas</TableHead>
-                {!somenteLeitura ? (
-                  <TableHead className="text-right">Ação</TableHead>
-                ) : null}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {avaliacoes.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell>{formatData(a.data)}</TableCell>
-                  <TableCell>{a.peso != null ? `${a.peso} kg` : "—"}</TableCell>
-                  <TableCell>{a.imc != null ? a.imc : "—"}</TableCell>
-                  <TableCell>
-                    {a.percentual_gordura != null
-                      ? `${a.percentual_gordura}%`
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
+        <div className="overflow-hidden rounded-lg border p-3 sm:p-0">
+          <TabelaResponsiva
+            dados={avaliacoes}
+            getKey={(a) => a.id}
+            colunas={[
+              {
+                cabecalho: "Data",
+                principal: true,
+                celula: (a) => formatData(a.data),
+              },
+              {
+                cabecalho: "Peso",
+                celula: (a) => (a.peso != null ? `${a.peso} kg` : "—"),
+              },
+              { cabecalho: "IMC", celula: (a) => (a.imc != null ? a.imc : "—") },
+              {
+                cabecalho: "% Gord.",
+                celula: (a) =>
+                  a.percentual_gordura != null
+                    ? `${a.percentual_gordura}%`
+                    : "—",
+              },
+              {
+                cabecalho: "Medidas",
+                celula: (a) => (
+                  <span className="text-xs text-muted-foreground">
                     {resumoMedidas(a.medidas)}
-                  </TableCell>
-                  {!somenteLeitura ? (
-                    <TableCell className="text-right">
-                      <ExcluirAvaliacaoButton id={a.id} alunoId={alunoId} />
-                    </TableCell>
-                  ) : null}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </span>
+                ),
+              },
+              ...(!somenteLeitura
+                ? [
+                    {
+                      cabecalho: "Ação",
+                      alinhar: "right" as const,
+                      semRotuloMobile: true,
+                      celula: (a: AvaliacaoFisica) => (
+                        <ExcluirAvaliacaoButton id={a.id} alunoId={alunoId} />
+                      ),
+                    },
+                  ]
+                : []),
+            ]}
+          />
         </div>
       ) : null}
     </div>

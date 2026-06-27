@@ -1,15 +1,18 @@
 import { notFound } from "next/navigation";
 
 import { AcompanhamentoCards } from "@/components/acompanhamento/acompanhamento-cards";
+import { TreinosEditor } from "@/components/treino/treinos-editor";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { requireUsuario } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { getExerciciosBiblioteca, getTreinosDoAluno } from "@/lib/treino";
 import type { Anamnese, Aluno, AvaliacaoFisica } from "@/lib/tipos";
 
 export default async function ProfessorAlunoDetalhe({
@@ -21,16 +24,23 @@ export default async function ProfessorAlunoDetalhe({
   const { id } = await params;
 
   const supabase = await createClient();
-  const [{ data: alunoData }, { data: anamneseData }, { data: avaliacoesData }] =
-    await Promise.all([
-      supabase.from("alunos").select("*").eq("id", id).maybeSingle(),
-      supabase.from("anamneses").select("*").eq("aluno_id", id).maybeSingle(),
-      supabase
-        .from("avaliacoes_fisicas")
-        .select("*")
-        .eq("aluno_id", id)
-        .order("data", { ascending: false }),
-    ]);
+  const [
+    { data: alunoData },
+    { data: anamneseData },
+    { data: avaliacoesData },
+    treinos,
+    exercicios,
+  ] = await Promise.all([
+    supabase.from("alunos").select("*").eq("id", id).maybeSingle(),
+    supabase.from("anamneses").select("*").eq("aluno_id", id).maybeSingle(),
+    supabase
+      .from("avaliacoes_fisicas")
+      .select("*")
+      .eq("aluno_id", id)
+      .order("data", { ascending: false }),
+    getTreinosDoAluno(id),
+    getExerciciosBiblioteca(),
+  ]);
 
   if (!alunoData) notFound();
   const aluno = alunoData as Aluno;
@@ -72,6 +82,22 @@ export default async function ProfessorAlunoDetalhe({
           anamnese={anamnese}
           avaliacoes={avaliacoes}
         />
+
+        <Card id="treino">
+          <CardHeader>
+            <CardTitle>Ficha de treino</CardTitle>
+            <CardDescription>
+              Fichas, divisões (A/B/C) e prescrição de exercícios.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TreinosEditor
+              alunoId={aluno.id}
+              treinos={treinos}
+              exercicios={exercicios}
+            />
+          </CardContent>
+        </Card>
       </div>
     </>
   );

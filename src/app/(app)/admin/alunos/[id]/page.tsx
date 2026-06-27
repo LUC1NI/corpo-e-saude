@@ -1,26 +1,22 @@
 import { notFound } from "next/navigation";
 
 import { AcompanhamentoCards } from "@/components/acompanhamento/acompanhamento-cards";
+import { TreinosEditor } from "@/components/treino/treinos-editor";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatusPagamento } from "@/components/ui-extra/status-badge";
+import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { requireUsuario } from "@/lib/auth";
 import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
 import { formatBRL, formatData } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
+import { getExerciciosBiblioteca, getTreinosDoAluno } from "@/lib/treino";
 import type {
   Aluno,
   Anamnese,
@@ -62,6 +58,8 @@ export default async function AlunoDetalhePage({
     { data: pagamentosData },
     { data: anamneseData },
     { data: avaliacoesData },
+    treinos,
+    exercicios,
   ] = await Promise.all([
     supabase.from("alunos").select("*").eq("id", id).maybeSingle(),
     supabase.from("professores").select("id, nome").eq("ativo", true).order("nome"),
@@ -92,6 +90,8 @@ export default async function AlunoDetalhePage({
       .select("*")
       .eq("aluno_id", id)
       .order("data", { ascending: false }),
+    getTreinosDoAluno(id),
+    getExerciciosBiblioteca(),
   ]);
 
   if (!alunoData) notFound();
@@ -148,46 +148,51 @@ export default async function AlunoDetalhePage({
               mensalidade.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Competência</TableHead>
-                  <TableHead>Vencimento</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pagamentos.map((p) => {
-                  const status: TStatusPagamento =
-                    p.status === "pendente" && p.vencimento < hoje
-                      ? "vencido"
-                      : p.status;
-                  return (
-                    <TableRow key={p.id}>
-                      <TableCell>{rotuloCompetencia(p.competencia)}</TableCell>
-                      <TableCell>{formatData(p.vencimento)}</TableCell>
-                      <TableCell>{formatBRL(p.valor)}</TableCell>
-                      <TableCell>
-                        <StatusPagamento status={status} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {p.status === "pago" ? (
-                          <span className="text-xs text-muted-foreground">
-                            {p.forma_pagamento
-                              ? `Pago · ${p.forma_pagamento}`
-                              : "Pago"}
-                          </span>
-                        ) : (
-                          <BaixaButton pagamentoId={p.id} />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <div className="p-3 sm:p-0">
+              <TabelaResponsiva
+                dados={pagamentos}
+                getKey={(p) => p.id}
+                colunas={[
+                  {
+                    cabecalho: "Competência",
+                    principal: true,
+                    celula: (p) => rotuloCompetencia(p.competencia),
+                  },
+                  {
+                    cabecalho: "Vencimento",
+                    celula: (p) => formatData(p.vencimento),
+                  },
+                  { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
+                  {
+                    cabecalho: "Status",
+                    celula: (p) => (
+                      <StatusPagamento
+                        status={
+                          p.status === "pendente" && p.vencimento < hoje
+                            ? "vencido"
+                            : p.status
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    cabecalho: "Ação",
+                    alinhar: "right",
+                    semRotuloMobile: true,
+                    celula: (p) =>
+                      p.status === "pago" ? (
+                        <span className="text-xs text-muted-foreground">
+                          {p.forma_pagamento
+                            ? `Pago · ${p.forma_pagamento}`
+                            : "Pago"}
+                        </span>
+                      ) : (
+                        <BaixaButton pagamentoId={p.id} />
+                      ),
+                  },
+                ]}
+              />
+            </div>
           )}
         </Card>
 
@@ -230,6 +235,22 @@ export default async function AlunoDetalhePage({
           anamnese={anamnese}
           avaliacoes={avaliacoes}
         />
+
+        <Card id="treino">
+          <CardHeader>
+            <CardTitle>Ficha de treino</CardTitle>
+            <CardDescription>
+              Fichas, divisões (A/B/C) e prescrição de exercícios.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TreinosEditor
+              alunoId={aluno.id}
+              treinos={treinos}
+              exercicios={exercicios}
+            />
+          </CardContent>
+        </Card>
       </div>
     </>
   );

@@ -16,6 +16,7 @@ import {
   type MatriculaInput,
 } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
+import { executarRenovacao } from "@/lib/renovacao";
 import type { Periodicidade } from "@/lib/tipos";
 
 // ---------------------------------------------------------------------------
@@ -99,64 +100,13 @@ export async function gerarCobrancasPendentes(): Promise<
 > {
   await assertPapel(["admin"]);
   const supabase = await createClient();
-  const hoje = hojeISO();
-
-  const { data: matriculas, error } = await supabase
-    .from("matriculas")
-    .select("id, aluno_id, data_proxima_cobranca, planos(valor, periodicidade)")
-    .eq("status", "ativa")
-    .eq("renovacao_automatica", true)
-    .lte("data_proxima_cobranca", hoje);
-  if (error) return falha("Não foi possível consultar as matrículas.");
-
-  let geradas = 0;
-
-  for (const m of matriculas ?? []) {
-    const plano = (
-      m as unknown as {
-        planos: { valor: number; periodicidade: Periodicidade } | null;
-      }
-    ).planos;
-    if (!plano) continue;
-
-    let proxima = m.data_proxima_cobranca as string;
-    const novosPagamentos: Record<string, unknown>[] = [];
-
-    // Gera uma cobrança por período em atraso (catch-up).
-    while (proxima <= hoje) {
-      novosPagamentos.push({
-        matricula_id: m.id,
-        aluno_id: m.aluno_id,
-        competencia: competenciaDe(proxima),
-        valor: plano.valor,
-        vencimento: proxima,
-        status: "pendente",
-      });
-      proxima = proximaCobranca(proxima, plano.periodicidade);
-    }
-
-    if (novosPagamentos.length > 0) {
-      const { error: errIns } = await supabase
-        .from("pagamentos")
-        .insert(novosPagamentos);
-      if (errIns) continue;
-      await supabase
-        .from("matriculas")
-        .update({ data_proxima_cobranca: proxima })
-        .eq("id", m.id);
-      geradas += novosPagamentos.length;
-    }
+  try {
+    const { geradas } = await executarRenovacao(supabase);
+    revalidatePath("/admin/financeiro");
+    return sucesso({ geradas });
+  } catch {
+    return falha("Não foi possível gerar as cobranças.");
   }
-
-  // Marca como vencidos os pendentes cujo vencimento já passou.
-  await supabase
-    .from("pagamentos")
-    .update({ status: "vencido" })
-    .eq("status", "pendente")
-    .lt("vencimento", hoje);
-
-  revalidatePath("/admin/financeiro");
-  return sucesso({ geradas });
 }
 
 // ---------------------------------------------------------------------------

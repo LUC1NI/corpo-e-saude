@@ -1,17 +1,9 @@
-import { Plus, Users } from "lucide-react";
+import { ChevronRight, Plus, Users } from "lucide-react";
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
@@ -90,56 +82,33 @@ export default async function AlunosPage({
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Aluno</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Professor</TableHead>
-                <TableHead>Acesso</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {alunos.map((aluno) => (
-                <TableRow key={aluno.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <AvatarIniciais nome={aluno.nome} tamanho="sm" />
-                      <span className="font-medium">{aluno.nome}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="capitalize">{aluno.tipo}</TableCell>
-                  <TableCell>{aluno.professores?.nome ?? "—"}</TableCell>
-                  <TableCell>
-                    <StatusBadge tom={aluno.usuario_id ? "info" : "neutro"}>
-                      {aluno.usuario_id ? "Com acesso" : "Sem acesso"}
-                    </StatusBadge>
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge
-                      tom={aluno.status === "ativo" ? "sucesso" : "neutro"}
-                    >
-                      {aluno.status === "ativo" ? "Ativo" : "Inativo"}
-                    </StatusBadge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Link
-                      href={`/admin/alunos/${aluno.id}`}
-                      className={cn(
-                        buttonVariants({ variant: "ghost", size: "sm" }),
-                      )}
-                    >
-                      Abrir
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {alunos.map((a) => (
+            <Link key={a.id} href={`/admin/alunos/${a.id}`}>
+              <Card className="h-full gap-3 p-4 transition-colors hover:border-primary/40 hover:bg-secondary/30">
+                <div className="flex items-center gap-3">
+                  <AvatarIniciais nome={a.nome} tamanho="md" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">{a.nome}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      <span className="capitalize">{a.tipo}</span>
+                      {a.professores?.nome ? ` · ${a.professores.nome}` : ""}
+                    </p>
+                  </div>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <StatusBadge tom={a.status === "ativo" ? "sucesso" : "neutro"}>
+                    {a.status === "ativo" ? "Ativo" : "Inativo"}
+                  </StatusBadge>
+                  <StatusBadge tom={a.usuario_id ? "info" : "neutro"}>
+                    {a.usuario_id ? "Com acesso" : "Sem acesso"}
+                  </StatusBadge>
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
       )}
     </>
   );

@@ -37,7 +37,7 @@ export async function loginAction(
   }
 
   const ip = await clienteIp();
-  const rl = rateLimit(`login:${ip}:${parsed.data.email}`, 5, 60_000);
+  const rl = await rateLimit(`login:${ip}:${parsed.data.email}`, 5, 60_000);
   if (!rl.ok) {
     return {
       erro: `Muitas tentativas. Tente novamente em ${rl.retornaEmSeg}s.`,
@@ -89,7 +89,7 @@ export async function recuperarSenhaAction(
   if (!parsed.success) return { ok: true };
 
   const ip = await clienteIp();
-  const rl = rateLimit(`reset:${ip}:${parsed.data.email}`, 3, 300_000);
+  const rl = await rateLimit(`reset:${ip}:${parsed.data.email}`, 3, 300_000);
   if (!rl.ok) {
     return {
       erro: `Muitas solicitações. Tente novamente em ${rl.retornaEmSeg}s.`,

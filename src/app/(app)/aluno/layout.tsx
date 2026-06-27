@@ -6,6 +6,6 @@ export default async function AlunoLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireUsuario(["aluno"]);
-  return <AlunoShell>{children}</AlunoShell>;
+  const usuario = await requireUsuario(["aluno"]);
+  return <AlunoShell nome={usuario.nome}>{children}</AlunoShell>;
 }

@@ -154,6 +154,86 @@ export interface Despesa {
   criado_em: string;
 }
 
+// ---------------------------------------------------------------------------
+// Treino
+// ---------------------------------------------------------------------------
+export interface Exercicio {
+  id: string;
+  nome: string;
+  grupo_muscular: string | null;
+  equipamento: string | null;
+  descricao: string | null;
+  midia_url: string | null;
+  criado_em: string;
+}
+
+export interface Treino {
+  id: string;
+  aluno_id: string;
+  professor_id: string | null;
+  nome: string;
+  objetivo: string | null;
+  ativo: boolean;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface TreinoDivisao {
+  id: string;
+  treino_id: string;
+  nome: string; // ex: "A", "B", "C"
+  foco: string | null; // ex: "Superior", "Inferior"
+  ordem: number;
+  dias_semana: number[]; // 0=domingo .. 6=sábado (dias agendados)
+}
+
+export interface TreinoExercicio {
+  id: string;
+  divisao_id: string;
+  exercicio_id: string;
+  series: number | null;
+  repeticoes: string | null;
+  carga: string | null;
+  descanso: string | null;
+  ordem: number;
+  observacao: string | null;
+}
+
+/** Exercício de uma divisão com o nome do exercício resolvido (join). */
+export type TreinoExercicioComNome = TreinoExercicio & {
+  exercicio: {
+    nome: string;
+    grupo_muscular: string | null;
+    midia_url: string | null;
+  } | null;
+};
+
+/** Divisão com seus exercícios já ordenados. */
+export type DivisaoComExercicios = TreinoDivisao & {
+  exercicios: TreinoExercicioComNome[];
+};
+
+/** Ficha de treino completa (divisões + exercícios). */
+export type TreinoComTudo = Treino & {
+  divisoes: DivisaoComExercicios[];
+};
+
+/** Grupos musculares sugeridos na biblioteca de exercícios. */
+export const GRUPOS_MUSCULARES = [
+  "Peito",
+  "Costas",
+  "Ombros",
+  "Bíceps",
+  "Tríceps",
+  "Pernas",
+  "Glúteos",
+  "Abdômen",
+  "Panturrilha",
+  "Antebraço",
+  "Cardio",
+  "Corpo inteiro",
+] as const;
+
 /** Nº de meses por periodicidade (para calcular a próxima cobrança). */
 export const MESES_POR_PERIODICIDADE: Record<Periodicidade, number> = {
   mensal: 1,

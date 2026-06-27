@@ -124,6 +124,58 @@ export const avaliacaoSchema = z.object({
 
 export type AvaliacaoInput = z.infer<typeof avaliacaoSchema>;
 
+// ---------------------------------------------------------------------------
+// Treino — biblioteca de exercícios
+// ---------------------------------------------------------------------------
+export const exercicioSchema = z.object({
+  nome: z.string().trim().min(2, "Informe o nome do exercício."),
+  grupo_muscular: opcional(z.string()),
+  equipamento: opcional(z.string()),
+  descricao: opcional(z.string()),
+  midia_url: opcional(z.string().url("URL inválida.")),
+});
+
+export type ExercicioInput = z.infer<typeof exercicioSchema>;
+
+// ---------------------------------------------------------------------------
+// Treino — ficha
+// ---------------------------------------------------------------------------
+export const treinoSchema = z.object({
+  nome: z.string().trim().min(2, "Informe o nome da ficha."),
+  objetivo: opcional(z.string()),
+  ativo: z.boolean().default(true),
+});
+
+export type TreinoInput = z.infer<typeof treinoSchema>;
+
+// ---------------------------------------------------------------------------
+// Treino — divisão (A/B/C)
+// ---------------------------------------------------------------------------
+export const divisaoSchema = z.object({
+  nome: z.string().trim().min(1, "Informe o nome da divisão."),
+  foco: opcional(z.string()),
+  dias_semana: z.array(z.number().int().min(0).max(6)).default([]),
+});
+
+export type DivisaoInput = z.infer<typeof divisaoSchema>;
+
+// ---------------------------------------------------------------------------
+// Treino — exercício dentro de uma divisão (prescrição)
+// ---------------------------------------------------------------------------
+export const treinoExercicioSchema = z.object({
+  exercicio_id: z.string().uuid("Selecione um exercício."),
+  series: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : v),
+    z.coerce.number().int().positive().optional(),
+  ),
+  repeticoes: opcional(z.string()),
+  carga: opcional(z.string()),
+  descanso: opcional(z.string()),
+  observacao: opcional(z.string()),
+});
+
+export type TreinoExercicioInput = z.infer<typeof treinoExercicioSchema>;
+
 export const MEDIDAS_CAMPOS = [
   { chave: "cintura", rotulo: "Cintura" },
   { chave: "quadril", rotulo: "Quadril" },

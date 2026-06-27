@@ -9,18 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { StatusPagamento } from "@/components/ui-extra/status-badge";
+import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { requireUsuario } from "@/lib/auth";
 import { formatBRL, formatData, formatDataExtenso } from "@/lib/formato";
 import { hojeISO } from "@/lib/financeiro";
@@ -176,36 +169,37 @@ export default async function AdminDashboard() {
               descricao="Nenhuma mensalidade pendente."
             />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Aluno</TableHead>
-                  <TableHead>Vencimento</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {vencendo.map((p) => {
-                  const status: TStatusPagamento =
-                    p.status === "pendente" && p.vencimento < hoje
-                      ? "vencido"
-                      : p.status;
-                  return (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">
-                        {p.alunos?.nome ?? "—"}
-                      </TableCell>
-                      <TableCell>{formatData(p.vencimento)}</TableCell>
-                      <TableCell>{formatBRL(p.valor)}</TableCell>
-                      <TableCell>
-                        <StatusPagamento status={status} />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <div className="p-3 sm:p-0">
+              <TabelaResponsiva
+                dados={vencendo}
+                getKey={(p) => p.id}
+                colunas={[
+                  {
+                    cabecalho: "Aluno",
+                    principal: true,
+                    celula: (p) => p.alunos?.nome ?? "—",
+                  },
+                  {
+                    cabecalho: "Vencimento",
+                    celula: (p) => formatData(p.vencimento),
+                  },
+                  { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
+                  {
+                    cabecalho: "Status",
+                    alinhar: "right",
+                    celula: (p) => (
+                      <StatusPagamento
+                        status={
+                          p.status === "pendente" && p.vencimento < hoje
+                            ? "vencido"
+                            : p.status
+                        }
+                      />
+                    ),
+                  },
+                ]}
+              />
+            </div>
           )}
         </Card>
       </div>

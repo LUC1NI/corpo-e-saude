@@ -19,12 +19,20 @@ const csp = [
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
   "worker-src 'self'",
   "manifest-src 'self'",
+  // Em produção (HTTPS), promove qualquer subrecurso http:// para https://
+  // — barreira contra conteúdo misto. Inofensivo fora de HTTPS.
+  ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
 const securityHeaders = [
   { key: "Content-Security-Policy", value: csp },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
+  // Isola o contexto de navegação (defesa contra XS-Leaks e tabnabbing
+  // via window.opener).
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  // Bloqueia políticas cross-domain legadas (Flash/Acrobat).
+  { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",

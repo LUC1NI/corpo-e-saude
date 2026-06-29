@@ -145,6 +145,16 @@ export async function redefinirSenhaAction(
     return { erro: "Sessão expirada. Faça login novamente." };
   }
 
+  // A senha não pode ser o próprio e-mail (nem a parte antes do @).
+  const senhaLower = parsed.data.senha.toLowerCase();
+  const emailLower = (user.email ?? "").toLowerCase();
+  if (
+    emailLower &&
+    (senhaLower === emailLower || senhaLower === emailLower.split("@")[0])
+  ) {
+    return { erro: "Escolha uma senha diferente do seu e-mail." };
+  }
+
   const { error } = await supabase.auth.updateUser({
     password: parsed.data.senha,
     data: { senha_provisoria: false },

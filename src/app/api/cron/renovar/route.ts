@@ -1,9 +1,19 @@
+import { timingSafeEqual } from "node:crypto";
+
 import { NextResponse } from "next/server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { executarRenovacao } from "@/lib/renovacao";
 
 export const dynamic = "force-dynamic";
+
+/** Compara dois textos em tempo constante (evita timing attack no segredo). */
+function comparaSegredo(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
+}
 
 /**
  * Cron de renovação automática. Gera as mensalidades pendentes das matrículas
@@ -22,8 +32,8 @@ export async function GET(request: Request): Promise<Response> {
     );
   }
 
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${segredo}`) {
+  const auth = request.headers.get("authorization") ?? "";
+  if (!comparaSegredo(auth, `Bearer ${segredo}`)) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 

@@ -1,0 +1,37 @@
+name: Keep Supabase Alive
+
+# Mantém o projeto Supabase (plano Free) ativo: faz uma batida diária no banco,
+# evitando a pausa automática por 7 dias de inatividade.
+#
+# Pré-requisitos (configurar no GitHub → Settings → Secrets and variables →
+# Actions → New repository secret):
+#   SUPABASE_URL       = a URL do projeto (Supabase → Settings → API → Project URL)
+#   SUPABASE_ANON_KEY  = a anon key       (Supabase → Settings → API → anon public)
+#
+# Observação: a anon key é pública por design (vai pro navegador), então guardá-la
+# como secret é só organização. Rode manualmente uma vez em "Run workflow" para testar.
+
+on:
+  schedule:
+    # Todo dia às 09:17 UTC (~06:17 em Mafra/SC). Minuto "quebrado" evita a fila
+    # de cron cheia do GitHub no minuto 0. Diário dá folga na janela de 7 dias.
+    - cron: "17 9 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chama a função keep_alive
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          curl -sS --fail -X POST \
+            "${SUPABASE_URL}/rest/v1/rpc/keep_alive" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+          echo "" && echo "keep-alive OK em $(date -u)"

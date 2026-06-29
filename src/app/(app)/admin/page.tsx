@@ -83,14 +83,13 @@ export default async function AdminDashboard() {
     .filter((p) => p.status === "pago")
     .reduce((s, p) => s + Number(p.valor), 0);
 
-  // Inadimplentes: alunos com cobrança vencida (consulta separada e enxuta).
-  const { data: vencidosData } = await supabase
-    .from("pagamentos")
-    .select("aluno_id")
-    .or(`status.eq.vencido,and(status.eq.pendente,vencimento.lt.${hoje})`);
-  const inadimplentes = new Set(
-    ((vencidosData ?? []) as { aluno_id: string }[]).map((p) => p.aluno_id),
-  ).size;
+  // Inadimplentes: alunos com cobrança vencida. O count(distinct) roda no
+  // banco (não baixa as linhas) — escala mesmo com anos de histórico.
+  const { data: inadimplentesData } = await supabase.rpc(
+    "contar_inadimplentes",
+    { p_hoje: hoje },
+  );
+  const inadimplentes = (inadimplentesData as number | null) ?? 0;
 
   // Série dos últimos 6 meses (recebido por competência).
   const porMes = new Map<string, number>();

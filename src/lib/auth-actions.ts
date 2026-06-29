@@ -109,13 +109,38 @@ export async function recuperarSenhaAction(
 // Redefinir senha — primeiro acesso ou via link de recuperação
 // (o usuário já está autenticado por sessão neste momento)
 // ---------------------------------------------------------------------------
+
+// Bloqueio das senhas/padrões mais comuns. Não substitui a checagem do
+// HaveIBeenPwned (recurso Pro do Supabase), mas barra o caso mais provável
+// de senha fraca sem custo. Comparado em minúsculas e sem espaços.
+const SENHAS_COMUNS = new Set([
+  "12345678",
+  "123456789",
+  "1234567890",
+  "senha123",
+  "senha1234",
+  "password",
+  "password1",
+  "password123",
+  "qwerty123",
+  "abc12345",
+  "11111111",
+  "00000000",
+  "iloveyou",
+  "admin123",
+  "corpoesaude",
+]);
+
 const redefinirSchema = z
   .object({
     senha: z
       .string()
       .min(8, "A senha deve ter ao menos 8 caracteres.")
       .regex(/[A-Za-z]/, "A senha deve conter letras.")
-      .regex(/[0-9]/, "A senha deve conter números."),
+      .regex(/[0-9]/, "A senha deve conter números.")
+      .refine((s) => !SENHAS_COMUNS.has(s.toLowerCase().trim()), {
+        message: "Essa senha é muito comum. Escolha uma mais difícil.",
+      }),
     confirmar: z.string(),
   })
   .refine((d) => d.senha === d.confirmar, {

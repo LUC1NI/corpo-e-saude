@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/ui-extra/link";
 
 import { Card } from "@/components/ui/card";
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";

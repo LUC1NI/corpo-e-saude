@@ -166,27 +166,29 @@ export default async function AlunoMensalidadePage() {
             descricao="Suas mensalidades aparecem aqui assim que forem geradas."
           />
         ) : (
-          <TabelaResponsiva
-            dados={pagamentos}
-            getKey={(p) => p.id}
-            colunas={[
-              {
-                cabecalho: "Competência",
-                principal: true,
-                celula: (p) => rotuloCompetencia(p.competencia),
-              },
-              {
-                cabecalho: "Vencimento",
-                celula: (p) => formatData(p.vencimento),
-              },
-              { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
-              {
-                cabecalho: "Situação",
-                alinhar: "right",
-                celula: (p) => <StatusPagamento status={efetivo(p)} />,
-              },
-            ]}
-          />
+          <div className="p-3 sm:p-0">
+            <TabelaResponsiva
+              dados={pagamentos}
+              getKey={(p) => p.id}
+              colunas={[
+                {
+                  cabecalho: "Competência",
+                  principal: true,
+                  celula: (p) => rotuloCompetencia(p.competencia),
+                },
+                {
+                  cabecalho: "Vencimento",
+                  celula: (p) => formatData(p.vencimento),
+                },
+                { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
+                {
+                  cabecalho: "Situação",
+                  alinhar: "right",
+                  celula: (p) => <StatusPagamento status={efetivo(p)} />,
+                },
+              ]}
+            />
+          </div>
         )}
       </Card>
     </div>

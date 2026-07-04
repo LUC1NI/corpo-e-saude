@@ -21,6 +21,7 @@ import type { StatusPagamento as TStatusPagamento } from "@/lib/tipos";
 import { BaixaButton } from "./baixa-button";
 import { DespesaForm } from "./despesa-form";
 import { ExcluirDespesaButton } from "./excluir-despesa-button";
+import { ExcluirPagamentoButton } from "./excluir-pagamento-button";
 import { GerarCobrancasButton } from "./gerar-cobrancas-button";
 
 interface PagamentoAberto {
@@ -195,46 +196,13 @@ export default async function FinanceiroPage() {
                   cabecalho: "Ação",
                   alinhar: "right",
                   semRotuloMobile: true,
-                  celula: (p) => <BaixaButton pagamentoId={p.id} />,
+                  celula: (p) => (
+                    <div className="flex items-center justify-end gap-1">
+                      <BaixaButton pagamentoId={p.id} />
+                      <ExcluirPagamentoButton pagamentoId={p.id} />
+                    </div>
+                  ),
                 },
-              ]}
-            />
-          </div>
-        )}
-      </Card>
-
-      <Card className="mt-6 overflow-hidden p-0">
-        <CardHeader className="p-5">
-          <CardTitle>Recebimentos recentes</CardTitle>
-        </CardHeader>
-        {recebidos.length === 0 ? (
-          <PageEmpty
-            icone={Wallet}
-            titulo="Nenhum recebimento ainda"
-            descricao="Os pagamentos confirmados aparecem aqui com a forma de pagamento."
-          />
-        ) : (
-          <div className="p-3 sm:p-0">
-            <TabelaResponsiva
-              dados={recebidos}
-              getKey={(p) => p.id}
-              colunas={[
-                {
-                  cabecalho: "Aluno",
-                  principal: true,
-                  celula: (p) => p.alunos?.nome ?? "—",
-                },
-                {
-                  cabecalho: "Competência",
-                  celula: (p) => rotuloCompetencia(p.competencia),
-                },
-                {
-                  cabecalho: "Pago em",
-                  celula: (p) =>
-                    p.data_pagamento ? formatData(p.data_pagamento) : "—",
-                },
-                { cabecalho: "Forma", celula: (p) => p.forma_pagamento ?? "—" },
-                { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
               ]}
             />
           </div>
@@ -280,6 +248,55 @@ export default async function FinanceiroPage() {
             </div>
           )}
         </CardContent>
+      </Card>
+
+      {/* Recebimentos: recolhível para não alongar a página. */}
+      <Card className="mt-6 overflow-hidden p-0">
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center justify-between p-5">
+            <span className="font-heading text-base font-semibold">
+              Recebimentos recentes
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {recebidos.length} · toque para ver
+            </span>
+          </summary>
+          {recebidos.length === 0 ? (
+            <PageEmpty
+              icone={Wallet}
+              titulo="Nenhum recebimento ainda"
+              descricao="Os pagamentos confirmados aparecem aqui com a forma de pagamento."
+            />
+          ) : (
+            <div className="border-t p-3 sm:p-0">
+              <TabelaResponsiva
+                dados={recebidos}
+                getKey={(p) => p.id}
+                colunas={[
+                  {
+                    cabecalho: "Aluno",
+                    principal: true,
+                    celula: (p) => p.alunos?.nome ?? "—",
+                  },
+                  {
+                    cabecalho: "Competência",
+                    celula: (p) => rotuloCompetencia(p.competencia),
+                  },
+                  {
+                    cabecalho: "Pago em",
+                    celula: (p) =>
+                      p.data_pagamento ? formatData(p.data_pagamento) : "—",
+                  },
+                  {
+                    cabecalho: "Forma",
+                    celula: (p) => p.forma_pagamento ?? "—",
+                  },
+                  { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
+                ]}
+              />
+            </div>
+          )}
+        </details>
       </Card>
     </>
   );

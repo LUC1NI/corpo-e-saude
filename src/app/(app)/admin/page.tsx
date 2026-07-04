@@ -1,6 +1,12 @@
 import { format, startOfMonth, subMonths } from "date-fns";
-import { AlertTriangle, CheckCircle2, TrendingUp, Users } from "lucide-react";
-import Link from "next/link";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronRight,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+import Link from "@/components/ui-extra/link";
 
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -9,11 +15,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { StatusPagamento } from "@/components/ui-extra/status-badge";
-import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { requireUsuario } from "@/lib/auth";
 import { formatBRL, formatData, formatDataExtenso } from "@/lib/formato";
 import { hojeISO } from "@/lib/financeiro";
@@ -49,14 +55,20 @@ export default async function AdminDashboard() {
 
   const [
     { count: alunosAtivos },
+    { count: novosNoMes },
     { data: mesData },
     { data: vencendoData },
     { data: historicoData },
+    { data: atrasoData },
   ] = await Promise.all([
     supabase
       .from("alunos")
       .select("id", { count: "exact", head: true })
       .eq("status", "ativo"),
+    supabase
+      .from("alunos")
+      .select("id", { count: "exact", head: true })
+      .gte("criado_em", inicioMes),
     supabase.from("pagamentos").select("valor, status").eq("competencia", inicioMes),
     supabase
       .from("pagamentos")
@@ -69,6 +81,13 @@ export default async function AdminDashboard() {
       .select("valor, competencia, status")
       .gte("competencia", inicio6Meses)
       .eq("status", "pago"),
+    // Cobranças em atraso (qualquer competência) para o total devido.
+    supabase
+      .from("pagamentos")
+      .select("valor")
+      .neq("status", "pago")
+      .lt("vencimento", hoje)
+      .limit(1000),
   ]);
 
   const mes = (mesData ?? []) as { valor: number; status: TStatusPagamento }[];
@@ -82,6 +101,14 @@ export default async function AdminDashboard() {
   const recebidoMes = mes
     .filter((p) => p.status === "pago")
     .reduce((s, p) => s + Number(p.valor), 0);
+
+  // Contexto dos indicadores: % já recebido e total em atraso (R$).
+  const pctRecebido =
+    faturamentoMes > 0 ? Math.round((recebidoMes / faturamentoMes) * 100) : null;
+  const valorAtraso = ((atrasoData ?? []) as { valor: number }[]).reduce(
+    (s, p) => s + Number(p.valor),
+    0,
+  );
 
   // Inadimplentes: alunos com cobrança vencida. O count(distinct) roda no
   // banco (não baixa as linhas) — escala mesmo com anos de histórico.
@@ -120,24 +147,47 @@ export default async function AdminDashboard() {
           valor={String(alunosAtivos ?? 0)}
           icone={Users}
           tomIcone="primary"
+          rodape={
+            (novosNoMes ?? 0) > 0
+              ? `+${novosNoMes} novo(s) este mês`
+              : "Nenhum novo este mês"
+          }
+          tomRodape={(novosNoMes ?? 0) > 0 ? "sucesso" : "neutro"}
+          href="/admin/alunos"
         />
         <StatCard
           titulo="Faturamento do mês"
           valor={formatBRL(faturamentoMes)}
           icone={TrendingUp}
           tomIcone="sucesso"
+          rodape={`${mes.length} cobrança(s) na competência`}
+          href="/admin/financeiro"
         />
         <StatCard
           titulo="Recebido no mês"
           valor={formatBRL(recebidoMes)}
           icone={CheckCircle2}
           tomIcone="sucesso"
+          rodape={
+            pctRecebido === null
+              ? "Sem cobranças no mês"
+              : `${pctRecebido}% do previsto`
+          }
+          tomRodape={pctRecebido !== null && pctRecebido >= 100 ? "sucesso" : "neutro"}
+          href="/admin/financeiro"
         />
         <StatCard
           titulo="Inadimplentes"
           valor={String(inadimplentes)}
           icone={AlertTriangle}
           tomIcone="perigo"
+          rodape={
+            inadimplentes > 0
+              ? `${formatBRL(valorAtraso)} em atraso`
+              : "Ninguém em atraso"
+          }
+          tomRodape={inadimplentes > 0 ? "perigo" : "sucesso"}
+          href="/admin/financeiro"
         />
       </div>
 
@@ -168,37 +218,40 @@ export default async function AdminDashboard() {
               descricao="Nenhuma mensalidade pendente."
             />
           ) : (
-            <div className="p-3 sm:p-0">
-              <TabelaResponsiva
-                dados={vencendo}
-                getKey={(p) => p.id}
-                colunas={[
-                  {
-                    cabecalho: "Aluno",
-                    principal: true,
-                    celula: (p) => p.alunos?.nome ?? "—",
-                  },
-                  {
-                    cabecalho: "Vencimento",
-                    celula: (p) => formatData(p.vencimento),
-                  },
-                  { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
-                  {
-                    cabecalho: "Status",
-                    alinhar: "right",
-                    celula: (p) => (
-                      <StatusPagamento
-                        status={
-                          p.status === "pendente" && p.vencimento < hoje
-                            ? "vencido"
-                            : p.status
-                        }
-                      />
-                    ),
-                  },
-                ]}
-              />
-            </div>
+            <ul className="divide-y">
+              {vencendo.map((p) => {
+                const nome = p.alunos?.nome ?? "—";
+                const status =
+                  p.status === "pendente" && p.vencimento < hoje
+                    ? "vencido"
+                    : p.status;
+                return (
+                  <li key={p.id}>
+                    <Link
+                      href={`/admin/alunos/${p.aluno_id}`}
+                      className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/50"
+                    >
+                      <AvatarIniciais nome={nome} tamanho="sm" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {nome}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Vence {formatData(p.vencimento)}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-sm font-semibold text-foreground">
+                          {formatBRL(p.valor)}
+                        </span>
+                        <StatusPagamento status={status} />
+                      </div>
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground/40" />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </Card>
       </div>

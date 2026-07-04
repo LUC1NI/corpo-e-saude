@@ -76,7 +76,7 @@ export function BotaoExcluir({
           <AlertDialogCancel disabled={carregando}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
-            disabled={carregando}
+            loading={carregando}
             onClick={(e) => {
               e.preventDefault();
               void excluir();

@@ -1,5 +1,5 @@
 import { Plus, Users } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/ui-extra/link";
 
 import { GradeAlunos } from "@/components/acompanhamento/grade-alunos";
 import { buttonVariants } from "@/components/ui/button";

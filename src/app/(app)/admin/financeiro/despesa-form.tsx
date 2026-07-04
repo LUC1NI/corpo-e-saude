@@ -106,9 +106,9 @@ export function DespesaForm({
           className="w-40"
         />
       </CampoForm>
-      <Button type="button" onClick={lancar} disabled={salvando}>
+      <Button type="button" onClick={lancar} loading={salvando}>
         <Plus className="size-4" />
-        {salvando ? "…" : "Lançar"}
+        {salvando ? "Lançando…" : "Lançar"}
       </Button>
     </div>
   );

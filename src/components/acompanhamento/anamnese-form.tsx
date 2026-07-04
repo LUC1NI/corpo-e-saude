@@ -145,7 +145,7 @@ export function AnamneseForm({
         />
       </CampoForm>
 
-      <Button type="submit" disabled={salvando}>
+      <Button type="submit" loading={salvando}>
         {salvando ? "Salvando…" : "Salvar anamnese"}
       </Button>
     </form>

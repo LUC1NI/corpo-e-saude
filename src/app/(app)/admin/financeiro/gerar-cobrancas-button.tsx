@@ -34,7 +34,7 @@ export function GerarCobrancasButton() {
       type="button"
       variant="outline"
       onClick={gerar}
-      disabled={carregando}
+      loading={carregando}
     >
       <RefreshCw className="size-4" />
       {carregando ? "Gerando…" : "Gerar cobranças"}

@@ -12,11 +12,16 @@ import {
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatusPagamento } from "@/components/ui-extra/status-badge";
 import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
+import { aguardandoPrimeiroAcesso } from "@/lib/acesso";
 import { requireUsuario } from "@/lib/auth";
 import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
 import { formatBRL, formatData } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
-import { getExerciciosBiblioteca, getTreinosDoAluno } from "@/lib/treino";
+import {
+  getExerciciosBiblioteca,
+  getModelosTreino,
+  getTreinosDoAluno,
+} from "@/lib/treino";
 import type {
   Aluno,
   Anamnese,
@@ -26,9 +31,11 @@ import type {
 } from "@/lib/tipos";
 
 import { AlunoForm } from "../aluno-form";
+import { ExcluirAlunoButton } from "../excluir-aluno-button";
 import { GerarAcesso } from "../gerar-acesso";
 import { MatriculaCard, type MatriculaAtiva } from "../matricula-card";
 import { BaixaButton } from "../../financeiro/baixa-button";
+import { ExcluirPagamentoButton } from "../../financeiro/excluir-pagamento-button";
 
 interface PagamentoAluno {
   id: string;
@@ -60,6 +67,7 @@ export default async function AlunoDetalhePage({
     { data: avaliacoesData },
     treinos,
     exercicios,
+    modelos,
   ] = await Promise.all([
     supabase.from("alunos").select("*").eq("id", id).maybeSingle(),
     supabase.from("professores").select("id, nome").eq("ativo", true).order("nome"),
@@ -92,6 +100,7 @@ export default async function AlunoDetalhePage({
       .order("data", { ascending: false }),
     getTreinosDoAluno(id),
     getExerciciosBiblioteca(),
+    getModelosTreino(),
   ]);
 
   if (!alunoData) notFound();
@@ -106,6 +115,7 @@ export default async function AlunoDetalhePage({
   const pagamentos = (pagamentosData ?? []) as PagamentoAluno[];
   const anamnese = (anamneseData as Anamnese | null) ?? null;
   const avaliacoes = (avaliacoesData ?? []) as AvaliacaoFisica[];
+  const aguardandoAcesso = await aguardandoPrimeiroAcesso(aluno.usuario_id);
 
   let matricula: MatriculaAtiva | null = null;
   if (matriculaData) {
@@ -187,7 +197,10 @@ export default async function AlunoDetalhePage({
                             : "Pago"}
                         </span>
                       ) : (
-                        <BaixaButton pagamentoId={p.id} />
+                        <div className="flex items-center justify-end gap-1">
+                          <BaixaButton pagamentoId={p.id} />
+                          <ExcluirPagamentoButton pagamentoId={p.id} />
+                        </div>
                       ),
                   },
                 ]}
@@ -204,6 +217,7 @@ export default async function AlunoDetalhePage({
             <GerarAcesso
               alunoId={aluno.id}
               temAcesso={Boolean(aluno.usuario_id)}
+              aguardandoPrimeiroAcesso={aguardandoAcesso}
               email={aluno.email}
             />
           </CardContent>
@@ -240,7 +254,8 @@ export default async function AlunoDetalhePage({
           <CardHeader>
             <CardTitle>Ficha de treino</CardTitle>
             <CardDescription>
-              Fichas, divisões (A/B/C) e prescrição de exercícios.
+              Aplique um treino pronto e ajuste, ou monte do zero — dias de
+              treino (A/B/C) e exercícios.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -248,7 +263,20 @@ export default async function AlunoDetalhePage({
               alunoId={aluno.id}
               treinos={treinos}
               exercicios={exercicios}
+              modelos={modelos}
             />
+          </CardContent>
+        </Card>
+
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle className="text-destructive">Zona de risco</CardTitle>
+            <CardDescription>
+              Excluir o aluno remove permanentemente todo o histórico vinculado.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ExcluirAlunoButton alunoId={aluno.id} nome={aluno.nome} />
           </CardContent>
         </Card>
       </div>

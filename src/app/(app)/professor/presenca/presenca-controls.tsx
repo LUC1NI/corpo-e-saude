@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect, useTransition } from "react";
 
+import { progressoNavegacao } from "@/components/ui-extra/progresso-navegacao";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -25,12 +27,24 @@ export function PresencaControls({
   slots: { hora_inicio: string; hora_fim: string }[];
 }) {
   const router = useRouter();
+  const [pending, startTransition] = useTransition();
+
+  // Enquanto a nova consulta carrega, mantém a barra de progresso no topo.
+  useEffect(() => {
+    if (!pending) return;
+    progressoNavegacao.iniciar();
+    return () => {
+      progressoNavegacao.terminar();
+    };
+  }, [pending]);
 
   function irPara(novaData: string, novaHora: string | null) {
     const params = new URLSearchParams();
     params.set("data", novaData);
     if (novaHora) params.set("hora", novaHora);
-    router.push(`/professor/presenca?${params.toString()}`);
+    startTransition(() => {
+      router.push(`/professor/presenca?${params.toString()}`);
+    });
   }
 
   return (
@@ -43,12 +57,19 @@ export function PresencaControls({
           className="w-44"
         />
       </CampoForm>
-      <CampoForm label="Horário" dica="Opcional — vincula a presença a um horário.">
+      <CampoForm
+        label="Aula / horário"
+        dica={
+          slots.length
+            ? "A 1ª aula do dia já vem selecionada. Use “sem horário” só para avulso/online."
+            : "Sem aulas neste dia — a presença fica como avulsa."
+        }
+      >
         <Select
           value={hora ?? SEM_HORARIO}
-          onValueChange={(v) => irPara(data, v === SEM_HORARIO ? null : v)}
+          onValueChange={(v) => irPara(data, v)}
           items={{
-            [SEM_HORARIO]: "Sem horário",
+            [SEM_HORARIO]: "Sem horário (avulso/online)",
             ...Object.fromEntries(
               slots.map((s) => [
                 s.hora_inicio,
@@ -58,10 +79,12 @@ export function PresencaControls({
           }}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Sem horário" />
+            <SelectValue placeholder="Sem horário (avulso/online)" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={SEM_HORARIO}>Sem horário</SelectItem>
+            <SelectItem value={SEM_HORARIO}>
+              Sem horário (avulso/online)
+            </SelectItem>
             {slots.map((s) => (
               <SelectItem key={s.hora_inicio} value={s.hora_inicio}>
                 {horaCurta(s.hora_inicio)}–{horaCurta(s.hora_fim)}

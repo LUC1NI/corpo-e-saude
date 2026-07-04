@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LineChart,
   type LucideIcon,
+  UserCog,
   Users,
   Wallet,
 } from "lucide-react";
@@ -22,11 +23,13 @@ export interface ItemNav {
 /** Navegação lateral do admin (dono) — acesso total. */
 export const navAdmin: ItemNav[] = [
   { titulo: "Visão Geral", href: "/admin", icone: LayoutDashboard },
-  { titulo: "Alunos", href: "/admin/alunos", icone: Users },
-  { titulo: "Planos", href: "/admin/planos", icone: CreditCard },
+  { titulo: "Horários", href: "/admin/horarios", icone: Clock },
   { titulo: "Presença", href: "/admin/presenca", icone: CalendarCheck },
   { titulo: "Treinos", href: "/admin/treinos", icone: Dumbbell },
   { titulo: "Financeiro", href: "/admin/financeiro", icone: Wallet },
+  { titulo: "Alunos", href: "/admin/alunos", icone: Users },
+  { titulo: "Professores", href: "/admin/professores", icone: UserCog },
+  { titulo: "Planos", href: "/admin/planos", icone: CreditCard },
 ];
 
 /** Navegação do professor — apenas a própria carteira de alunos. */

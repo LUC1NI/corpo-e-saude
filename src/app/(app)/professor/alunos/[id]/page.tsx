@@ -10,9 +10,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui-extra/page-header";
+import { aguardandoPrimeiroAcesso } from "@/lib/acesso";
 import { requireUsuario } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getExerciciosBiblioteca, getTreinosDoAluno } from "@/lib/treino";
+import {
+  getExerciciosBiblioteca,
+  getModelosTreino,
+  getTreinosDoAluno,
+} from "@/lib/treino";
 import type { Anamnese, Aluno, AvaliacaoFisica } from "@/lib/tipos";
 
 import { AlunoForm } from "../../../admin/alunos/aluno-form";
@@ -33,6 +38,7 @@ export default async function ProfessorAlunoDetalhe({
     { data: avaliacoesData },
     treinos,
     exercicios,
+    modelos,
   ] = await Promise.all([
     supabase.from("alunos").select("*").eq("id", id).maybeSingle(),
     supabase.from("anamneses").select("*").eq("aluno_id", id).maybeSingle(),
@@ -43,12 +49,14 @@ export default async function ProfessorAlunoDetalhe({
       .order("data", { ascending: false }),
     getTreinosDoAluno(id),
     getExerciciosBiblioteca(),
+    getModelosTreino(),
   ]);
 
   if (!alunoData) notFound();
   const aluno = alunoData as Aluno;
   const anamnese = (anamneseData as Anamnese | null) ?? null;
   const avaliacoes = (avaliacoesData ?? []) as AvaliacaoFisica[];
+  const aguardandoAcesso = await aguardandoPrimeiroAcesso(aluno.usuario_id);
 
   return (
     <>
@@ -69,6 +77,7 @@ export default async function ProfessorAlunoDetalhe({
             <GerarAcesso
               alunoId={aluno.id}
               temAcesso={Boolean(aluno.usuario_id)}
+              aguardandoPrimeiroAcesso={aguardandoAcesso}
               email={aluno.email}
             />
           </CardContent>
@@ -106,7 +115,8 @@ export default async function ProfessorAlunoDetalhe({
           <CardHeader>
             <CardTitle>Ficha de treino</CardTitle>
             <CardDescription>
-              Fichas, divisões (A/B/C) e prescrição de exercícios.
+              Aplique um treino pronto e ajuste, ou monte do zero — dias de
+              treino (A/B/C) e exercícios.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -114,6 +124,7 @@ export default async function ProfessorAlunoDetalhe({
               alunoId={aluno.id}
               treinos={treinos}
               exercicios={exercicios}
+              modelos={modelos}
             />
           </CardContent>
         </Card>

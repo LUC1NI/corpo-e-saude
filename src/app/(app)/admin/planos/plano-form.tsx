@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
+import Link from "@/components/ui-extra/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -159,7 +159,7 @@ export function PlanoForm({
       />
 
       <div className="flex items-center gap-3 pt-2">
-        <Button type="submit" disabled={salvando}>
+        <Button type="submit" loading={salvando}>
           {salvando ? "Salvando…" : "Salvar plano"}
         </Button>
         <Link

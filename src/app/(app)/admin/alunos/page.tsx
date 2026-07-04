@@ -1,5 +1,5 @@
 import { ChevronRight, Plus, Users } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/ui-extra/link";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

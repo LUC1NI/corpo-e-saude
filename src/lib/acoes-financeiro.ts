@@ -34,6 +34,21 @@ export async function criarMatricula(
 
   const supabase = await createClient();
 
+  // Não permite duas matrículas ativas para o mesmo aluno (evita cobrança
+  // dobrada na renovação). A UI já esconde o form, mas garantimos no servidor.
+  const { data: ativaExistente } = await supabase
+    .from("matriculas")
+    .select("id")
+    .eq("aluno_id", alunoId)
+    .eq("status", "ativa")
+    .limit(1)
+    .maybeSingle();
+  if (ativaExistente) {
+    return falha(
+      "Este aluno já tem uma matrícula ativa. Cancele a atual antes de criar outra.",
+    );
+  }
+
   const { data: plano } = await supabase
     .from("planos")
     .select("valor, periodicidade")
@@ -58,16 +73,31 @@ export async function criarMatricula(
     .single();
   if (errMat || !matricula) return falha("Não foi possível criar a matrícula.");
 
-  // Primeiro pagamento (referente ao período inicial).
-  const { error: errPag } = await supabase.from("pagamentos").insert({
-    matricula_id: matricula.id,
-    aluno_id: alunoId,
-    competencia: competenciaDe(parsed.data.data_inicio),
-    valor: plano.valor,
-    vencimento: parsed.data.data_inicio,
-    status: "pendente",
-  });
-  if (errPag) return falha("Matrícula criada, mas falhou ao gerar a cobrança.");
+  // Primeiro pagamento (referente ao período inicial). Não duplica: se o aluno
+  // já tem uma cobrança nessa competência (ex.: rematrícula no mesmo mês após
+  // um cancelamento), reaproveita-a em vez de gerar outra.
+  const competencia = competenciaDe(parsed.data.data_inicio);
+  const { data: existente } = await supabase
+    .from("pagamentos")
+    .select("id")
+    .eq("aluno_id", alunoId)
+    .eq("competencia", competencia)
+    .limit(1)
+    .maybeSingle();
+
+  if (!existente) {
+    const { error: errPag } = await supabase.from("pagamentos").insert({
+      matricula_id: matricula.id,
+      aluno_id: alunoId,
+      competencia,
+      valor: plano.valor,
+      vencimento: parsed.data.data_inicio,
+      status: "pendente",
+    });
+    if (errPag) {
+      return falha("Matrícula criada, mas falhou ao gerar a cobrança.");
+    }
+  }
 
   revalidatePath(`/admin/alunos/${alunoId}`);
   revalidatePath("/admin/financeiro");
@@ -129,6 +159,40 @@ export async function marcarPagamentoPago(
   if (error) return falha("Não foi possível dar baixa no pagamento.");
 
   revalidatePath("/admin/financeiro");
+  return sucesso();
+}
+
+/**
+ * Exclui uma cobrança ainda EM ABERTO (pendente/vencida). Recusa apagar uma
+ * já recebida (pago) — isso distorceria o financeiro. Admin apenas.
+ */
+export async function excluirPagamento(
+  pagamentoId: string,
+): Promise<ResultadoAcao> {
+  await assertPapel(["admin"]);
+  const supabase = await createClient();
+
+  const { data: pagamento } = await supabase
+    .from("pagamentos")
+    .select("id, aluno_id, status")
+    .eq("id", pagamentoId)
+    .maybeSingle();
+
+  if (!pagamento) return falha("Cobrança não encontrada.");
+  if (pagamento.status === "pago") {
+    return falha("Não é possível excluir uma cobrança já recebida.");
+  }
+
+  const { error } = await supabase
+    .from("pagamentos")
+    .delete()
+    .eq("id", pagamentoId);
+  if (error) return falha("Não foi possível excluir a cobrança.");
+
+  revalidatePath("/admin/financeiro");
+  if (pagamento.aluno_id) {
+    revalidatePath(`/admin/alunos/${pagamento.aluno_id}`);
+  }
   return sucesso();
 }
 

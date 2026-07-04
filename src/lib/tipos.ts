@@ -169,7 +169,8 @@ export interface Exercicio {
 
 export interface Treino {
   id: string;
-  aluno_id: string;
+  /** null quando é um treino-modelo (reutilizável, sem aluno). */
+  aluno_id: string | null;
   professor_id: string | null;
   nome: string;
   objetivo: string | null;

@@ -1,4 +1,6 @@
 import type { LucideIcon } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+import Link from "@/components/ui-extra/link";
 
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -20,6 +22,8 @@ export interface StatCardProps {
   /** Texto auxiliar abaixo do valor (ex.: "+4 novos este mês"). */
   rodape?: string;
   tomRodape?: "neutro" | "sucesso" | "perigo";
+  /** Se informado, o cartão vira um link para a área de detalhe. */
+  href?: string;
 }
 
 export function StatCard({
@@ -29,9 +33,10 @@ export function StatCard({
   tomIcone = "primary",
   rodape,
   tomRodape = "neutro",
+  href,
 }: StatCardProps) {
-  return (
-    <Card className="gap-0 p-5">
+  const conteudo = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-muted-foreground">{titulo}</p>
         {Icone ? (
@@ -60,6 +65,22 @@ export function StatCard({
           {rodape}
         </p>
       ) : null}
-    </Card>
+    </>
   );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="group block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+      >
+        <Card className="relative gap-0 p-5 transition-all group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-md">
+          <ArrowUpRight className="absolute right-4 bottom-4 size-4 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100" />
+          {conteudo}
+        </Card>
+      </Link>
+    );
+  }
+
+  return <Card className="gap-0 p-5">{conteudo}</Card>;
 }

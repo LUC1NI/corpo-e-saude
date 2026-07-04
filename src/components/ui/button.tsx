@@ -1,5 +1,6 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -44,14 +45,31 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  loading = false,
+  disabled,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props &
+  VariantProps<typeof buttonVariants> & {
+    /** Mostra um spinner, esconde o ícone estático e desabilita o clique. */
+    loading?: boolean
+  }) {
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      data-loading={loading || undefined}
+      disabled={disabled || loading}
+      className={cn(
+        buttonVariants({ variant, size, className }),
+        // Enquanto carrega, oculta o ícone estático (svg que não gira) para
+        // não aparecer junto do spinner.
+        loading && "[&>svg:not(.animate-spin)]:hidden",
+      )}
       {...props}
-    />
+    >
+      {loading ? <Loader2 className="animate-spin" /> : null}
+      {children}
+    </ButtonPrimitive>
   )
 }
 

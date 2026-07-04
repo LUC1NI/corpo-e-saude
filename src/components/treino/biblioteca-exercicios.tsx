@@ -165,7 +165,7 @@ function ExercicioDialog({
           <Button
             type="submit"
             form="form-exercicio"
-            disabled={salvando}
+            loading={salvando}
           >
             {salvando ? "Salvando…" : "Salvar"}
           </Button>

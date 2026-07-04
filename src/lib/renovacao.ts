@@ -39,30 +39,52 @@ export async function executarRenovacao(
     if (!plano) continue;
 
     let proxima = m.data_proxima_cobranca as string;
-    const novosPagamentos: Record<string, unknown>[] = [];
+    const periodos: { competencia: string; vencimento: string }[] = [];
 
     while (proxima <= hoje) {
-      novosPagamentos.push({
-        matricula_id: m.id,
-        aluno_id: m.aluno_id,
-        competencia: competenciaDe(proxima),
-        valor: plano.valor,
-        vencimento: proxima,
-        status: "pendente",
-      });
+      periodos.push({ competencia: competenciaDe(proxima), vencimento: proxima });
       proxima = proximaCobranca(proxima, plano.periodicidade);
     }
 
-    if (novosPagamentos.length > 0) {
-      const { error: errIns } = await supabase
+    if (periodos.length > 0) {
+      // Idempotência: não recria cobrança de uma competência que o aluno já
+      // tem (ex.: rodadas concorrentes, ponteiro não avançado, rematrícula).
+      const comps = periodos.map((p) => p.competencia);
+      const { data: jaExistem } = await supabase
         .from("pagamentos")
-        .insert(novosPagamentos);
-      if (errIns) continue;
+        .select("competencia")
+        .eq("aluno_id", m.aluno_id)
+        .in("competencia", comps);
+      const existentes = new Set(
+        ((jaExistem ?? []) as { competencia: string }[]).map(
+          (r) => r.competencia,
+        ),
+      );
+
+      const novosPagamentos = periodos
+        .filter((p) => !existentes.has(p.competencia))
+        .map((p) => ({
+          matricula_id: m.id,
+          aluno_id: m.aluno_id,
+          competencia: p.competencia,
+          valor: plano.valor,
+          vencimento: p.vencimento,
+          status: "pendente",
+        }));
+
+      if (novosPagamentos.length > 0) {
+        const { error: errIns } = await supabase
+          .from("pagamentos")
+          .insert(novosPagamentos);
+        if (errIns) continue;
+        geradas += novosPagamentos.length;
+      }
+
+      // Avança o ponteiro mesmo se tudo já existia (evita reprocessar sempre).
       await supabase
         .from("matriculas")
         .update({ data_proxima_cobranca: proxima })
         .eq("id", m.id);
-      geradas += novosPagamentos.length;
     }
   }
 

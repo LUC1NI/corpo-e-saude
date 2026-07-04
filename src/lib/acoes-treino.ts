@@ -16,11 +16,17 @@ import {
   type TreinoInput,
 } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
-import { getTemplate } from "@/lib/templates-treino";
 
-function revalidarAluno(alunoId: string) {
-  revalidatePath(`/admin/alunos/${alunoId}`);
-  revalidatePath(`/professor/alunos/${alunoId}`);
+/**
+ * Revalida as telas afetadas por uma mudança de treino. `alunoId` null indica
+ * edição de um treino-modelo (aba Treinos), sem página de aluno envolvida.
+ */
+function revalidarAluno(alunoId: string | null) {
+  if (alunoId) {
+    revalidatePath(`/admin/alunos/${alunoId}`);
+    revalidatePath(`/professor/alunos/${alunoId}`);
+  }
+  revalidarBiblioteca();
 }
 
 function revalidarBiblioteca() {
@@ -137,7 +143,7 @@ export async function criarTreino(
 
 export async function atualizarTreino(
   id: string,
-  alunoId: string,
+  alunoId: string | null,
   input: TreinoInput,
 ): Promise<ResultadoAcao> {
   await assertPapel(["admin", "professor"]);
@@ -164,7 +170,7 @@ export async function atualizarTreino(
 
 export async function excluirTreino(
   id: string,
-  alunoId: string,
+  alunoId: string | null,
 ): Promise<ResultadoAcao> {
   await assertPapel(["admin", "professor"]);
   const supabase = await createClient();
@@ -180,7 +186,7 @@ export async function excluirTreino(
 // ===========================================================================
 export async function criarDivisao(
   treinoId: string,
-  alunoId: string,
+  alunoId: string | null,
   input: DivisaoInput,
   ordem: number,
 ): Promise<ResultadoAcao<{ id: string }>> {
@@ -211,7 +217,7 @@ export async function criarDivisao(
 
 export async function atualizarDivisao(
   id: string,
-  alunoId: string,
+  alunoId: string | null,
   input: DivisaoInput,
 ): Promise<ResultadoAcao> {
   await assertPapel(["admin", "professor"]);
@@ -234,7 +240,7 @@ export async function atualizarDivisao(
 
 export async function excluirDivisao(
   id: string,
-  alunoId: string,
+  alunoId: string | null,
 ): Promise<ResultadoAcao> {
   await assertPapel(["admin", "professor"]);
   const supabase = await createClient();
@@ -253,7 +259,7 @@ export async function excluirDivisao(
 // ===========================================================================
 export async function adicionarTreinoExercicio(
   divisaoId: string,
-  alunoId: string,
+  alunoId: string | null,
   input: TreinoExercicioInput,
   ordem: number,
 ): Promise<ResultadoAcao> {
@@ -283,7 +289,7 @@ export async function adicionarTreinoExercicio(
 
 export async function atualizarTreinoExercicio(
   id: string,
-  alunoId: string,
+  alunoId: string | null,
   input: TreinoExercicioInput,
 ): Promise<ResultadoAcao> {
   await assertPapel(["admin", "professor"]);
@@ -313,7 +319,7 @@ export async function atualizarTreinoExercicio(
 
 export async function removerTreinoExercicio(
   id: string,
-  alunoId: string,
+  alunoId: string | null,
 ): Promise<ResultadoAcao> {
   await assertPapel(["admin", "professor"]);
   const supabase = await createClient();
@@ -328,86 +334,171 @@ export async function removerTreinoExercicio(
 }
 
 // ===========================================================================
-// Aplicar um modelo (template) de treino a um aluno — gera a ficha pronta
+// Atalho "montar treino": ficha ativa + divisão A criadas de uma vez, levando
+// o professor direto à etapa que importa (adicionar os exercícios).
 // ===========================================================================
-export async function aplicarTemplate(
+export async function criarTreinoRapido(
   alunoId: string,
-  templateId: string,
 ): Promise<ResultadoAcao<{ id: string }>> {
   await assertPapel(["admin", "professor"]);
-  const template = getTemplate(templateId);
-  if (!template) return falha("Modelo não encontrado.");
 
   const professor = await getProfessorAtual();
   const supabase = await createClient();
 
-  // Casa os exercícios do modelo com a biblioteca (por nome).
-  const nomes = [
-    ...new Set(
-      template.divisoes.flatMap((d) => d.exercicios.map((e) => e.nome)),
-    ),
-  ];
-  const { data: existentes } = await supabase
-    .from("exercicios")
-    .select("id, nome")
-    .in("nome", nomes);
-  const mapa = new Map(
-    ((existentes ?? []) as { id: string; nome: string }[]).map((e) => [
-      e.nome,
-      e.id,
-    ]),
-  );
-
-  // Cria a ficha.
-  const { data: treino, error: eT } = await supabase
+  const { data: treino, error } = await supabase
     .from("treinos")
     .insert({
       aluno_id: alunoId,
       professor_id: professor?.id ?? null,
-      nome: template.nome,
-      objetivo: template.objetivo,
+      nome: "Ficha de treino",
+      objetivo: null,
       ativo: true,
     })
     .select("id")
     .single();
-  if (eT || !treino) return falha("Não foi possível criar a ficha do modelo.");
+  if (error || !treino) return falha("Não foi possível criar a ficha.");
 
-  // Cria divisões e exercícios.
-  let ordemDiv = 0;
-  for (const div of template.divisoes) {
+  const { error: eD } = await supabase.from("treino_divisoes").insert({
+    treino_id: treino.id,
+    nome: "A",
+    foco: null,
+    dias_semana: [],
+    ordem: 0,
+  });
+  if (eD) return falha("Ficha criada, mas a divisão A falhou. Adicione-a manualmente.");
+
+  revalidarAluno(alunoId);
+  return sucesso({ id: treino.id as string });
+}
+
+// ===========================================================================
+// Treinos-modelo (reutilizáveis): montados na aba Treinos e aplicados a
+// qualquer aluno com um clique — a aplicação copia divisões e exercícios,
+// então a ficha do aluno fica independente e pode ser ajustada à vontade.
+// ===========================================================================
+export async function criarModeloTreino(
+  input: TreinoInput,
+): Promise<ResultadoAcao<{ id: string }>> {
+  await assertPapel(["admin", "professor"]);
+  const parsed = treinoSchema.safeParse(input);
+  if (!parsed.success) {
+    return falha(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+  }
+
+  const d = parsed.data;
+  const professor = await getProfessorAtual();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("treinos")
+    .insert({
+      aluno_id: null,
+      professor_id: professor?.id ?? null,
+      nome: d.nome,
+      objetivo: d.objetivo ?? null,
+      ativo: d.ativo,
+      modelo: true,
+    })
+    .select("id")
+    .single();
+  if (error || !data) return falha("Não foi possível criar o treino.");
+
+  revalidarBiblioteca();
+  return sucesso({ id: data.id as string });
+}
+
+export async function aplicarModeloAoAluno(
+  modeloId: string,
+  alunoId: string,
+): Promise<ResultadoAcao<{ id: string }>> {
+  await assertPapel(["admin", "professor"]);
+
+  const supabase = await createClient();
+
+  // Lê o modelo completo (RLS: todo professor enxerga os modelos do studio).
+  const { data: modeloData } = await supabase
+    .from("treinos")
+    .select(
+      `nome, objetivo,
+       treino_divisoes (
+         nome, foco, ordem, dias_semana,
+         treino_exercicios (
+           exercicio_id, series, repeticoes, carga, descanso, ordem, observacao
+         )
+       )`,
+    )
+    .eq("id", modeloId)
+    .eq("modelo", true)
+    .maybeSingle();
+  if (!modeloData) return falha("Treino não encontrado.");
+
+  const modelo = modeloData as unknown as {
+    nome: string;
+    objetivo: string | null;
+    treino_divisoes: {
+      nome: string;
+      foco: string | null;
+      ordem: number;
+      dias_semana: number[] | null;
+      treino_exercicios: {
+        exercicio_id: string;
+        series: number | null;
+        repeticoes: string | null;
+        carga: string | null;
+        descanso: string | null;
+        ordem: number;
+        observacao: string | null;
+      }[];
+    }[];
+  };
+
+  const professor = await getProfessorAtual();
+
+  // Cria a ficha do aluno (o RLS valida o vínculo professor × aluno).
+  const { data: ficha, error: eT } = await supabase
+    .from("treinos")
+    .insert({
+      aluno_id: alunoId,
+      professor_id: professor?.id ?? null,
+      nome: modelo.nome,
+      objetivo: modelo.objetivo,
+      ativo: true,
+    })
+    .select("id")
+    .single();
+  if (eT || !ficha) return falha("Não foi possível criar a ficha do aluno.");
+
+  // Copia divisões e exercícios.
+  for (const div of [...modelo.treino_divisoes].sort(
+    (a, b) => a.ordem - b.ordem,
+  )) {
     const { data: divisao, error: eD } = await supabase
       .from("treino_divisoes")
       .insert({
-        treino_id: treino.id,
+        treino_id: ficha.id,
         nome: div.nome,
         foco: div.foco,
-        dias_semana: div.dias_semana,
-        ordem: ordemDiv++,
+        dias_semana: div.dias_semana ?? [],
+        ordem: div.ordem,
       })
       .select("id")
       .single();
     if (eD || !divisao) continue;
 
-    const linhas = div.exercicios
-      .map((item, i) => {
-        const exId = mapa.get(item.nome);
-        if (!exId) return null;
-        return {
-          divisao_id: divisao.id,
-          exercicio_id: exId,
-          series: item.series ?? null,
-          repeticoes: item.repeticoes ?? null,
-          descanso: item.descanso ?? null,
-          ordem: i,
-        };
-      })
-      .filter((l): l is NonNullable<typeof l> => l !== null);
-
+    const linhas = div.treino_exercicios.map((e) => ({
+      divisao_id: divisao.id,
+      exercicio_id: e.exercicio_id,
+      series: e.series,
+      repeticoes: e.repeticoes,
+      carga: e.carga,
+      descanso: e.descanso,
+      observacao: e.observacao,
+      ordem: e.ordem,
+    }));
     if (linhas.length) {
       await supabase.from("treino_exercicios").insert(linhas);
     }
   }
 
   revalidarAluno(alunoId);
-  return sucesso({ id: treino.id as string });
+  return sucesso({ id: ficha.id as string });
 }

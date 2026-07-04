@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -46,9 +46,13 @@ export function PresencaToggle({
           : "bg-background text-muted-foreground hover:bg-muted",
       )}
     >
-      <Check
-        className={cn("size-4", presente ? "opacity-100" : "opacity-30")}
-      />
+      {carregando ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : (
+        <Check
+          className={cn("size-4", presente ? "opacity-100" : "opacity-30")}
+        />
+      )}
       {presente ? "Presente" : "Marcar"}
     </button>
   );

@@ -90,7 +90,7 @@ export function AvaliacaoForm({ alunoId }: { alunoId: string }) {
         <Textarea id="obs" rows={2} {...register("observacoes")} />
       </CampoForm>
 
-      <Button type="submit" disabled={salvando}>
+      <Button type="submit" loading={salvando}>
         <Plus className="size-4" />
         {salvando ? "Salvando…" : "Registrar avaliação"}
       </Button>

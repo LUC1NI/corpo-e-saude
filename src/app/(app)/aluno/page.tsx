@@ -1,12 +1,14 @@
+import { format, startOfMonth } from "date-fns";
 import {
   AlertCircle,
+  CalendarCheck,
   CheckCircle2,
   ChevronRight,
   Dumbbell,
   LineChart,
   Moon,
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/ui-extra/link";
 
 import { Card } from "@/components/ui/card";
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
@@ -26,24 +28,33 @@ export default async function AlunoHome() {
   let treinos: TreinoComTudo[] = [];
   let pendencias = 0;
   let temAvaliacoes = false;
+  let presencasMes = 0;
 
   if (aluno) {
     const supabase = await createClient();
-    const [treinosData, { count: pend }, { count: avals }] = await Promise.all([
-      getTreinosDoAluno(aluno.id),
-      supabase
-        .from("pagamentos")
-        .select("id", { count: "exact", head: true })
-        .eq("aluno_id", aluno.id)
-        .neq("status", "pago"),
-      supabase
-        .from("avaliacoes_fisicas")
-        .select("id", { count: "exact", head: true })
-        .eq("aluno_id", aluno.id),
-    ]);
+    const inicioMes = format(startOfMonth(new Date()), "yyyy-MM-dd");
+    const [treinosData, { count: pend }, { count: avals }, { count: pres }] =
+      await Promise.all([
+        getTreinosDoAluno(aluno.id),
+        supabase
+          .from("pagamentos")
+          .select("id", { count: "exact", head: true })
+          .eq("aluno_id", aluno.id)
+          .neq("status", "pago"),
+        supabase
+          .from("avaliacoes_fisicas")
+          .select("id", { count: "exact", head: true })
+          .eq("aluno_id", aluno.id),
+        supabase
+          .from("presencas")
+          .select("id", { count: "exact", head: true })
+          .eq("aluno_id", aluno.id)
+          .gte("data", inicioMes),
+      ]);
     treinos = treinosData;
     pendencias = pend ?? 0;
     temAvaliacoes = (avals ?? 0) > 0;
+    presencasMes = pres ?? 0;
   }
 
   const ativos = treinos.filter((t) => t.ativo);
@@ -165,6 +176,31 @@ export default async function AlunoHome() {
           </Card>
         )}
       </section>
+
+      {/* Frequência do mês */}
+      <Card className="flex-row items-center gap-3 p-5">
+        <span
+          className={
+            presencasMes > 0
+              ? "inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"
+              : "inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground"
+          }
+        >
+          <CalendarCheck className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold">
+            {presencasMes > 0
+              ? `${presencasMes} treino${presencasMes > 1 ? "s" : ""} este mês`
+              : "Nenhum treino este mês"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {presencasMes > 0
+              ? "Continue nesse ritmo! 💪"
+              : "Suas presenças aparecem aqui quando registradas."}
+          </p>
+        </div>
+      </Card>
 
       {/* Evolução */}
       <Link href="/aluno/evolucao">

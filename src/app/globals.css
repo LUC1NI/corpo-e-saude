@@ -131,3 +131,14 @@
     @apply font-sans;
   }
 }
+
+/* Barra de progresso de navegação (topo): faixa que corre da esquerda para a
+   direita enquanto uma rota está carregando, dando feedback imediato ao clique. */
+@keyframes barra-navegacao {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(340%);
+  }
+}

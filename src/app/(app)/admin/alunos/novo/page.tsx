@@ -1,3 +1,4 @@
+import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { requireUsuario } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -16,7 +17,13 @@ export default async function NovoAlunoPage() {
   return (
     <>
       <PageHeader titulo="Novo aluno" subtitulo="Cadastre um aluno do studio." />
-      <AlunoForm professores={(data ?? []) as { id: string; nome: string }[]} />
+      <Card>
+        <CardContent>
+          <AlunoForm
+            professores={(data ?? []) as { id: string; nome: string }[]}
+          />
+        </CardContent>
+      </Card>
     </>
   );
 }

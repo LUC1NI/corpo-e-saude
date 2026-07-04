@@ -86,6 +86,35 @@ export async function atualizarAluno(
   return sucesso();
 }
 
+/**
+ * Exclui o aluno e tudo que depende dele (matrículas, pagamentos, presenças,
+ * anamnese, avaliações e treinos caem por cascade). Se houver acesso criado,
+ * remove também o usuário do Auth para não deixar conta órfã. Admin apenas.
+ */
+export async function excluirAluno(id: string): Promise<ResultadoAcao> {
+  await assertPapel(["admin"]);
+
+  const supabase = await createClient();
+  const { data: aluno } = await supabase
+    .from("alunos")
+    .select("id, usuario_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!aluno) return falha("Aluno não encontrado.");
+
+  const { error } = await supabase.from("alunos").delete().eq("id", id);
+  if (error) return falha("Não foi possível excluir o aluno.");
+
+  // Remove o acesso (auth.users → usuarios cai por cascade) se existir.
+  if (aluno.usuario_id) {
+    const admin = createAdminClient();
+    await admin.auth.admin.deleteUser(aluno.usuario_id as string);
+  }
+
+  revalidarListas();
+  return sucesso();
+}
+
 export async function alternarStatusAluno(
   id: string,
   status: "ativo" | "inativo",
@@ -167,6 +196,56 @@ export async function gerarAcessoAluno(
     await admin.auth.admin.deleteUser(userId);
     return falha("Não foi possível vincular o acesso ao aluno.");
   }
+
+  revalidarListas(alunoId);
+  return sucesso({ senha, email: aluno.email });
+}
+
+/**
+ * Gera uma NOVA senha provisória para um aluno que já tem acesso mas ainda
+ * não fez o primeiro login. Permite ao dono reobter a credencial para
+ * repassar (a anterior é invalidada). Não funciona depois que o aluno já
+ * definiu a própria senha — aí ele usa "esqueci minha senha".
+ *
+ * Não guardamos a senha em lugar nenhum: ela só existe no retorno desta
+ * chamada, respeitando "o dono nunca guarda a senha do aluno".
+ */
+export async function redefinirSenhaProvisoria(
+  alunoId: string,
+): Promise<ResultadoAcao<{ senha: string; email: string }>> {
+  await assertPapel(["admin", "professor"]);
+
+  const supabase = await createClient();
+  const { data: aluno } = await supabase
+    .from("alunos")
+    .select("id, nome, email, usuario_id")
+    .eq("id", alunoId)
+    .maybeSingle();
+
+  if (!aluno) return falha("Aluno não encontrado.");
+  if (!aluno.usuario_id) {
+    return falha("Este aluno ainda não tem acesso. Gere o acesso primeiro.");
+  }
+  if (!aluno.email) {
+    return falha("Cadastre o e-mail do aluno antes de redefinir o acesso.");
+  }
+
+  const admin = createAdminClient();
+
+  // Só permite enquanto o acesso ainda é provisório (aluno não trocou a senha).
+  const { data: atual } = await admin.auth.admin.getUserById(aluno.usuario_id);
+  if (atual.user?.user_metadata?.senha_provisoria !== true) {
+    return falha(
+      "O aluno já definiu a própria senha. Se ele esqueceu, use “esqueci minha senha” na tela de login.",
+    );
+  }
+
+  const senha = gerarSenhaProvisoria();
+  const { error } = await admin.auth.admin.updateUserById(aluno.usuario_id, {
+    password: senha,
+    user_metadata: { senha_provisoria: true, nome: aluno.nome },
+  });
+  if (error) return falha("Não foi possível redefinir a senha provisória.");
 
   revalidarListas(alunoId);
   return sucesso({ senha, email: aluno.email });

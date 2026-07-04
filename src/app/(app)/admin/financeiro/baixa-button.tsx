@@ -23,11 +23,15 @@ export function BaixaButton({ pagamentoId }: { pagamentoId: string }) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
   const [carregando, setCarregando] = useState(false);
+  // Qual botão disparou a baixa (para o spinner aparecer só nele).
+  const [formaEmCurso, setFormaEmCurso] = useState<string | null>(null);
 
   async function baixar(forma?: string) {
     setCarregando(true);
+    setFormaEmCurso(forma ?? "__sem__");
     const res = await marcarPagamentoPago(pagamentoId, forma);
     setCarregando(false);
+    setFormaEmCurso(null);
     if (res.ok) {
       setAberto(false);
       toast.success("Pagamento confirmado.");
@@ -57,6 +61,7 @@ export function BaixaButton({ pagamentoId }: { pagamentoId: string }) {
               type="button"
               variant="outline"
               disabled={carregando}
+              loading={formaEmCurso === forma}
               onClick={() => baixar(forma)}
             >
               {forma}
@@ -67,6 +72,7 @@ export function BaixaButton({ pagamentoId }: { pagamentoId: string }) {
           type="button"
           variant="ghost"
           disabled={carregando}
+          loading={formaEmCurso === "__sem__"}
           onClick={() => baixar()}
           className="w-full"
         >

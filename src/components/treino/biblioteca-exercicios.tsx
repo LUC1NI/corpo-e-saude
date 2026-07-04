@@ -248,11 +248,11 @@ export function BibliotecaExercicios({
                 },
                 {
                   cabecalho: "Grupo muscular",
-                  celula: (e) => e.grupo_muscular ?? "—",
+                  celula: (e) => e.grupo_muscular ?? "-",
                 },
                 {
                   cabecalho: "Equipamento",
-                  celula: (e) => e.equipamento ?? "—",
+                  celula: (e) => e.equipamento ?? "-",
                 },
                 {
                   cabecalho: "Ações",

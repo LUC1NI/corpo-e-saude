@@ -77,7 +77,7 @@ export default async function ProfessoresPage() {
                 <div className="space-y-1 text-sm">
                   <p className="flex items-center gap-2 text-muted-foreground">
                     <Mail className="size-3.5 shrink-0" />
-                    <span className="truncate">{p.usuarios?.email ?? "—"}</span>
+                    <span className="truncate">{p.usuarios?.email ?? "-"}</span>
                   </p>
                   {p.telefone ? (
                     <p className="flex items-center gap-2 text-muted-foreground">

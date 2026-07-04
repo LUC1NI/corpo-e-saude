@@ -195,7 +195,7 @@ export function AdicionarHorario({
             <p className="mb-2 text-sm font-medium">
               Dias{" "}
               <span className="font-normal text-muted-foreground">
-                — marque para replicar
+                (marque para replicar)
               </span>
             </p>
             <div className="grid grid-cols-7 gap-1.5">

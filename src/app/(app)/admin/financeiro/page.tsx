@@ -61,6 +61,7 @@ export default async function FinanceiroPage() {
     { data: abertosData },
     { data: recebidosData },
     { data: mesData },
+    { data: recebidoMesData },
     { data: despesasData },
     { data: categoriasData },
   ] = await Promise.all([
@@ -82,6 +83,12 @@ export default async function FinanceiroPage() {
       .from("pagamentos")
       .select("valor, status")
       .eq("competencia", inicioMes),
+    // Dinheiro que ENTROU no mês (pela data do pagamento, não da competência).
+    supabase
+      .from("pagamentos")
+      .select("valor")
+      .eq("status", "pago")
+      .gte("data_pagamento", inicioMes),
     supabase
       .from("despesas")
       .select("id, descricao, valor, data, categorias(nome)")
@@ -97,9 +104,10 @@ export default async function FinanceiroPage() {
   const categorias = (categoriasData ?? []) as { id: string; nome: string }[];
 
   const faturamentoMes = mes.reduce((s, p) => s + Number(p.valor), 0);
-  const recebidoMes = mes
-    .filter((p) => p.status === "pago")
-    .reduce((s, p) => s + Number(p.valor), 0);
+  const recebidoMes = ((recebidoMesData ?? []) as { valor: number }[]).reduce(
+    (s, p) => s + Number(p.valor),
+    0,
+  );
   const totalAberto = abertos.reduce((s, p) => s + Number(p.valor), 0);
   const inadimplentes = new Set(
     abertos
@@ -161,7 +169,7 @@ export default async function FinanceiroPage() {
                 {
                   cabecalho: "Aluno",
                   principal: true,
-                  celula: (p) => p.alunos?.nome ?? "—",
+                  celula: (p) => p.alunos?.nome ?? "-",
                 },
                 {
                   cabecalho: "Competência",
@@ -233,7 +241,7 @@ export default async function FinanceiroPage() {
                   },
                   {
                     cabecalho: "Categoria",
-                    celula: (d) => d.categorias?.nome ?? "—",
+                    celula: (d) => d.categorias?.nome ?? "-",
                   },
                   { cabecalho: "Data", celula: (d) => formatData(d.data) },
                   { cabecalho: "Valor", celula: (d) => formatBRL(d.valor) },
@@ -276,7 +284,7 @@ export default async function FinanceiroPage() {
                   {
                     cabecalho: "Aluno",
                     principal: true,
-                    celula: (p) => p.alunos?.nome ?? "—",
+                    celula: (p) => p.alunos?.nome ?? "-",
                   },
                   {
                     cabecalho: "Competência",
@@ -285,11 +293,11 @@ export default async function FinanceiroPage() {
                   {
                     cabecalho: "Pago em",
                     celula: (p) =>
-                      p.data_pagamento ? formatData(p.data_pagamento) : "—",
+                      p.data_pagamento ? formatData(p.data_pagamento) : "-",
                   },
                   {
                     cabecalho: "Forma",
-                    celula: (p) => p.forma_pagamento ?? "—",
+                    celula: (p) => p.forma_pagamento ?? "-",
                   },
                   { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
                 ]}

@@ -94,7 +94,7 @@ export function NovoModeloButton({ basePath }: { basePath: string }) {
               id="modelo-nome"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
-              placeholder="Ex.: Hipertrofia ABC — iniciante"
+              placeholder="Ex.: Hipertrofia ABC iniciante"
             />
           </CampoForm>
           <CampoForm label="Objetivo" htmlFor="modelo-objetivo">

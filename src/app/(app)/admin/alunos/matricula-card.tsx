@@ -203,7 +203,7 @@ export function MatriculaCard({
             value={planoId}
             onValueChange={(v) => setPlanoId(v ?? "")}
             items={Object.fromEntries(
-              planos.map((p) => [p.id, `${p.nome} — ${formatBRL(p.valor)}`]),
+              planos.map((p) => [p.id, `${p.nome} · ${formatBRL(p.valor)}`]),
             )}
           >
             <SelectTrigger className="w-full">
@@ -212,7 +212,7 @@ export function MatriculaCard({
             <SelectContent>
               {planos.map((p) => (
                 <SelectItem key={p.id} value={p.id}>
-                  {p.nome} — {formatBRL(p.valor)}
+                  {p.nome} · {formatBRL(p.valor)}
                 </SelectItem>
               ))}
             </SelectContent>

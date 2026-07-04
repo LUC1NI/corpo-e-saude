@@ -55,7 +55,7 @@ export function GerarAcesso({
     return (
       <div className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          Repasse estes dados ao aluno — ele definirá a própria senha no
+          Repasse estes dados ao aluno: ele definirá a própria senha no
           primeiro login.
         </p>
         <CredencialBox email={emailGerado} senha={senha} />

@@ -58,7 +58,7 @@ function StatCard({
     <Card className="gap-2 p-4">
       <p className="text-xs font-medium text-muted-foreground">{titulo}</p>
       <p className="font-heading text-2xl font-bold">
-        {valor != null ? fmt.format(valor) : "—"}
+        {valor != null ? fmt.format(valor) : "-"}
         {valor != null ? (
           <span className="ml-1 text-sm font-medium text-muted-foreground">
             {unidade}
@@ -202,18 +202,18 @@ export function EvolucaoResumo({
                 {
                   cabecalho: "Peso",
                   celula: (a) =>
-                    a.peso != null ? `${fmt.format(a.peso)} kg` : "—",
+                    a.peso != null ? `${fmt.format(a.peso)} kg` : "-",
                 },
                 {
                   cabecalho: "IMC",
-                  celula: (a) => (a.imc != null ? fmt.format(a.imc) : "—"),
+                  celula: (a) => (a.imc != null ? fmt.format(a.imc) : "-"),
                 },
                 {
                   cabecalho: "% Gord.",
                   celula: (a) =>
                     a.percentual_gordura != null
                       ? `${fmt.format(a.percentual_gordura)}%`
-                      : "—",
+                      : "-",
                 },
               ]}
             />

@@ -57,6 +57,7 @@ export default async function AdminDashboard() {
     { count: alunosAtivos },
     { count: novosNoMes },
     { data: mesData },
+    { data: recebidoMesData },
     { data: vencendoData },
     { data: historicoData },
     { data: atrasoData },
@@ -70,6 +71,12 @@ export default async function AdminDashboard() {
       .select("id", { count: "exact", head: true })
       .gte("criado_em", inicioMes),
     supabase.from("pagamentos").select("valor, status").eq("competencia", inicioMes),
+    // Dinheiro que ENTROU no mês (pela data do pagamento, não da competência).
+    supabase
+      .from("pagamentos")
+      .select("valor")
+      .eq("status", "pago")
+      .gte("data_pagamento", inicioMes),
     supabase
       .from("pagamentos")
       .select("id, aluno_id, competencia, vencimento, valor, status, alunos(nome)")
@@ -98,9 +105,10 @@ export default async function AdminDashboard() {
   }[];
 
   const faturamentoMes = mes.reduce((s, p) => s + Number(p.valor), 0);
-  const recebidoMes = mes
-    .filter((p) => p.status === "pago")
-    .reduce((s, p) => s + Number(p.valor), 0);
+  const recebidoMes = ((recebidoMesData ?? []) as { valor: number }[]).reduce(
+    (s, p) => s + Number(p.valor),
+    0,
+  );
 
   // Contexto dos indicadores: % já recebido e total em atraso (R$).
   const pctRecebido =
@@ -194,7 +202,7 @@ export default async function AdminDashboard() {
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Faturamento — últimos 6 meses</CardTitle>
+            <CardTitle>Faturamento dos últimos 6 meses</CardTitle>
           </CardHeader>
           <CardContent>
             <FaturamentoChart dados={serie} />
@@ -220,7 +228,7 @@ export default async function AdminDashboard() {
           ) : (
             <ul className="divide-y">
               {vencendo.map((p) => {
-                const nome = p.alunos?.nome ?? "—";
+                const nome = p.alunos?.nome ?? "-";
                 const status =
                   p.status === "pendente" && p.vencimento < hoje
                     ? "vencido"

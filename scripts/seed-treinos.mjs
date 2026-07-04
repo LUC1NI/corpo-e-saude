@@ -193,7 +193,7 @@ async function montarFicha(alunoId, mapaEx) {
     .insert({
       aluno_id: alunoId,
       nome: FICHA_NOME,
-      objetivo: "Ganho de massa e melhora do condicionamento — 3x por semana.",
+      objetivo: "Ganho de massa e melhora do condicionamento: 3x por semana.",
       ativo: true,
     })
     .select("id")

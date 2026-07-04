@@ -123,7 +123,7 @@ export function PlanoForm({
       <CampoForm
         label="Duração (meses)"
         htmlFor="duracao_meses"
-        dica="Opcional — deixe vazio para plano sem prazo definido."
+        dica="Opcional: deixe vazio para plano sem prazo definido."
         erro={errors.duracao_meses?.message}
       >
         <Input

@@ -172,7 +172,7 @@ export default async function PresencaPage({
             >
               <span className={lotada ? "font-medium text-amber-800" : ""}>
                 {lotada
-                  ? "Aula cheia — você ainda pode marcar (encaixe)."
+                  ? "Aula cheia, mas você ainda pode marcar (encaixe)."
                   : "Presentes nesta aula"}
               </span>
               {/* Presentes em relação aos alunos DA AULA — a capacidade é só
@@ -194,7 +194,7 @@ export default async function PresencaPage({
               <PageEmpty
                 icone={Users}
                 titulo="Nenhum aluno nesta aula"
-                descricao="Atribua alunos a esta aula em Horários para marcá-los aqui — ou use “Sem horário (avulso/online)”."
+                descricao="Atribua alunos a esta aula em Horários para marcá-los aqui, ou use “Sem horário (avulso/online)”."
                 acao={
                   <Link
                     href="/professor/horarios"
@@ -258,7 +258,7 @@ export default async function PresencaPage({
                 {
                   cabecalho: "Aluno",
                   principal: true,
-                  celula: (p) => p.alunos?.nome ?? "—",
+                  celula: (p) => p.alunos?.nome ?? "-",
                 },
                 { cabecalho: "Data", celula: (p) => formatData(p.data) },
                 {

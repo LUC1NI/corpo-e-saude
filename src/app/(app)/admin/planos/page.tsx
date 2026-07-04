@@ -69,7 +69,7 @@ export default async function PlanosPage() {
                 {
                   cabecalho: "Duração",
                   celula: (p) =>
-                    p.duracao_meses ? `${p.duracao_meses} meses` : "—",
+                    p.duracao_meses ? `${p.duracao_meses} meses` : "-",
                 },
                 {
                   cabecalho: "Status",

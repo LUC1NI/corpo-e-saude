@@ -77,7 +77,7 @@ export function AdicionarProfessor() {
             <DialogHeader>
               <DialogTitle>Professor criado</DialogTitle>
               <DialogDescription>
-                Repasse o acesso ao professor — ele define a própria senha no
+                Repasse o acesso ao professor: ele define a própria senha no
                 primeiro login.
               </DialogDescription>
             </DialogHeader>

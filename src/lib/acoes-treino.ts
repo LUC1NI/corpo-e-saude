@@ -111,6 +111,24 @@ export async function excluirExercicio(id: string): Promise<ResultadoAcao> {
 // ===========================================================================
 // Fichas de treino (por aluno) — RLS escopa ao professor responsável
 // ===========================================================================
+
+/**
+ * Garante UMA ficha ativa por aluno: ao ativar uma, desativa as demais.
+ * Sem isso o "treino de hoje" do aluno fica ambíguo (duas fichas ativas).
+ */
+async function desativarOutrasFichas(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  alunoId: string,
+  mantemId: string,
+) {
+  await supabase
+    .from("treinos")
+    .update({ ativo: false })
+    .eq("aluno_id", alunoId)
+    .eq("ativo", true)
+    .neq("id", mantemId);
+}
+
 export async function criarTreino(
   alunoId: string,
   input: TreinoInput,
@@ -136,6 +154,7 @@ export async function criarTreino(
     .select("id")
     .single();
   if (error || !data) return falha("Não foi possível criar a ficha.");
+  if (d.ativo) await desativarOutrasFichas(supabase, alunoId, data.id as string);
 
   revalidarAluno(alunoId);
   return sucesso({ id: data.id as string });
@@ -163,6 +182,7 @@ export async function atualizarTreino(
     })
     .eq("id", id);
   if (error) return falha("Não foi possível salvar a ficha.");
+  if (d.ativo && alunoId) await desativarOutrasFichas(supabase, alunoId, id);
 
   revalidarAluno(alunoId);
   return sucesso();
@@ -357,6 +377,7 @@ export async function criarTreinoRapido(
     .select("id")
     .single();
   if (error || !treino) return falha("Não foi possível criar a ficha.");
+  await desativarOutrasFichas(supabase, alunoId, treino.id as string);
 
   const { error: eD } = await supabase.from("treino_divisoes").insert({
     treino_id: treino.id,
@@ -466,6 +487,7 @@ export async function aplicarModeloAoAluno(
     .select("id")
     .single();
   if (eT || !ficha) return falha("Não foi possível criar a ficha do aluno.");
+  await desativarOutrasFichas(supabase, alunoId, ficha.id as string);
 
   // Copia divisões e exercícios.
   for (const div of [...modelo.treino_divisoes].sort(

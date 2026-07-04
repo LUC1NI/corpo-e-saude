@@ -12,11 +12,11 @@ import { AvaliacaoForm } from "./avaliacao-form";
 import { ExcluirAvaliacaoButton } from "./excluir-avaliacao-button";
 
 function resumoMedidas(medidas: Record<string, number> | null): string {
-  if (!medidas) return "—";
+  if (!medidas) return "-";
   const partes = MEDIDAS_CAMPOS.filter((m) => medidas[m.chave] != null).map(
     (m) => `${m.rotulo} ${medidas[m.chave]}`,
   );
-  return partes.length ? partes.join(" · ") : "—";
+  return partes.length ? partes.join(" · ") : "-";
 }
 
 export function AvaliacoesSection({
@@ -68,15 +68,15 @@ export function AvaliacoesSection({
               },
               {
                 cabecalho: "Peso",
-                celula: (a) => (a.peso != null ? `${a.peso} kg` : "—"),
+                celula: (a) => (a.peso != null ? `${a.peso} kg` : "-"),
               },
-              { cabecalho: "IMC", celula: (a) => (a.imc != null ? a.imc : "—") },
+              { cabecalho: "IMC", celula: (a) => (a.imc != null ? a.imc : "-") },
               {
                 cabecalho: "% Gord.",
                 celula: (a) =>
                   a.percentual_gordura != null
                     ? `${a.percentual_gordura}%`
-                    : "—",
+                    : "-",
               },
               {
                 cabecalho: "Medidas",

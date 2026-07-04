@@ -254,7 +254,7 @@ export default async function AlunoDetalhePage({
           <CardHeader>
             <CardTitle>Ficha de treino</CardTitle>
             <CardDescription>
-              Aplique um treino pronto e ajuste, ou monte do zero — dias de
+              Aplique um treino pronto e ajuste, ou monte do zero: dias de
               treino (A/B/C) e exercícios.
             </CardDescription>
           </CardHeader>

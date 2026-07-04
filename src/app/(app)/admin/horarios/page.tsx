@@ -104,7 +104,7 @@ export default async function AdminHorariosPage({
     <>
       <PageHeader
         titulo="Grade de horários"
-        subtitulo="Ocupação por professor e horário — veja a disponibilidade num relance."
+        subtitulo="Ocupação por professor e horário: veja a disponibilidade num relance."
         acoes={
           professores.length > 0 ? (
             <AdicionarHorario
@@ -188,7 +188,7 @@ export default async function AdminHorariosPage({
                           key={p.id}
                           className="text-center text-muted-foreground/40"
                         >
-                          —
+                          -
                         </TableCell>
                       );
                     }
@@ -219,7 +219,7 @@ export default async function AdminHorariosPage({
         aberto sem alunos ·{" "}
         <span className="font-medium text-sky-700">N/cap</span> = ocupação
         atual · <span className="font-medium text-amber-700">cheio</span> ao
-        atingir a capacidade · <span className="text-muted-foreground/60">—</span>{" "}
+        atingir a capacidade · <span className="text-muted-foreground/60">-</span>{" "}
         = sem aula nesse horário.
       </p>
     </>

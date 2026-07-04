@@ -27,14 +27,29 @@ export function AvaliacaoChart({ dados }: { dados: PontoAvaliacao[] }) {
           axisLine={false}
           tick={{ fontSize: 12, fill: "#5a6b80" }}
         />
+        {/* Domínio ajustado aos dados (com folga): começando em zero as
+            linhas ficam achatadas e a evolução some. */}
         <YAxis
           yAxisId="peso"
+          domain={[
+            (min: number) => Math.floor(min - 2),
+            (max: number) => Math.ceil(max + 2),
+          ]}
           tickLine={false}
           axisLine={false}
           width={36}
+          tickFormatter={(v: number) => String(Math.round(v))}
           tick={{ fontSize: 12, fill: "#5a6b80" }}
         />
-        <YAxis yAxisId="gordura" orientation="right" hide />
+        <YAxis
+          yAxisId="gordura"
+          domain={[
+            (min: number) => Math.floor(min - 2),
+            (max: number) => Math.ceil(max + 2),
+          ]}
+          orientation="right"
+          hide
+        />
         <Tooltip
           contentStyle={{
             borderRadius: 12,
@@ -42,7 +57,7 @@ export function AvaliacaoChart({ dados }: { dados: PontoAvaliacao[] }) {
             fontSize: 12,
           }}
           formatter={(v, nome) => [
-            v == null ? "—" : `${v}${nome === "Peso" ? " kg" : "%"}`,
+            v == null ? "-" : `${v}${nome === "Peso" ? " kg" : "%"}`,
             nome,
           ]}
         />

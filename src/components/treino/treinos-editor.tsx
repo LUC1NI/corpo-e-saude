@@ -146,7 +146,7 @@ function FichaDialog({
             <Input
               id="ficha-nome"
               {...register("nome")}
-              placeholder="Ex.: Hipertrofia — 2026/2º sem."
+              placeholder="Ex.: Hipertrofia 2026"
             />
           </CampoForm>
           <CampoForm label="Objetivo" htmlFor="ficha-objetivo" erro={errors.objetivo?.message}>
@@ -239,8 +239,8 @@ function DivisaoDialog({
             {divisao ? "Editar dia de treino" : "Novo dia de treino"}
           </DialogTitle>
           <DialogDescription>
-            Cada divisão é um dia de treino. Ex.: A — Peito/Tríceps, B —
-            Costas/Bíceps, C — Pernas.
+            Cada divisão é um dia de treino. Ex.: A: Peito/Tríceps, B:
+            Costas/Bíceps, C: Pernas.
           </DialogDescription>
         </DialogHeader>
 
@@ -429,7 +429,7 @@ function ExercicioDivisaoDialog({
             {item ? "Editar exercício" : "Adicionar exercício"}
           </DialogTitle>
           <DialogDescription>
-            Busque na biblioteca ou digite um nome novo — ele é criado
+            Busque na biblioteca ou digite um nome novo: ele é criado
             automaticamente.
           </DialogDescription>
         </DialogHeader>
@@ -613,7 +613,7 @@ function DivisaoBloco({
 
       {divisao.exercicios.length === 0 ? (
         <p className="px-4 py-4 text-sm text-muted-foreground">
-          Nenhum exercício nesta divisão. Use “Exercício” para adicionar — dá
+          Nenhum exercício nesta divisão. Use “Exercício” para adicionar: dá
           para buscar na biblioteca ou digitar um novo na hora.
         </p>
       ) : (
@@ -634,7 +634,7 @@ function DivisaoBloco({
                     />
                     <div className="min-w-0">
                       <span className="font-medium">
-                        {ex.exercicio?.nome ?? "—"}
+                        {ex.exercicio?.nome ?? "-"}
                       </span>
                       {ex.observacao ? (
                         <span className="block text-xs text-muted-foreground">
@@ -645,10 +645,10 @@ function DivisaoBloco({
                   </div>
                 ),
               },
-              { cabecalho: "Séries", celula: (ex) => ex.series ?? "—" },
-              { cabecalho: "Reps", celula: (ex) => ex.repeticoes ?? "—" },
-              { cabecalho: "Carga", celula: (ex) => ex.carga ?? "—" },
-              { cabecalho: "Descanso", celula: (ex) => ex.descanso ?? "—" },
+              { cabecalho: "Séries", celula: (ex) => ex.series ?? "-" },
+              { cabecalho: "Reps", celula: (ex) => ex.repeticoes ?? "-" },
+              { cabecalho: "Carga", celula: (ex) => ex.carga ?? "-" },
+              { cabecalho: "Descanso", celula: (ex) => ex.descanso ?? "-" },
               {
                 cabecalho: "Ações",
                 alinhar: "right",
@@ -841,7 +841,7 @@ function AplicarModeloDialog({
         <DialogHeader>
           <DialogTitle>Treinos prontos</DialogTitle>
           <DialogDescription>
-            Aplica uma cópia do treino a este aluno — depois é só ajustar um
+            Aplica uma cópia do treino a este aluno. Depois é só ajustar um
             exercício ou outro.
           </DialogDescription>
         </DialogHeader>
@@ -867,7 +867,7 @@ function AplicarModeloDialog({
                     <p className="truncate text-sm font-semibold">{m.nome}</p>
                     <p className="text-xs text-muted-foreground">
                       {m.divisoes.length > 0
-                        ? `${m.divisoes.map((d) => d.nome).join(" · ")} — ${nEx} exercício(s)`
+                        ? `${m.divisoes.map((d) => d.nome).join(" · ")} · ${nEx} exercício(s)`
                         : "Sem divisões ainda"}
                     </p>
                   </div>
@@ -937,7 +937,7 @@ export function TreinosEditor({
           <PageEmpty
             icone={Dumbbell}
             titulo="Este aluno ainda não tem treino"
-            descricao="Aplique um treino pronto e ajuste o que quiser — ou monte do zero."
+            descricao="Aplique um treino pronto e ajuste o que quiser, ou monte do zero."
             acao={
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <AplicarModeloDialog alunoId={alunoId} modelos={modelos} />

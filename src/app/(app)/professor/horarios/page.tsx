@@ -215,7 +215,7 @@ export default async function HorariosPage() {
                             d === diaHoje && "bg-primary/5",
                           )}
                         >
-                          —
+                          -
                         </TableCell>
                       );
                     }

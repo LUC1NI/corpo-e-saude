@@ -24,15 +24,17 @@ export function AppHeader({
       <MobileSidebar papel={papel} nome={nome} />
 
       <div className="flex flex-1 items-center justify-end gap-2">
-        <div className="relative hidden sm:block">
+        {/* Form GET: Enter navega para a lista de alunos já filtrada. */}
+        <form action={basePath} className="relative hidden sm:block">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
+            name="q"
             placeholder="Buscar aluno…"
             aria-label="Buscar aluno"
             className="h-9 w-56 rounded-lg border bg-secondary/60 pr-3 pl-9 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
           />
-        </div>
+        </form>
         <NotificacoesButton itens={alertas} basePath={basePath} />
       </div>
     </header>

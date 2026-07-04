@@ -148,7 +148,7 @@ export function GerenciarAula({
         <p className="text-xs text-muted-foreground">
           {selecionados.size} selecionado(s)
           {capacidade != null ? ` · capacidade ${capacidade}` : ""}
-          {acimaCap ? " — acima da capacidade" : ""}
+          {acimaCap ? " (acima da capacidade)" : ""}
         </p>
 
         <DialogFooter

@@ -87,13 +87,13 @@ const EXERCICIOS = [
   { nome: "Levantamento terra", en: "Barbell Deadlift", grupo: "Costas", equip: "Barra", desc: "Quadril para trás, coluna neutra, empurre o chão." },
   { nome: "Pull-down braços estendidos", en: "Straight-Arm Pulldown", grupo: "Costas", equip: "Polia", desc: "Braços quase estendidos, leve a barra até a coxa." },
   { nome: "Encolhimento com barra", en: "Barbell Shrug", grupo: "Costas", equip: "Barra", desc: "Eleve os ombros em direção às orelhas (trapézio)." },
-  { nome: "Extensão lombar (banco romano)", en: "Hyperextensions (Back Extensions)", grupo: "Costas", equip: "Peso corporal", desc: "Suba até alinhar o tronco — sem hiperestender." },
+  { nome: "Extensão lombar (banco romano)", en: "Hyperextensions (Back Extensions)", grupo: "Costas", equip: "Peso corporal", desc: "Suba até alinhar o tronco, sem hiperestender." },
 
   // — Pernas (quadríceps)
   { nome: "Agachamento livre", en: "Barbell Squat", grupo: "Pernas", equip: "Barra", desc: "Pés na largura dos ombros, desça até a paralela." },
-  { nome: "Agachamento frontal", en: "Front Barbell Squat", grupo: "Pernas", equip: "Barra", desc: "Barra à frente, tronco mais ereto — ênfase no quadríceps." },
+  { nome: "Agachamento frontal", en: "Front Barbell Squat", grupo: "Pernas", equip: "Barra", desc: "Barra à frente, tronco mais ereto, com ênfase no quadríceps." },
   { nome: "Agachamento corpo livre", en: "Bodyweight Squat", grupo: "Pernas", equip: "Peso corporal", desc: "Base para aprender o padrão do agachamento." },
-  { nome: "Agachamento no Smith", en: "Smith Machine Squat", grupo: "Pernas", equip: "Máquina", desc: "Trajetória guiada — bom para aprender ou variar." },
+  { nome: "Agachamento no Smith", en: "Smith Machine Squat", grupo: "Pernas", equip: "Máquina", desc: "Trajetória guiada, boa para aprender ou variar." },
   { nome: "Agachamento búlgaro", en: "One Leg Barbell Squat", grupo: "Pernas", equip: "Barra", desc: "Pé de trás elevado no banco, desça na perna da frente." },
   { nome: "Leg press", en: "Leg Press", grupo: "Pernas", equip: "Máquina", desc: "Desça controlando até ~90° sem tirar o quadril do banco." },
   { nome: "Afundo com barra", en: "Barbell Lunge", grupo: "Pernas", equip: "Barra", desc: "Passo à frente, joelho de trás em direção ao chão." },
@@ -121,13 +121,13 @@ const EXERCICIOS = [
   { nome: "Desenvolvimento Arnold", en: "Arnold Dumbbell Press", grupo: "Ombros", equip: "Halteres", desc: "Gire os punhos durante a subida." },
   { nome: "Elevação lateral", en: "Side Lateral Raise", grupo: "Ombros", equip: "Halteres", desc: "Eleve até a linha dos ombros, cotovelos levemente flexionados." },
   { nome: "Elevação frontal", en: "Front Dumbbell Raise", grupo: "Ombros", equip: "Halteres", desc: "Eleve à frente até a altura dos ombros." },
-  { nome: "Crucifixo inverso", en: "Reverse Flyes", grupo: "Ombros", equip: "Halteres", desc: "Tronco inclinado, abra os braços — posterior de ombro." },
+  { nome: "Crucifixo inverso", en: "Reverse Flyes", grupo: "Ombros", equip: "Halteres", desc: "Tronco inclinado, abra os braços; posterior de ombro." },
   { nome: "Remada alta", en: "Upright Barbell Row", grupo: "Ombros", equip: "Barra", desc: "Puxe a barra até a linha do peito, cotovelos altos." },
 
   // — Bíceps
   { nome: "Rosca direta com barra", en: "Barbell Curl", grupo: "Bíceps", equip: "Barra", desc: "Cotovelos fixos ao lado do corpo, sem balanço." },
   { nome: "Rosca alternada com halteres", en: "Dumbbell Alternate Bicep Curl", grupo: "Bíceps", equip: "Halteres", desc: "Alterne os braços, girando o punho na subida." },
-  { nome: "Rosca martelo", en: "Hammer Curls", grupo: "Bíceps", equip: "Halteres", desc: "Pegada neutra — trabalha também o antebraço." },
+  { nome: "Rosca martelo", en: "Hammer Curls", grupo: "Bíceps", equip: "Halteres", desc: "Pegada neutra, trabalha também o antebraço." },
   { nome: "Rosca Scott", en: "Preacher Curl", grupo: "Bíceps", equip: "Barra W", desc: "Braços apoiados no banco Scott, amplitude completa." },
   { nome: "Rosca concentrada", en: "Concentration Curls", grupo: "Bíceps", equip: "Halteres", desc: "Cotovelo apoiado na coxa, suba com controle." },
   { nome: "Rosca na polia", en: "Standing Biceps Cable Curl", grupo: "Bíceps", equip: "Polia", desc: "Tensão contínua durante todo o movimento." },
@@ -142,7 +142,7 @@ const EXERCICIOS = [
   { nome: "Paralelas (tríceps)", en: "Dips - Triceps Version", grupo: "Tríceps", equip: "Paralelas", desc: "Tronco ereto para focar o tríceps." },
 
   // — Abdômen & Core
-  { nome: "Abdominal supra", en: "Crunches", grupo: "Abdômen", equip: "Peso corporal", desc: "Suba o tronco contraindo o abdômen — sem puxar o pescoço." },
+  { nome: "Abdominal supra", en: "Crunches", grupo: "Abdômen", equip: "Peso corporal", desc: "Suba o tronco contraindo o abdômen, sem puxar o pescoço." },
   { nome: "Abdominal infra", en: "Reverse Crunch", grupo: "Abdômen", equip: "Peso corporal", desc: "Traga os joelhos ao peito elevando o quadril." },
   { nome: "Abdominal bicicleta", en: "Air Bike", grupo: "Abdômen", equip: "Peso corporal", desc: "Cotovelo em direção ao joelho oposto, alternando." },
   { nome: "Prancha", en: "Plank", grupo: "Abdômen", equip: "Peso corporal", desc: "Corpo alinhado, abdômen contraído. Segure o tempo indicado." },
@@ -165,8 +165,8 @@ const EXERCICIOS = [
 // ---------------------------------------------------------------------------
 const MODELOS = [
   {
-    nome: "Full Body — Iniciante",
-    objetivo: "Adaptação e condicionamento geral — 2 a 3x por semana.",
+    nome: "Full Body · Iniciante",
+    objetivo: "Adaptação e condicionamento geral: 2 a 3x por semana.",
     divisoes: [
       {
         nome: "A", foco: "Corpo inteiro I", dias: [1, 5],
@@ -191,8 +191,8 @@ const MODELOS = [
     ],
   },
   {
-    nome: "Hipertrofia ABC — Intermediário",
-    objetivo: "Ganho de massa muscular — 3 a 5x por semana.",
+    nome: "Hipertrofia ABC · Intermediário",
+    objetivo: "Ganho de massa muscular: 3 a 5x por semana.",
     divisoes: [
       {
         nome: "A", foco: "Peito & Tríceps", dias: [1],
@@ -231,8 +231,8 @@ const MODELOS = [
     ],
   },
   {
-    nome: "Inferior & Glúteos — Foco",
-    objetivo: "Ênfase em pernas e glúteos — 2x por semana.",
+    nome: "Inferior & Glúteos · Foco",
+    objetivo: "Ênfase em pernas e glúteos: 2x por semana.",
     divisoes: [
       {
         nome: "A", foco: "Quadríceps", dias: [2],
@@ -257,8 +257,8 @@ const MODELOS = [
     ],
   },
   {
-    nome: "Condicionamento — Circuito",
-    objetivo: "Emagrecimento e resistência — circuito com pouco descanso, 3x por semana.",
+    nome: "Condicionamento · Circuito",
+    objetivo: "Emagrecimento e resistência: circuito com pouco descanso, 3x por semana.",
     divisoes: [
       {
         nome: "A", foco: "Circuito corpo inteiro", dias: [2, 4, 6],

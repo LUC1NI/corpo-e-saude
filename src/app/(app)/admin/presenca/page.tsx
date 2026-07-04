@@ -102,7 +102,7 @@ export default async function AdminPresencaPage() {
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Aulas de hoje — {DIAS_SEMANA[diaHoje]}</CardTitle>
+          <CardTitle>Aulas de hoje · {DIAS_SEMANA[diaHoje]}</CardTitle>
         </CardHeader>
         {aulasHoje.length === 0 ? (
           <PageEmpty
@@ -135,7 +135,7 @@ export default async function AdminPresencaPage() {
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {a.professores?.nome ?? "—"}
+                    {a.professores?.nome ?? "-"}
                   </p>
                   <p className="mt-2 text-xs text-muted-foreground">
                     {a.atribuidos} aluno(s) agendado(s)
@@ -166,16 +166,16 @@ export default async function AdminPresencaPage() {
                 {
                   cabecalho: "Aluno",
                   principal: true,
-                  celula: (p) => p.alunos?.nome ?? "—",
+                  celula: (p) => p.alunos?.nome ?? "-",
                 },
                 {
                   cabecalho: "Professor",
-                  celula: (p) => p.professores?.nome ?? "—",
+                  celula: (p) => p.professores?.nome ?? "-",
                 },
                 { cabecalho: "Data", celula: (p) => formatData(p.data) },
                 {
                   cabecalho: "Horário",
-                  celula: (p) => (p.hora ? horaCurta(p.hora) : "—"),
+                  celula: (p) => (p.hora ? horaCurta(p.hora) : "-"),
                 },
               ]}
             />

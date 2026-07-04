@@ -394,7 +394,7 @@ export default async function ProfessorDashboard() {
                               d === diaHoje && "bg-primary/5",
                             )}
                           >
-                            —
+                            -
                           </TableCell>
                         );
                       }

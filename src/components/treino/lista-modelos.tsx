@@ -48,7 +48,7 @@ export function ListaModelos({
                 <p className="truncate font-semibold">{m.nome}</p>
                 <p className="text-xs text-muted-foreground">
                   {m.divisoes.length > 0
-                    ? `${m.divisoes.map((d) => d.nome).join(" · ")} — ${nEx} exercício(s)`
+                    ? `${m.divisoes.map((d) => d.nome).join(" · ")} · ${nEx} exercício(s)`
                     : "Sem dias de treino ainda"}
                 </p>
               </div>

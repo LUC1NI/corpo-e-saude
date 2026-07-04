@@ -167,7 +167,7 @@ async function main() {
   const anamneseDef = [
     { nome: "João Pereira", objetivos: "Hipertrofia e ganho de força.", historico_saude: "Sem comorbidades.", lesoes_restricoes: "Leve dor lombar.", medicacao: "Nenhuma.", rotina_disponibilidade: "Seg/Qua/Sex de manhã.", nivel_atividade: "Moderado" },
     { nome: "Ana Souza", objetivos: "Emagrecimento e condicionamento.", historico_saude: "Hipertensão controlada.", lesoes_restricoes: "Nenhuma.", medicacao: "Losartana.", rotina_disponibilidade: "Noite.", nivel_atividade: "Leve" },
-    { nome: "Diego Rocha", objetivos: "Saúde geral.", historico_saude: "—", lesoes_restricoes: "—", medicacao: "—", rotina_disponibilidade: "Flexível (online).", nivel_atividade: "Intenso" },
+    { nome: "Diego Rocha", objetivos: "Saúde geral.", historico_saude: "Sem histórico relevante.", lesoes_restricoes: "Nenhuma.", medicacao: "Nenhuma.", rotina_disponibilidade: "Flexível (online).", nivel_atividade: "Intenso" },
   ];
   for (const an of anamneseDef) {
     await db.from("anamneses").insert({

@@ -17,6 +17,8 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  // Mapa do Google incorporado na landing (seção "Onde estamos").
+  "frame-src https://www.google.com",
   "worker-src 'self'",
   "manifest-src 'self'",
   // Em produção (HTTPS), promove qualquer subrecurso http:// para https://

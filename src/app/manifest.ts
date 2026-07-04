@@ -6,7 +6,7 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Corpo & Saúde — Personal Trainer Studio",
+    name: "Corpo & Saúde Personal Trainer Studio",
     short_name: "Corpo & Saúde",
     description:
       "Gestão de alunos, treinos, presença, finanças e avaliação física do Corpo & Saúde.",

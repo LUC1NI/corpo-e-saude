@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { BarraProgressoNavegacao } from "@/components/ui-extra/progresso-navegacao";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   applicationName: "Corpo & Saúde",
   title: {
-    default: "Corpo & Saúde — Personal Trainer Studio",
+    default: "Corpo & Saúde | Personal Trainer Studio",
     template: "%s · Corpo & Saúde",
   },
   description:
@@ -57,9 +58,10 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <BarraProgressoNavegacao />
         {children}
         <Toaster richColors position="top-right" />
       </body>

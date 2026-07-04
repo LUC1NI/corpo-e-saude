@@ -10,8 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { InputSenha } from "@/components/ui-extra/input-senha";
 import {
   redefinirSenhaAction,
   type RedefinirState,
@@ -43,10 +43,9 @@ export function RedefinirForm({
         <form action={formAction} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="senha">Nova senha</Label>
-            <Input
+            <InputSenha
               id="senha"
               name="senha"
-              type="password"
               autoComplete="new-password"
               required
             />
@@ -56,10 +55,9 @@ export function RedefinirForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmar">Confirmar senha</Label>
-            <Input
+            <InputSenha
               id="confirmar"
               name="confirmar"
-              type="password"
               autoComplete="new-password"
               required
             />

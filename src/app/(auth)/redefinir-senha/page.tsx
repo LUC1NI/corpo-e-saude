@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 
+import { AuthShell } from "../auth-shell";
 import { RedefinirForm } from "./redefinir-form";
 
 export const metadata: Metadata = { title: "Definir senha" };
@@ -22,5 +23,9 @@ export default async function RedefinirSenhaPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?erro=link");
 
-  return <RedefinirForm primeiroAcesso={primeiro === "1"} />;
+  return (
+    <AuthShell>
+      <RedefinirForm primeiroAcesso={primeiro === "1"} />
+    </AuthShell>
+  );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui-extra/link";
 import { useActionState } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -70,7 +70,7 @@ export function RecuperarForm() {
               </p>
             ) : null}
 
-            <Button type="submit" className="w-full" disabled={pending}>
+            <Button type="submit" className="w-full" loading={pending}>
               {pending ? "Enviando…" : "Enviar link"}
             </Button>
             <Link

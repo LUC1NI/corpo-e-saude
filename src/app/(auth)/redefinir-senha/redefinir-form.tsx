@@ -74,7 +74,7 @@ export function RedefinirForm({
             </p>
           ) : null}
 
-          <Button type="submit" className="w-full" disabled={pending}>
+          <Button type="submit" className="w-full" loading={pending}>
             {pending ? "Salvando…" : "Salvar senha"}
           </Button>
         </form>

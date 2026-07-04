@@ -1,16 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui-extra/link";
 import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loginAction, type LoginState } from "@/lib/auth-actions";
@@ -24,12 +18,8 @@ export function LoginForm({ mensagemInicial }: { mensagemInicial?: string }) {
   const erro = state.erro ?? mensagemInicial;
 
   return (
-    <Card className="w-full max-w-sm shadow-lg">
-      <CardHeader>
-        <CardTitle>Entrar</CardTitle>
-        <CardDescription>Acesse sua conta do studio.</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <Card className="w-full shadow-lg">
+      <CardContent className="pt-6">
         <form action={formAction} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">E-mail</Label>
@@ -70,7 +60,7 @@ export function LoginForm({ mensagemInicial }: { mensagemInicial?: string }) {
             </p>
           ) : null}
 
-          <Button type="submit" className="w-full" disabled={pending}>
+          <Button type="submit" className="w-full" loading={pending}>
             {pending ? "Entrando…" : "Entrar"}
           </Button>
         </form>

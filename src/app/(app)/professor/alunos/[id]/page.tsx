@@ -13,7 +13,9 @@ import { PageHeader } from "@/components/ui-extra/page-header";
 import { aguardandoPrimeiroAcesso } from "@/lib/acesso";
 import { requireUsuario } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { ExecucoesLista } from "@/components/treino/execucoes-lista";
 import {
+  getExecucoesDoAluno,
   getExerciciosBiblioteca,
   getModelosTreino,
   getTreinosDoAluno,
@@ -39,6 +41,7 @@ export default async function ProfessorAlunoDetalhe({
     treinos,
     exercicios,
     modelos,
+    execucoes,
   ] = await Promise.all([
     supabase.from("alunos").select("*").eq("id", id).maybeSingle(),
     supabase.from("anamneses").select("*").eq("aluno_id", id).maybeSingle(),
@@ -50,6 +53,7 @@ export default async function ProfessorAlunoDetalhe({
     getTreinosDoAluno(id),
     getExerciciosBiblioteca(),
     getModelosTreino(),
+    getExecucoesDoAluno(id),
   ]);
 
   if (!alunoData) notFound();
@@ -126,6 +130,19 @@ export default async function ProfessorAlunoDetalhe({
               exercicios={exercicios}
               modelos={modelos}
             />
+          </CardContent>
+        </Card>
+
+        <Card id="execucoes">
+          <CardHeader>
+            <CardTitle>Treinos realizados</CardTitle>
+            <CardDescription>
+              Retorno do aluno pelo aplicativo: treinos concluídos, duração,
+              séries e observações.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ExecucoesLista execucoes={execucoes} />
           </CardContent>
         </Card>
       </div>

@@ -183,3 +183,29 @@ export const MEDIDAS_CAMPOS = [
   { chave: "coxa", rotulo: "Coxa" },
   { chave: "peitoral", rotulo: "Peitoral" },
 ] as const;
+
+// ---------------------------------------------------------------------------
+// Treino — execução (modo treino do aluno)
+// ---------------------------------------------------------------------------
+export const execucaoSchema = z.object({
+  divisao_id: z.string().uuid().nullable(),
+  nome_divisao: z.string().trim().min(1).max(40),
+  foco_divisao: opcional(z.string().max(80)),
+  iniciado_em: z.string().datetime({ offset: true }),
+  duracao_segundos: z.number().int().min(0).max(86400),
+  detalhes: z
+    .array(
+      z.object({
+        nome: z.string().trim().min(1).max(120),
+        series: z.number().int().min(0).max(50),
+        series_feitas: z.number().int().min(0).max(50),
+        carga: opcional(z.string().max(60)),
+      }),
+    )
+    .min(1, "Nenhum exercício no treino.")
+    .max(40),
+  sensacao: z.enum(["facil", "na_medida", "dificil"]).optional(),
+  observacao: opcional(z.string().max(1000)),
+});
+
+export type ExecucaoInput = z.infer<typeof execucaoSchema>;

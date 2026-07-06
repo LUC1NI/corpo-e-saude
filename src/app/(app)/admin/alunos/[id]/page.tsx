@@ -17,7 +17,9 @@ import { requireUsuario } from "@/lib/auth";
 import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
 import { formatBRL, formatData } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
+import { ExecucoesLista } from "@/components/treino/execucoes-lista";
 import {
+  getExecucoesDoAluno,
   getExerciciosBiblioteca,
   getModelosTreino,
   getTreinosDoAluno,
@@ -68,6 +70,7 @@ export default async function AlunoDetalhePage({
     treinos,
     exercicios,
     modelos,
+    execucoes,
   ] = await Promise.all([
     supabase.from("alunos").select("*").eq("id", id).maybeSingle(),
     supabase.from("professores").select("id, nome").eq("ativo", true).order("nome"),
@@ -101,6 +104,7 @@ export default async function AlunoDetalhePage({
     getTreinosDoAluno(id),
     getExerciciosBiblioteca(),
     getModelosTreino(),
+    getExecucoesDoAluno(id),
   ]);
 
   if (!alunoData) notFound();
@@ -265,6 +269,19 @@ export default async function AlunoDetalhePage({
               exercicios={exercicios}
               modelos={modelos}
             />
+          </CardContent>
+        </Card>
+
+        <Card id="execucoes">
+          <CardHeader>
+            <CardTitle>Treinos realizados</CardTitle>
+            <CardDescription>
+              Retorno do aluno pelo aplicativo: treinos concluídos, duração,
+              séries e observações.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ExecucoesLista execucoes={execucoes} />
           </CardContent>
         </Card>
 

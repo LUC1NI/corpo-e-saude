@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Exercicio, TreinoComTudo } from "@/lib/tipos";
+import type { Exercicio, TreinoComTudo, TreinoExecucao } from "@/lib/tipos";
 
 /** Select aninhado usado tanto para fichas de aluno quanto para modelos. */
 const SELECT_TREINO_COMPLETO = `id, aluno_id, professor_id, nome, objetivo, ativo, criado_em, atualizado_em,
@@ -137,4 +137,19 @@ export async function getExerciciosBiblioteca(): Promise<Exercicio[]> {
   const supabase = await createClient();
   const { data } = await supabase.from("exercicios").select("*").order("nome");
   return (data ?? []) as Exercicio[];
+}
+
+/** Execuções de treino do aluno (modo treino), mais recentes primeiro. */
+export async function getExecucoesDoAluno(
+  alunoId: string,
+  limite = 30,
+): Promise<TreinoExecucao[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("treino_execucoes")
+    .select("*")
+    .eq("aluno_id", alunoId)
+    .order("finalizado_em", { ascending: false })
+    .limit(limite);
+  return (data ?? []) as TreinoExecucao[];
 }

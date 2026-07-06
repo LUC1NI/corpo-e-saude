@@ -33,28 +33,39 @@ export default async function AlunoHome() {
   if (aluno) {
     const supabase = await createClient();
     const inicioMes = format(startOfMonth(new Date()), "yyyy-MM-dd");
-    const [treinosData, { count: pend }, { count: avals }, { count: pres }] =
-      await Promise.all([
-        getTreinosDoAluno(aluno.id),
-        supabase
-          .from("pagamentos")
-          .select("id", { count: "exact", head: true })
-          .eq("aluno_id", aluno.id)
-          .neq("status", "pago"),
-        supabase
-          .from("avaliacoes_fisicas")
-          .select("id", { count: "exact", head: true })
-          .eq("aluno_id", aluno.id),
-        supabase
-          .from("presencas")
-          .select("id", { count: "exact", head: true })
-          .eq("aluno_id", aluno.id)
-          .gte("data", inicioMes),
-      ]);
+    const [
+      treinosData,
+      { count: pend },
+      { count: avals },
+      { count: pres },
+      { count: execs },
+    ] = await Promise.all([
+      getTreinosDoAluno(aluno.id),
+      supabase
+        .from("pagamentos")
+        .select("id", { count: "exact", head: true })
+        .eq("aluno_id", aluno.id)
+        .neq("status", "pago"),
+      supabase
+        .from("avaliacoes_fisicas")
+        .select("id", { count: "exact", head: true })
+        .eq("aluno_id", aluno.id),
+      supabase
+        .from("presencas")
+        .select("id", { count: "exact", head: true })
+        .eq("aluno_id", aluno.id)
+        .gte("data", inicioMes),
+      supabase
+        .from("treino_execucoes")
+        .select("id", { count: "exact", head: true })
+        .eq("aluno_id", aluno.id)
+        .gte("finalizado_em", inicioMes),
+    ]);
     treinos = treinosData;
     pendencias = pend ?? 0;
     temAvaliacoes = (avals ?? 0) > 0;
-    presencasMes = pres ?? 0;
+    // Presenças marcadas pelo professor + treinos concluídos no app.
+    presencasMes = (pres ?? 0) + (execs ?? 0);
   }
 
   const ativos = treinos.filter((t) => t.ativo);
@@ -197,7 +208,7 @@ export default async function AlunoHome() {
           <p className="text-xs text-muted-foreground">
             {presencasMes > 0
               ? "Continue nesse ritmo! 💪"
-              : "Suas presenças aparecem aqui quando registradas."}
+              : "Conclua treinos no app ou marque presença no estúdio."}
           </p>
         </div>
       </Card>

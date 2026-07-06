@@ -219,6 +219,41 @@ export type TreinoComTudo = Treino & {
   divisoes: DivisaoComExercicios[];
 };
 
+/** Um exercício dentro do snapshot de uma execução de treino. */
+export interface ExecucaoDetalhe {
+  nome: string;
+  series: number;
+  series_feitas: number;
+  carga: string | null;
+}
+
+/** Treino concluído pelo aluno no modo treino (retorno para o professor). */
+export interface TreinoExecucao {
+  id: string;
+  aluno_id: string;
+  divisao_id: string | null;
+  nome_divisao: string;
+  foco_divisao: string | null;
+  iniciado_em: string;
+  finalizado_em: string;
+  duracao_segundos: number;
+  exercicios_previstos: number;
+  exercicios_feitos: number;
+  detalhes: ExecucaoDetalhe[];
+  sensacao: "facil" | "na_medida" | "dificil" | null;
+  observacao: string | null;
+  criado_em: string;
+}
+
+export const SENSACOES: Record<
+  NonNullable<TreinoExecucao["sensacao"]>,
+  { rotulo: string; emoji: string }
+> = {
+  facil: { rotulo: "Fácil", emoji: "😄" },
+  na_medida: { rotulo: "Na medida", emoji: "💪" },
+  dificil: { rotulo: "Difícil", emoji: "🥵" },
+};
+
 /** Equipamentos sugeridos (biblioteca de exercícios). */
 export const EQUIPAMENTOS = [
   "Peso corporal",

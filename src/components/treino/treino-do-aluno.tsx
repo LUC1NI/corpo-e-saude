@@ -1,9 +1,10 @@
 "use client";
 
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Play } from "lucide-react";
 import { useState } from "react";
 
 import { MidiaThumb } from "@/components/treino/midia-thumb";
+import { TreinoPlayer } from "@/components/treino/treino-player";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { DIAS_SEMANA, DIAS_SEMANA_CURTO, type TreinoComTudo } from "@/lib/tipos";
@@ -31,6 +32,7 @@ export function TreinoDoAluno({
   const divisoes = treino.divisoes;
   const indiceHoje = divisoes.findIndex((d) => d.dias_semana.includes(diaHoje));
   const [sel, setSel] = useState(indiceHoje >= 0 ? indiceHoje : 0);
+  const [treinando, setTreinando] = useState(false);
 
   if (divisoes.length === 0) {
     return (
@@ -42,6 +44,12 @@ export function TreinoDoAluno({
 
   const ativa = divisoes[sel] ?? divisoes[0]!;
   const ehHoje = ativa.dias_semana.includes(diaHoje);
+
+  if (treinando) {
+    return (
+      <TreinoPlayer divisao={ativa} aoFechar={() => setTreinando(false)} />
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -115,7 +123,16 @@ export function TreinoDoAluno({
             Nenhum exercício nesta divisão.
           </p>
         ) : (
-          <ul className="divide-y">
+          <>
+            <button
+              type="button"
+              onClick={() => setTreinando(true)}
+              className="inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#0090D8] to-[#00A8E4] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,144,216,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(0,168,228,0.5)] active:translate-y-0"
+            >
+              <Play className="size-4.5 fill-current" />
+              Iniciar treino
+            </button>
+            <ul className="divide-y">
             {ativa.exercicios.map((ex) => (
               <li key={ex.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
                 <MidiaThumb
@@ -138,7 +155,8 @@ export function TreinoDoAluno({
                 </div>
               </li>
             ))}
-          </ul>
+            </ul>
+          </>
         )}
       </Card>
 

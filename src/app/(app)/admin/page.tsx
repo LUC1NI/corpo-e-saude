@@ -11,6 +11,7 @@ import Link from "@/components/ui-extra/link";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardHeader,
   CardTitle,
@@ -210,14 +211,16 @@ export default async function AdminDashboard() {
         </Card>
 
         <Card className="overflow-hidden p-0">
-          <CardHeader className="flex-row items-center justify-between p-5">
+          <CardHeader className="p-5">
             <CardTitle>Mensalidades vencendo</CardTitle>
-            <Link
-              href="/admin/financeiro"
-              className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-            >
-              Ver todas
-            </Link>
+            <CardAction>
+              <Link
+                href="/admin/financeiro"
+                className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+              >
+                Ver todas
+              </Link>
+            </CardAction>
           </CardHeader>
           {vencendo.length === 0 ? (
             <PageEmpty

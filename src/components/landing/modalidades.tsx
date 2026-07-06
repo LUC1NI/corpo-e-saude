@@ -13,6 +13,7 @@ const MODALIDADES = [
     icone: MapPin,
     selo: "No estúdio · Mafra/SC",
     titulo: "Treino presencial",
+    destaque: true,
     descricao:
       "A experiência completa: você treina com hora marcada e o personal do seu lado, do aquecimento ao alongamento.",
     itens: [
@@ -29,6 +30,7 @@ const MODALIDADES = [
     icone: Wifi,
     selo: "Onde você estiver",
     titulo: "Consultoria online",
+    destaque: false,
     descricao:
       "Para quem tem rotina apertada ou mora longe: o mesmo cuidado do presencial, com treino sob medida direto no seu celular.",
     itens: [
@@ -53,7 +55,10 @@ export function Modalidades() {
             Modalidades
           </p>
           <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[#18181A] sm:text-4xl">
-            Presencial ou online, você escolhe
+            Presencial ou online,{" "}
+            <span className="bg-gradient-to-r from-[#0090D8] to-[#033373] bg-clip-text text-transparent">
+              você escolhe
+            </span>
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-[#5a6b80]">
             O acompanhamento é o mesmo nos dois formatos: treino individual,
@@ -64,34 +69,89 @@ export function Modalidades() {
         <div className="mt-12 grid gap-6 lg:grid-cols-2">
           {MODALIDADES.map((m, i) => {
             const Icone = m.icone;
+            const escuro = m.destaque;
             return (
-              <Revelar key={m.titulo} delay={i * 0.12}>
-                <article className="flex h-full flex-col rounded-3xl bg-[#F4F7FB] p-8 ring-1 ring-black/5 transition-all hover:shadow-lg hover:ring-[#0090D8]/20 lg:p-10">
-                  <div className="flex items-center gap-4">
-                    <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#033373] text-white shadow-md">
+              <Revelar key={m.titulo} delay={i * 0.12} className="h-full">
+                <article
+                  className={
+                    escuro
+                      ? "relative flex h-full flex-col overflow-hidden rounded-3xl bg-gradient-to-br from-[#022a5e] via-[#033373] to-[#0353a8] p-8 text-white shadow-xl ring-1 ring-white/10 transition-all hover:-translate-y-1 hover:shadow-2xl lg:p-10"
+                      : "flex h-full flex-col rounded-3xl bg-[#F4F7FB] p-8 ring-1 ring-black/5 transition-all hover:-translate-y-1 hover:shadow-lg hover:ring-[#0090D8]/20 lg:p-10"
+                  }
+                >
+                  {escuro && (
+                    <>
+                      <div
+                        aria-hidden
+                        className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-[#0090D8]/30 blur-3xl"
+                      />
+                      <span className="absolute top-5 right-5 rounded-full bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-3 py-1 text-[10px] font-bold tracking-widest text-white uppercase shadow-lg">
+                        Mais procurado
+                      </span>
+                    </>
+                  )}
+
+                  <div className="relative flex items-center gap-4">
+                    <span
+                      className={
+                        escuro
+                          ? "flex size-12 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#7dd3fc] shadow-md ring-1 ring-white/15"
+                          : "flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#033373] to-[#0090D8] text-white shadow-md"
+                      }
+                    >
                       <Icone className="size-5.5" />
                     </span>
                     <span>
-                      <span className="block text-[11px] font-semibold tracking-widest text-[#0090D8] uppercase">
+                      <span
+                        className={
+                          escuro
+                            ? "block text-[11px] font-semibold tracking-widest text-[#7dd3fc] uppercase"
+                            : "block text-[11px] font-semibold tracking-widest text-[#0090D8] uppercase"
+                        }
+                      >
                         {m.selo}
                       </span>
-                      <h3 className="text-xl font-extrabold tracking-tight text-[#18181A]">
+                      <h3
+                        className={
+                          escuro
+                            ? "text-xl font-extrabold tracking-tight text-white"
+                            : "text-xl font-extrabold tracking-tight text-[#18181A]"
+                        }
+                      >
                         {m.titulo}
                       </h3>
                     </span>
                   </div>
 
-                  <p className="mt-4 text-sm leading-relaxed text-[#5a6b80]">
+                  <p
+                    className={
+                      escuro
+                        ? "relative mt-4 text-sm leading-relaxed text-white/75"
+                        : "mt-4 text-sm leading-relaxed text-[#5a6b80]"
+                    }
+                  >
                     {m.descricao}
                   </p>
 
-                  <ul className="mt-6 flex-1 space-y-3">
+                  <ul className="relative mt-6 flex-1 space-y-3">
                     {m.itens.map((item) => (
                       <li key={item} className="flex items-start gap-2.5">
-                        <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#0090D8]/10 text-[#0090D8]">
+                        <span
+                          className={
+                            escuro
+                              ? "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#00A8E4]/25 text-[#7dd3fc]"
+                              : "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#0090D8]/10 text-[#0090D8]"
+                          }
+                        >
                           <Check className="size-3" strokeWidth={3} />
                         </span>
-                        <span className="text-sm leading-relaxed text-[#18181A]/80">
+                        <span
+                          className={
+                            escuro
+                              ? "text-sm leading-relaxed text-white/85"
+                              : "text-sm leading-relaxed text-[#18181A]/80"
+                          }
+                        >
                           {item}
                         </span>
                       </li>
@@ -102,7 +162,11 @@ export function Modalidades() {
                     href={linkWhatsApp(m.mensagem)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-8 inline-flex h-11 items-center justify-center gap-2.5 self-start rounded-xl bg-[#0090D8] px-5 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(0,144,216,0.35)] transition-all hover:-translate-y-0.5 hover:bg-[#00A8E4] active:translate-y-0"
+                    className={
+                      escuro
+                        ? "relative mt-8 inline-flex h-11 items-center justify-center gap-2.5 self-start rounded-xl bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-5 text-sm font-semibold text-white shadow-[0_6px_20px_rgba(0,168,228,0.5)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,168,228,0.6)] active:translate-y-0"
+                        : "mt-8 inline-flex h-11 items-center justify-center gap-2.5 self-start rounded-xl bg-[#0090D8] px-5 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(0,144,216,0.35)] transition-all hover:-translate-y-0.5 hover:bg-[#00A8E4] active:translate-y-0"
+                    }
                   >
                     <IconeWhatsApp className="size-4" />
                     {m.cta}

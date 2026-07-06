@@ -58,7 +58,10 @@ export function Diferenciais() {
             Por que treinar aqui
           </p>
           <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[#18181A] sm:text-4xl">
-            Qual é o nosso diferencial?
+            Qual é o nosso{" "}
+            <span className="bg-gradient-to-r from-[#0090D8] to-[#033373] bg-clip-text text-transparent">
+              diferencial?
+            </span>
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-[#5a6b80]">
             A diferença entre treinar por treinar e treinar com segurança,
@@ -71,8 +74,13 @@ export function Diferenciais() {
             const Icone = item.icone;
             return (
               <Revelar key={item.titulo} delay={(i % 3) * 0.1}>
-                <article className="group h-full rounded-2xl bg-white p-7 shadow-sm ring-1 ring-black/5 transition-all hover:-translate-y-1 hover:shadow-lg hover:ring-[#0090D8]/20">
-                  <span className="inline-flex size-12 items-center justify-center rounded-xl bg-[#033373] text-white shadow-md transition-colors group-hover:bg-[#0090D8]">
+                <article className="group relative h-full overflow-hidden rounded-2xl bg-white p-7 shadow-sm ring-1 ring-black/5 transition-all hover:-translate-y-1.5 hover:shadow-xl hover:ring-[#0090D8]/30">
+                  {/* Brilho no canto ao passar o mouse */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute -top-16 -right-16 size-40 rounded-full bg-[#0090D8]/0 blur-2xl transition-colors duration-500 group-hover:bg-[#0090D8]/15"
+                  />
+                  <span className="inline-flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#033373] to-[#0090D8] text-white shadow-md shadow-[#033373]/25 transition-transform group-hover:scale-110">
                     <Icone className="size-5.5" />
                   </span>
                   <h3 className="mt-5 text-lg font-bold text-[#18181A]">

@@ -142,3 +142,21 @@
     transform: translateX(340%);
   }
 }
+/* Flutuação suave de elementos decorativos da landing (selos, pills).
+   Usar com animate-[flutuar_6s_ease-in-out_infinite]; quem prefere menos
+   movimento não perde conteúdo (é só enfeite). */
+@keyframes flutuar {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animar-flutuar {
+    animation: none !important;
+  }
+}

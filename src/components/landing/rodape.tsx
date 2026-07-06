@@ -20,8 +20,12 @@ export function Rodape() {
       <div className="mx-auto w-full max-w-6xl px-4 pt-16 pb-10 lg:px-8 lg:pt-20">
         {/* CTA final */}
         <Revelar>
-          <div className="flex flex-col items-start justify-between gap-6 rounded-3xl bg-white/5 p-8 ring-1 ring-white/10 sm:flex-row sm:items-center lg:p-10">
-            <div>
+          <div className="relative flex flex-col items-start justify-between gap-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[#0090D8]/25 via-white/5 to-transparent p-8 ring-1 ring-white/15 sm:flex-row sm:items-center lg:p-10">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -top-20 -right-20 size-56 rounded-full bg-[#00A8E4]/25 blur-3xl"
+            />
+            <div className="relative">
               <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
                 Pronto para começar?
               </h2>
@@ -34,7 +38,7 @@ export function Rodape() {
               href={WHATSAPP_LINK}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-12 shrink-0 items-center justify-center gap-2.5 rounded-xl bg-[#0090D8] px-6 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,144,216,0.45)] transition-all hover:-translate-y-0.5 hover:bg-[#00A8E4] active:translate-y-0"
+              className="relative inline-flex h-12 shrink-0 items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-6 text-sm font-semibold text-white shadow-[0_8px_28px_rgba(0,144,216,0.55)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(0,168,228,0.6)] active:translate-y-0"
             >
               <IconeWhatsApp className="size-4.5" />
               Falar no WhatsApp

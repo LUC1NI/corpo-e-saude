@@ -46,8 +46,15 @@ export function Depoimentos() {
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {DEPOIMENTOS.map((d, i) => (
-            <Revelar key={d.nome} delay={i * 0.1}>
-              <figure className="flex h-full flex-col rounded-2xl bg-[#F4F7FB] p-7 ring-1 ring-black/5">
+            <Revelar key={d.nome} delay={i * 0.1} className="h-full">
+              <figure className="relative flex h-full flex-col overflow-hidden rounded-2xl bg-[#F4F7FB] p-7 ring-1 ring-black/5 transition-all hover:-translate-y-1 hover:shadow-lg hover:ring-[#0090D8]/20">
+                {/* Aspas decorativas */}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -top-3 right-4 font-serif text-[88px] leading-none font-bold text-[#0090D8]/10 select-none"
+                >
+                  &ldquo;
+                </span>
                 <div
                   className="flex gap-1 text-[#0090D8]"
                   aria-label="5 de 5 estrelas"

@@ -52,23 +52,23 @@ export function ComoFunciona() {
           </p>
         </Revelar>
 
-        <ol className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+        <ol className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {PASSOS.map((passo, i) => {
             const Icone = passo.icone;
             return (
-              <Revelar key={passo.titulo} delay={i * 0.1}>
-                <li className="relative h-full">
+              <Revelar key={passo.titulo} delay={i * 0.1} className="h-full">
+                <li className="group relative h-full">
                   {/* Linha conectando os passos (só no desktop, exceto o último) */}
                   {i < PASSOS.length - 1 && (
                     <span
                       aria-hidden
-                      className="absolute top-7 left-[calc(50%+40px)] hidden h-px w-[calc(100%-80px)] bg-gradient-to-r from-[#0090D8]/40 to-[#0090D8]/10 lg:block"
+                      className="absolute top-12 left-[calc(100%-8px)] z-10 hidden h-0.5 w-[calc(2rem+16px)] bg-gradient-to-r from-[#0090D8]/50 to-[#0090D8]/10 lg:block"
                     />
                   )}
-                  <div className="flex h-full flex-col items-center text-center">
-                    <span className="relative flex size-14 items-center justify-center rounded-2xl bg-[#033373] text-white shadow-lg shadow-[#033373]/20">
+                  <div className="flex h-full flex-col rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 transition-all group-hover:-translate-y-1 group-hover:shadow-lg group-hover:ring-[#0090D8]/25">
+                    <span className="relative inline-flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#033373] to-[#0090D8] text-white shadow-lg shadow-[#033373]/25 transition-transform group-hover:scale-105">
                       <Icone className="size-6" />
-                      <span className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-[#0090D8] text-[11px] font-bold text-white ring-2 ring-[#F4F7FB]">
+                      <span className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-[#00A8E4] text-[11px] font-bold text-white ring-2 ring-white">
                         {i + 1}
                       </span>
                     </span>

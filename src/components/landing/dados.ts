@@ -1,4 +1,8 @@
-/** Dados institucionais da landing (fonte única). */
+/** Dados institucionais do estúdio (fonte única). */
+
+export const CNPJ = "21.625.312/0001-60";
+/** Chave PIX do estúdio (o CNPJ, só dígitos — formato que os bancos aceitam). */
+export const PIX_CHAVE = "21625312000160";
 
 export const WHATSAPP_PRINCIPAL = "5547991667475";
 export const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_PRINCIPAL}?text=${encodeURIComponent(

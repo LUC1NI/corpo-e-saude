@@ -20,6 +20,8 @@ import {
   type StatusPagamento as TStatusPagamento,
 } from "@/lib/tipos";
 
+import { PagamentoPix } from "./pagamento-pix";
+
 interface PagamentoAluno {
   id: string;
   competencia: string;
@@ -88,6 +90,15 @@ export default async function AlunoMensalidadePage() {
   const totalAberto = emAberto.reduce((s, p) => s + p.valor, 0);
   const emDia = emAberto.length === 0;
 
+  // O que o aluno paga agora: as pendências (se houver) ou a mensalidade do
+  // plano ativo (quando está em dia e quer se adiantar).
+  const valorPagar = !emDia ? totalAberto : (matricula?.valor ?? 0);
+  const descricaoPagar = !emDia
+    ? `${emAberto.length} mensalidade(s) em aberto · ${formatBRL(totalAberto)}`
+    : matricula
+      ? `Mensalidade do plano ${matricula.plano_nome}`
+      : "";
+
   return (
     <div className="space-y-5">
       <h1 className="font-heading text-xl font-bold">Sua mensalidade</h1>
@@ -120,6 +131,11 @@ export default async function AlunoMensalidadePage() {
           </div>
         </div>
       </section>
+
+      {/* Como pagar (PIX) */}
+      {valorPagar > 0 ? (
+        <PagamentoPix valor={valorPagar} descricao={descricaoPagar} />
+      ) : null}
 
       {/* Plano e próxima cobrança */}
       {matricula ? (

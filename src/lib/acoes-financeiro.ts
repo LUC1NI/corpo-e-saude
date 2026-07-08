@@ -16,7 +16,6 @@ import {
   type MatriculaInput,
 } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
-import { executarRenovacao } from "@/lib/renovacao";
 import type { Periodicidade } from "@/lib/tipos";
 
 // ---------------------------------------------------------------------------
@@ -119,24 +118,6 @@ export async function cancelarMatricula(
   revalidatePath(`/admin/alunos/${alunoId}`);
   revalidatePath("/admin/financeiro");
   return sucesso();
-}
-
-// ---------------------------------------------------------------------------
-// Renovação automática — gera cobranças vencidas e marca inadimplência
-// (rodada manual pelo dono; no go-live vira um cron — ver passo 10)
-// ---------------------------------------------------------------------------
-export async function gerarCobrancasPendentes(): Promise<
-  ResultadoAcao<{ geradas: number }>
-> {
-  await assertPapel(["admin"]);
-  const supabase = await createClient();
-  try {
-    const { geradas } = await executarRenovacao(supabase);
-    revalidatePath("/admin/financeiro");
-    return sucesso({ geradas });
-  } catch {
-    return falha("Não foi possível gerar as cobranças.");
-  }
 }
 
 // ---------------------------------------------------------------------------

@@ -10,29 +10,20 @@ import {
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
-import { StatusPagamento } from "@/components/ui-extra/status-badge";
 import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { requireUsuario } from "@/lib/auth";
 import { formatBRL, formatData } from "@/lib/formato";
 import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
+import { executarRenovacao } from "@/lib/renovacao";
 import { createClient } from "@/lib/supabase/server";
 import type { StatusPagamento as TStatusPagamento } from "@/lib/tipos";
 
-import { BaixaButton } from "./baixa-button";
 import { DespesaForm } from "./despesa-form";
 import { ExcluirDespesaButton } from "./excluir-despesa-button";
-import { ExcluirPagamentoButton } from "./excluir-pagamento-button";
-import { GerarCobrancasButton } from "./gerar-cobrancas-button";
-
-interface PagamentoAberto {
-  id: string;
-  aluno_id: string;
-  competencia: string;
-  vencimento: string;
-  valor: number;
-  status: TStatusPagamento;
-  alunos: { nome: string } | null;
-}
+import {
+  MensalidadesAbertas,
+  type PagamentoAberto,
+} from "./mensalidades-abertas";
 
 interface RecebidoItem {
   id: string;
@@ -56,6 +47,15 @@ export default async function FinanceiroPage() {
   const supabase = await createClient();
   const hoje = hojeISO();
   const inicioMes = format(startOfMonth(new Date()), "yyyy-MM-dd");
+
+  // Renovação automática oportunista: sempre que o financeiro é aberto,
+  // gera as cobranças que venceram e marca atrasos (idempotente). Em
+  // produção o cron diário (/api/cron/renovar) faz o mesmo de madrugada.
+  try {
+    await executarRenovacao(supabase);
+  } catch {
+    // Sem renovação agora — a tela segue com os dados existentes.
+  }
 
   const [
     { data: abertosData },
@@ -120,7 +120,6 @@ export default async function FinanceiroPage() {
       <PageHeader
         titulo="Financeiro"
         subtitulo="Mensalidades, inadimplência e despesas."
-        acoes={<GerarCobrancasButton />}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -150,72 +149,7 @@ export default async function FinanceiroPage() {
         />
       </div>
 
-      <Card className="mt-6 overflow-hidden p-0">
-        <CardHeader className="p-5">
-          <CardTitle>Mensalidades em aberto</CardTitle>
-        </CardHeader>
-        {abertos.length === 0 ? (
-          <PageEmpty
-            icone={CheckCircle2}
-            titulo="Nenhuma mensalidade em aberto"
-            descricao="As cobranças aparecem aqui quando você matricula um aluno (em Alunos) ou roda “Gerar cobranças”. Confirme cada recebimento pelo botão Confirmar."
-          />
-        ) : (
-          <div className="p-3 sm:p-0">
-            <TabelaResponsiva
-              dados={abertos}
-              getKey={(p) => p.id}
-              colunas={[
-                {
-                  cabecalho: "Aluno",
-                  principal: true,
-                  celula: (p) => p.alunos?.nome ?? "-",
-                },
-                {
-                  cabecalho: "Competência",
-                  celula: (p) => rotuloCompetencia(p.competencia),
-                },
-                {
-                  cabecalho: "Vencimento",
-                  celula: (p) => {
-                    const venc =
-                      p.status === "pendente" && p.vencimento < hoje;
-                    return (
-                      <span className={venc ? "text-destructive" : undefined}>
-                        {formatData(p.vencimento)}
-                      </span>
-                    );
-                  },
-                },
-                { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
-                {
-                  cabecalho: "Status",
-                  celula: (p) => (
-                    <StatusPagamento
-                      status={
-                        p.status === "pendente" && p.vencimento < hoje
-                          ? "vencido"
-                          : p.status
-                      }
-                    />
-                  ),
-                },
-                {
-                  cabecalho: "Ação",
-                  alinhar: "right",
-                  semRotuloMobile: true,
-                  celula: (p) => (
-                    <div className="flex items-center justify-end gap-1">
-                      <BaixaButton pagamentoId={p.id} />
-                      <ExcluirPagamentoButton pagamentoId={p.id} />
-                    </div>
-                  ),
-                },
-              ]}
-            />
-          </div>
-        )}
-      </Card>
+      <MensalidadesAbertas abertos={abertos} hoje={hoje} />
 
       <Card className="mt-6">
         <CardHeader>

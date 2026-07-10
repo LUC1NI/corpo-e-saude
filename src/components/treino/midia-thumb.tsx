@@ -19,7 +19,9 @@ export function MidiaThumb({
   tamanho?: "sm" | "md";
 }) {
   const [erro, setErro] = useState(false);
-  if (!url) return null;
+  // Defesa em profundidade: só renderiza link http(s), mesmo que uma URL
+  // antiga no banco tenha escapado da validação do schema.
+  if (!url || !/^https?:\/\//i.test(url)) return null;
 
   const px = tamanho === "sm" ? "size-9" : "size-14";
 

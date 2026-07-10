@@ -9,7 +9,13 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  // Só aceita caminho interno: barra open redirect via `next` manipulado
+  // ("//evil.com", "https://evil.com", "/\evil.com" viram "/").
+  const bruto = searchParams.get("next") ?? "/";
+  const next =
+    bruto.startsWith("/") && !bruto.startsWith("//") && !bruto.startsWith("/\\")
+      ? bruto
+      : "/";
 
   if (code) {
     const supabase = await createClient();

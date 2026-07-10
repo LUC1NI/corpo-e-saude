@@ -132,7 +132,13 @@ export const exercicioSchema = z.object({
   grupo_muscular: opcional(z.string()),
   equipamento: opcional(z.string()),
   descricao: opcional(z.string()),
-  midia_url: opcional(z.string().url("URL inválida.")),
+  midia_url: opcional(
+    z
+      .string()
+      .url("URL inválida.")
+      // Só http(s): impede link "javascript:" (XSS) salvo como mídia.
+      .regex(/^https?:\/\//i, "O link deve começar com http:// ou https://"),
+  ),
 });
 
 export type ExercicioInput = z.infer<typeof exercicioSchema>;

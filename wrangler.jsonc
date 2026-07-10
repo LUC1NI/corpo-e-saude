@@ -1,0 +1,36 @@
+/**
+ * Config do Cloudflare Workers (deploy via OpenNext).
+ *
+ * Antes do primeiro deploy:
+ *   1. `npx wrangler login` (abre o navegador — conta Cloudflare).
+ *   2. Preencha os `vars` abaixo (são valores PÚBLICOS — a anon key vai pro
+ *      navegador por design; segredo nenhum entra neste arquivo).
+ *   3. Cadastre os SEGREDOS fora do repo:
+ *        npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+ *        npx wrangler secret put CRON_SECRET
+ *   4. `npm run deploy:cf`
+ *
+ * Guia completo: DEPLOY.md.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "corpo-e-saude",
+  "main": "worker.ts",
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true },
+  // Renovação automática diária (06:00 UTC ≈ 03:00 em Mafra/SC).
+  // Dispara o handler `scheduled` do worker.ts → /api/cron/renovar.
+  "triggers": { "crons": ["0 6 * * *"] },
+  "vars": {
+    // Somente valores públicos aqui (os mesmos NEXT_PUBLIC_* do .env.local).
+    "NEXT_PUBLIC_SUPABASE_URL": "https://SEU-PROJETO.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "cole-aqui-a-anon-key-publica",
+    // Após o 1º deploy, ajuste para a URL real do worker e redeploye.
+    "NEXT_PUBLIC_SITE_URL": "https://corpo-e-saude.SEU-SUBDOMINIO.workers.dev"
+  }
+}

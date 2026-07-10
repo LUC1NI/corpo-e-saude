@@ -1,23 +1,68 @@
 # Deploy — Corpo & Saúde
 
 Guia de colocar o sistema no ar (produção). A stack é **Next.js + Supabase**;
-o deploy recomendado é na **Vercel** (suporta os Vercel Crons usados pela
-renovação automática).
+o deploy recomendado é no **Cloudflare Workers** via OpenNext (a Vercel Hobby
+proíbe uso comercial; o plano pago da Vercel fica como alternativa).
 
 ---
 
-## 1. Pré-requisitos
+## 1. Deploy no Cloudflare Workers (recomendado)
 
-- Projeto **Supabase** criado (Postgres + Auth + Storage).
-- Repositório no GitHub/GitLab conectado à **Vercel**.
-- As **migrations** aplicadas no banco de produção (`npm run db:migrate`).
+Já está tudo configurado no repo: `wrangler.jsonc` (config do worker),
+`open-next.config.ts` (adapter) e `worker.ts` (entrypoint que adiciona o
+cron de renovação). O bundle atual tem ~2,1 MiB gzip — cabe no plano Free
+(limite 3 MiB).
+
+### Passo a passo (primeira vez)
+
+1. **Login na Cloudflare** (abre o navegador):
+   ```bash
+   npx wrangler login
+   ```
+2. **Preencha os `vars` públicos** em `wrangler.jsonc`
+   (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `NEXT_PUBLIC_SITE_URL`) — são os mesmos do `.env.local`. A anon key é
+   pública por design; **segredo nenhum entra nesse arquivo**.
+3. **Cadastre os segredos** (ficam só na Cloudflare, fora do repo):
+   ```bash
+   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+   npx wrangler secret put CRON_SECRET
+   ```
+4. **Migrations e admin** no banco de produção (seções 4 e 5 abaixo).
+5. **Deploy:**
+   ```bash
+   npm run deploy:cf
+   ```
+   A URL sai no final (ex.: `https://corpo-e-saude.SEU-SUBDOMINIO.workers.dev`).
+6. **Ajuste pós-1º deploy:** atualize `NEXT_PUBLIC_SITE_URL` no
+   `wrangler.jsonc` com a URL real e rode `npm run deploy:cf` de novo.
+   No Supabase (Auth → URL Configuration), inclua essa URL em **Site URL** e
+   **Redirect URLs** (`https://.../auth/callback`) — senão reset de senha e
+   primeiro acesso quebram.
+
+Para testar localmente no runtime do Workers antes de publicar:
+`npm run preview:cf`.
+
+### Cron (renovação automática) no Cloudflare
+
+O `wrangler.jsonc` agenda `0 6 * * *` (≈ 03:00 em Mafra/SC). O Cron Trigger
+chama o handler `scheduled` do `worker.ts`, que bate na rota
+`/api/cron/renovar` com o `Bearer CRON_SECRET` — a mesma proteção de sempre.
+Esse toque diário no banco também **substitui o keep-alive** do Supabase Free
+(a GitHub Action `keep-alive.yml` só é necessária se o repo estiver no GitHub;
+sem remote, o cron do worker já cumpre o papel).
+
+> **Nota técnica:** o middleware do app usa o formato legado `middleware.ts`
+> (runtime Edge) de propósito — o `proxy.ts` do Next 16 roda sempre em
+> Node.js, que o OpenNext/Cloudflare não suporta. Não renomeie de volta.
 
 ---
 
 ## 2. Variáveis de ambiente (produção)
 
-Defina na Vercel (Project → Settings → Environment Variables) — veja
-`.env.local.example` para referência:
+No Cloudflare: `vars` públicos no `wrangler.jsonc` + segredos via
+`wrangler secret put` (passo a passo acima). Na Vercel: Project → Settings →
+Environment Variables. Veja `.env.local.example` para referência:
 
 | Variável | Onde | Observação |
 |---|---|---|
@@ -39,11 +84,10 @@ o reset de senha / primeiro acesso quebra.
 
 ## 3. Build
 
-A Vercel usa o `vercel.json` (já no repo):
-
-```json
-{ "buildCommand": "next build --webpack" }
-```
+- **Cloudflare:** `npm run deploy:cf` roda `opennextjs-cloudflare build`
+  (que executa o script `build` do package.json) e publica com o wrangler.
+- **Vercel (alternativa):** usa o `vercel.json` (já no repo):
+  `{ "buildCommand": "next build --webpack" }`.
 
 O `--webpack` é necessário: o PWA (Serwist) injeta a config webpack para gerar
 o `public/sw.js`. O service worker é registrado automaticamente em produção.
@@ -73,21 +117,17 @@ npm run criar-usuario -- admin dono@studio.com SenhaForte123 "Nome do Dono" prov
 
 ## 5. Renovação automática (cron)
 
-Já configurado no `vercel.json`:
+- **Cloudflare (recomendado):** já agendado no `wrangler.jsonc`
+  (`triggers.crons`) — ver seção 1.
+- **Vercel:** o `vercel.json` agenda o mesmo horário; a Vercel injeta o
+  `Bearer CRON_SECRET` automaticamente.
+- **Qualquer outro agendador** (cron-job.org, GitHub Actions): aponte para
+  `GET https://SEU-DOMINIO/api/cron/renovar` com o header
+  `Authorization: Bearer <CRON_SECRET>`.
 
-```json
-{ "crons": [{ "path": "/api/cron/renovar", "schedule": "0 6 * * *" }] }
-```
-
-- Roda diariamente ~06:00 UTC (~03:00 BRT).
-- A rota `/api/cron/renovar` exige `Authorization: Bearer <CRON_SECRET>` — a
-  Vercel injeta isso automaticamente quando `CRON_SECRET` está definido.
-- Gera os `pagamentos` pendentes (catch-up por período em atraso) e marca os
-  vencidos. A ação manual "Gerar cobranças" no painel continua disponível.
-
-**Sem Vercel?** Aponte qualquer agendador (cron-job.org, GitHub Actions) para
-um `GET https://SEU-DOMINIO/api/cron/renovar` com o header
-`Authorization: Bearer <CRON_SECRET>`.
+Em todos os casos: roda diariamente ~06:00 UTC (~03:00 BRT), gera os
+`pagamentos` pendentes (catch-up por período em atraso) e marca os vencidos.
+A ação manual "Gerar cobranças" no painel continua disponível.
 
 ---
 

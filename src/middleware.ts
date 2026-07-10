@@ -3,10 +3,12 @@ import { type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 /**
- * Proxy (antigo "middleware" — renomeado no Next 16). Roda no runtime
- * Node.js antes de cada rota e renova a sessão do Supabase.
+ * Middleware no formato legado do Next 16, em runtime EDGE de propósito:
+ * o novo `proxy.ts` roda sempre em Node.js, que o deploy no Cloudflare
+ * Workers (OpenNext) não suporta — lá o middleware precisa ser Edge.
+ * Só renova a sessão do Supabase a cada requisição (compatível com Edge).
  */
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   return updateSession(request);
 }
 

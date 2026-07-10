@@ -17,6 +17,11 @@ const eslintConfig = defineConfig([
     "public/swe-worker-*.js",
     // Service worker é transpilado pelo Serwist, não pelo lint do app.
     "src/app/sw.ts",
+    // Saída do OpenNext (deploy Cloudflare) e entrypoint do worker
+    // (importa um arquivo que só existe após o build).
+    ".open-next/**",
+    ".wrangler/**",
+    "worker.ts",
   ]),
 ]);
 

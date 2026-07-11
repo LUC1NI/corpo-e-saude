@@ -21,13 +21,19 @@ function Chip({ rotulo, valor }: { rotulo: string; valor: string | number }) {
 /**
  * Treino do aluno com seleção por divisão. Abre na divisão de HOJE (pela
  * agenda do professor) e permite alternar entre as divisões em abas.
+ *
+ * `permitirIniciar` liga o "modo treino" (player com timer e retorno ao
+ * professor) — usado pelo aluno ONLINE. O presencial treina no estúdio com
+ * o professor, então só consulta a prescrição (botão oculto).
  */
 export function TreinoDoAluno({
   treino,
   diaHoje,
+  permitirIniciar = true,
 }: {
   treino: TreinoComTudo;
   diaHoje: number;
+  permitirIniciar?: boolean;
 }) {
   const divisoes = treino.divisoes;
   const indiceHoje = divisoes.findIndex((d) => d.dias_semana.includes(diaHoje));
@@ -45,7 +51,7 @@ export function TreinoDoAluno({
   const ativa = divisoes[sel] ?? divisoes[0]!;
   const ehHoje = ativa.dias_semana.includes(diaHoje);
 
-  if (treinando) {
+  if (treinando && permitirIniciar) {
     return (
       <TreinoPlayer divisao={ativa} aoFechar={() => setTreinando(false)} />
     );
@@ -124,14 +130,16 @@ export function TreinoDoAluno({
           </p>
         ) : (
           <>
-            <button
-              type="button"
-              onClick={() => setTreinando(true)}
-              className="inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#0090D8] to-[#00A8E4] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,144,216,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(0,168,228,0.5)] active:translate-y-0"
-            >
-              <Play className="size-4.5 fill-current" />
-              Iniciar treino
-            </button>
+            {permitirIniciar ? (
+              <button
+                type="button"
+                onClick={() => setTreinando(true)}
+                className="inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#0090D8] to-[#00A8E4] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,144,216,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(0,168,228,0.5)] active:translate-y-0"
+              >
+                <Play className="size-4.5 fill-current" />
+                Iniciar treino
+              </button>
+            ) : null}
             <ul className="divide-y">
             {ativa.exercicios.map((ex) => (
               <li key={ex.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">

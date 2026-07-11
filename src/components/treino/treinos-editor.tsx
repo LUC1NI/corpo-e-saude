@@ -696,10 +696,13 @@ function FichaCard({
   alunoId,
   ficha,
   exercicios,
+  redirecionarAoExcluir,
 }: {
   alunoId: string | null;
   ficha: TreinoComTudo;
   exercicios: Exercicio[];
+  /** Rota para onde ir ao excluir (usado na página do próprio treino-modelo). */
+  redirecionarAoExcluir?: string;
 }) {
   return (
     <Card className="gap-4 p-5">
@@ -730,6 +733,7 @@ function FichaCard({
             titulo="Excluir ficha"
             descricao={`Excluir a ficha "${ficha.nome}" com todas as divisões e exercícios?`}
             sucessoMsg="Ficha excluída."
+            redirecionarPara={redirecionarAoExcluir}
           />
         </div>
       </div>
@@ -899,6 +903,7 @@ export function TreinosEditor({
   treinos,
   exercicios,
   modelos = [],
+  redirecionarAoExcluirTreino,
 }: {
   /** null = editando um treino-modelo (aba Treinos). */
   alunoId: string | null;
@@ -906,6 +911,11 @@ export function TreinosEditor({
   exercicios: Exercicio[];
   /** Treinos prontos para aplicar (usado apenas no modo aluno). */
   modelos?: TreinoComTudo[];
+  /**
+   * Na página de um treino-modelo, a ficha É o conteúdo da página; ao excluí-la
+   * é preciso voltar para a lista (senão dá refresh num recurso apagado → 404).
+   */
+  redirecionarAoExcluirTreino?: string;
 }) {
   const modoModelo = alunoId === null;
 
@@ -954,6 +964,7 @@ export function TreinosEditor({
               alunoId={alunoId}
               ficha={t}
               exercicios={exercicios}
+              redirecionarAoExcluir={redirecionarAoExcluirTreino}
             />
           ))}
         </div>

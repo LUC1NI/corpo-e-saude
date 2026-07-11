@@ -38,7 +38,12 @@ export default async function AdminModeloTreinoPage({
           </Link>
         }
       />
-      <TreinosEditor alunoId={null} treinos={[modelo]} exercicios={exercicios} />
+      <TreinosEditor
+        alunoId={null}
+        treinos={[modelo]}
+        exercicios={exercicios}
+        redirecionarAoExcluirTreino="/admin/treinos"
+      />
     </>
   );
 }

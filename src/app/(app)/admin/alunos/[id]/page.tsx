@@ -109,6 +109,7 @@ export default async function AlunoDetalhePage({
 
   if (!alunoData) notFound();
   const aluno = alunoData as Aluno;
+  const online = aluno.tipo === "online";
   const professores = (professoresData ?? []) as { id: string; nome: string }[];
   const planos = (planosData ?? []) as {
     id: string;
@@ -256,10 +257,13 @@ export default async function AlunoDetalhePage({
 
         <Card id="treino">
           <CardHeader>
-            <CardTitle>Ficha de treino</CardTitle>
+            <CardTitle>
+              {online ? "Ficha de treino" : "Ficha de treino (opcional)"}
+            </CardTitle>
             <CardDescription>
-              Aplique um treino pronto e ajuste, ou monte do zero: dias de
-              treino (A/B/C) e exercícios.
+              {online
+                ? "Aplique um treino pronto e ajuste, ou monte do zero: dias de treino (A/B/C) e exercícios. O aluno treina pelo app e envia o retorno."
+                : "Aluno presencial: o treino é conduzido na aula. Prescrever aqui é opcional — se preencher, o aluno vê a ficha no app para consultar; se deixar em branco, ele vê um aviso de que o treino é no estúdio."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -272,18 +276,21 @@ export default async function AlunoDetalhePage({
           </CardContent>
         </Card>
 
-        <Card id="execucoes">
-          <CardHeader>
-            <CardTitle>Treinos realizados</CardTitle>
-            <CardDescription>
-              Retorno do aluno pelo aplicativo: treinos concluídos, duração,
-              séries e observações.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ExecucoesLista execucoes={execucoes} />
-          </CardContent>
-        </Card>
+        {/* Retorno do modo treino (app): só o aluno online registra execuções. */}
+        {online ? (
+          <Card id="execucoes">
+            <CardHeader>
+              <CardTitle>Treinos realizados</CardTitle>
+              <CardDescription>
+                Retorno do aluno pelo aplicativo: treinos concluídos, duração,
+                séries e observações.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ExecucoesLista execucoes={execucoes} />
+            </CardContent>
+          </Card>
+        ) : null}
 
         <Card className="border-destructive/30">
           <CardHeader>

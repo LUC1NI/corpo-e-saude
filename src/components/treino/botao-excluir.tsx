@@ -29,12 +29,19 @@ export function BotaoExcluir({
   descricao,
   sucessoMsg = "Excluído.",
   rotulo = "Excluir",
+  redirecionarPara,
 }: {
   onConfirm: () => Promise<ResultadoAcao>;
   titulo: string;
   descricao: string;
   sucessoMsg?: string;
   rotulo?: string;
+  /**
+   * Se o item excluído for o próprio conteúdo da página (ex.: excluir um
+   * treino-modelo estando dentro dele), navega para esta rota em vez de dar
+   * refresh — que recarregaria um recurso já apagado e cairia num 404.
+   */
+  redirecionarPara?: string;
 }) {
   const router = useRouter();
   const [carregando, setCarregando] = useState(false);
@@ -43,12 +50,17 @@ export function BotaoExcluir({
   async function excluir() {
     setCarregando(true);
     const res = await onConfirm();
-    setCarregando(false);
     if (res.ok) {
       toast.success(sucessoMsg);
       setAberto(false);
+      if (redirecionarPara) {
+        router.push(redirecionarPara);
+      } else {
+        setCarregando(false);
+      }
       router.refresh();
     } else {
+      setCarregando(false);
       toast.error(res.erro);
     }
   }

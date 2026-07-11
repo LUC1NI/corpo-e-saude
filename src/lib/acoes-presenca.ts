@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { assertPapel } from "@/lib/auth";
+import { assertPapel, type Papel } from "@/lib/auth";
 import { falha, sucesso, type ResultadoAcao } from "@/lib/acoes";
 import { getProfessorAtual } from "@/lib/professor";
 import { horarioSchema, type HorarioInput } from "@/lib/schemas";
@@ -269,52 +269,85 @@ export async function excluirHorarioAdmin(id: string): Promise<ResultadoAcao> {
 
 // ---------------------------------------------------------------------------
 // Presença (marcação por dia / horário)
+//
+// Marcam presença: o professor (na própria carteira) e o admin. A presença
+// NÃO depende do horário da aula ter passado — o professor pode lançar à
+// noite, no dia seguinte etc. (marcação retroativa). Quando o admin marca,
+// o `professor_id` da presença é o professor daquela aula/aluno, informado
+// por quem chama.
 // ---------------------------------------------------------------------------
+
+/**
+ * Resolve o `professor_id` a gravar na presença conforme o papel:
+ *  - professor: sempre o próprio (ignora o argumento, não dá para marcar
+ *    presença na carteira de outro);
+ *  - admin: o `professorId` informado (o professor daquela aula).
+ * Retorna `null` quando algo impede (sem perfil / admin sem professor).
+ */
+async function resolverProfessorPresenca(
+  papel: Papel,
+  professorIdInformado: string | null,
+): Promise<string | null> {
+  if (papel === "professor") {
+    const professor = await getProfessorAtual();
+    return professor?.id ?? null;
+  }
+  return professorIdInformado ?? null;
+}
+
+const CAMINHOS_PRESENCA = [
+  "/professor/presenca",
+  "/professor/horarios",
+  "/admin/presenca",
+];
+function revalidarPresenca() {
+  for (const p of CAMINHOS_PRESENCA) revalidatePath(p);
+}
+
 export async function marcarPresenca(
   alunoId: string,
   data: string,
   hora: string | null,
+  professorId: string | null = null,
 ): Promise<ResultadoAcao> {
-  await assertPapel(["professor"]);
-  const professor = await getProfessorAtual();
-  if (!professor) return falha("Professor não encontrado.");
+  const usuario = await assertPapel(["professor", "admin"]);
+  const profId = await resolverProfessorPresenca(usuario.papel, professorId);
+  if (!profId) return falha("Professor não encontrado.");
 
   const supabase = await createClient();
   const { error } = await supabase.from("presencas").insert({
     aluno_id: alunoId,
-    professor_id: professor.id,
+    professor_id: profId,
     data,
     hora,
   });
   if (error) return falha("Não foi possível registrar a presença.");
 
-  revalidatePath("/professor/presenca");
-  revalidatePath("/professor/horarios");
+  revalidarPresenca();
   return sucesso();
 }
 
 export async function removerPresenca(id: string): Promise<ResultadoAcao> {
-  await assertPapel(["professor"]);
+  await assertPapel(["professor", "admin"]);
   const supabase = await createClient();
   const { error } = await supabase.from("presencas").delete().eq("id", id);
   if (error) return falha("Não foi possível remover a presença.");
 
-  revalidatePath("/professor/presenca");
-  revalidatePath("/professor/horarios");
+  revalidarPresenca();
   return sucesso();
 }
 
 /**
  * Corrige uma presença já registrada: muda a data e/ou o horário (null =
- * sem horário). O RLS garante que só o professor responsável edita, e o
- * índice único impede criar duplicata do mesmo aluno no mesmo dia/horário.
+ * sem horário). O RLS garante que só o professor responsável (ou o admin)
+ * edita, e o índice único impede duplicar o mesmo aluno no mesmo dia/horário.
  */
 export async function atualizarPresenca(
   id: string,
   data: string,
   hora: string | null,
 ): Promise<ResultadoAcao> {
-  await assertPapel(["professor"]);
+  await assertPapel(["professor", "admin"]);
   if (!data) return falha("Informe a data.");
 
   const supabase = await createClient();
@@ -329,23 +362,25 @@ export async function atualizarPresenca(
     return falha("Não foi possível atualizar a presença.");
   }
 
-  revalidatePath("/professor/presenca");
-  revalidatePath("/professor/horarios");
+  revalidarPresenca();
   return sucesso();
 }
 
 /**
  * Alterna a presença de um aluno em uma data (e opcionalmente um horário):
- * cria se não existir, remove se já existir. Base do roster diário.
+ * cria se não existir, remove se já existir. Base do roster diário. Funciona
+ * para qualquer data (inclusive retroativa). Admin informa o `professorId`
+ * da aula; professor usa a própria carteira.
  */
 export async function alternarPresenca(
   alunoId: string,
   data: string,
   hora: string | null,
+  professorId: string | null = null,
 ): Promise<ResultadoAcao<{ presente: boolean }>> {
-  await assertPapel(["professor"]);
-  const professor = await getProfessorAtual();
-  if (!professor) return falha("Professor não encontrado.");
+  const usuario = await assertPapel(["professor", "admin"]);
+  const profId = await resolverProfessorPresenca(usuario.papel, professorId);
+  if (!profId) return falha("Professor não encontrado.");
 
   const supabase = await createClient();
 
@@ -354,7 +389,7 @@ export async function alternarPresenca(
     .select("id")
     .eq("aluno_id", alunoId)
     .eq("data", data)
-    .eq("professor_id", professor.id);
+    .eq("professor_id", profId);
   consulta = hora ? consulta.eq("hora", hora) : consulta.is("hora", null);
 
   const { data: existente } = await consulta.maybeSingle();
@@ -365,19 +400,17 @@ export async function alternarPresenca(
       .delete()
       .eq("id", existente.id);
     if (error) return falha("Não foi possível atualizar a presença.");
-    revalidatePath("/professor/presenca");
-    revalidatePath("/professor/horarios");
+    revalidarPresenca();
     return sucesso({ presente: false });
   }
 
   const { error } = await supabase.from("presencas").insert({
     aluno_id: alunoId,
-    professor_id: professor.id,
+    professor_id: profId,
     data,
     hora,
   });
   if (error) return falha("Não foi possível registrar a presença.");
-  revalidatePath("/professor/presenca");
-  revalidatePath("/professor/horarios");
+  revalidarPresenca();
   return sucesso({ presente: true });
 }

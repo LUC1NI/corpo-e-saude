@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
-import { StatCard } from "@/components/ui-extra/stat-card";
+import { StatusPagamento } from "@/components/ui-extra/status-badge";
 import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { requireUsuario } from "@/lib/auth";
 import { formatBRL, formatData } from "@/lib/formato";
@@ -24,6 +24,7 @@ import {
   MensalidadesAbertas,
   type PagamentoAberto,
 } from "./mensalidades-abertas";
+import { LinhaDetalhe, StatCardDialog } from "./stat-card-dialog";
 
 interface RecebidoItem {
   id: string;
@@ -81,14 +82,16 @@ export default async function FinanceiroPage() {
       .limit(20),
     supabase
       .from("pagamentos")
-      .select("valor, status")
-      .eq("competencia", inicioMes),
+      .select("valor, status, vencimento, alunos(nome)")
+      .eq("competencia", inicioMes)
+      .order("vencimento"),
     // Dinheiro que ENTROU no mês (pela data do pagamento, não da competência).
     supabase
       .from("pagamentos")
-      .select("valor")
+      .select("valor, competencia, data_pagamento, forma_pagamento, alunos(nome)")
       .eq("status", "pago")
-      .gte("data_pagamento", inicioMes),
+      .gte("data_pagamento", inicioMes)
+      .order("data_pagamento", { ascending: false }),
     supabase
       .from("despesas")
       .select("id, descricao, valor, data, categorias(nome)")
@@ -99,21 +102,42 @@ export default async function FinanceiroPage() {
 
   const abertos = (abertosData ?? []) as unknown as PagamentoAberto[];
   const recebidos = (recebidosData ?? []) as unknown as RecebidoItem[];
-  const mes = (mesData ?? []) as { valor: number; status: TStatusPagamento }[];
+  const mes = (mesData ?? []) as unknown as {
+    valor: number;
+    status: TStatusPagamento;
+    vencimento: string;
+    alunos: { nome: string } | null;
+  }[];
+  const recebidoMesLista = (recebidoMesData ?? []) as unknown as {
+    valor: number;
+    competencia: string;
+    data_pagamento: string | null;
+    forma_pagamento: string | null;
+    alunos: { nome: string } | null;
+  }[];
   const despesas = (despesasData ?? []) as unknown as DespesaItem[];
   const categorias = (categoriasData ?? []) as { id: string; nome: string }[];
 
   const faturamentoMes = mes.reduce((s, p) => s + Number(p.valor), 0);
-  const recebidoMes = ((recebidoMesData ?? []) as { valor: number }[]).reduce(
-    (s, p) => s + Number(p.valor),
-    0,
-  );
+  const recebidoMes = recebidoMesLista.reduce((s, p) => s + Number(p.valor), 0);
   const totalAberto = abertos.reduce((s, p) => s + Number(p.valor), 0);
-  const inadimplentes = new Set(
-    abertos
-      .filter((p) => p.status === "vencido" || p.vencimento < hoje)
-      .map((p) => p.aluno_id),
-  ).size;
+
+  // Inadimplentes: alunos com pelo menos uma mensalidade vencida — com o total
+  // devido de cada um, para o detalhamento.
+  const vencidosPorAluno = new Map<string, { nome: string; valor: number }>();
+  for (const p of abertos) {
+    if (p.status !== "vencido" && p.vencimento >= hoje) continue;
+    const atual = vencidosPorAluno.get(p.aluno_id) ?? {
+      nome: p.alunos?.nome ?? "Aluno",
+      valor: 0,
+    };
+    atual.valor += Number(p.valor);
+    vencidosPorAluno.set(p.aluno_id, atual);
+  }
+  const listaInadimplentes = [...vencidosPorAluno.values()].sort(
+    (a, b) => b.valor - a.valor,
+  );
+  const inadimplentes = listaInadimplentes.length;
 
   return (
     <>
@@ -123,30 +147,109 @@ export default async function FinanceiroPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
+        <StatCardDialog
           titulo="Faturamento do mês"
           valor={formatBRL(faturamentoMes)}
           icone={TrendingUp}
           tomIcone="primary"
-        />
-        <StatCard
+          descricao={`Mensalidades com competência de ${rotuloCompetencia(inicioMes)} (pagas + em aberto).`}
+        >
+          {mes.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              Nenhuma mensalidade neste mês ainda.
+            </p>
+          ) : (
+            <ul className="divide-y rounded-lg border">
+              {mes.map((p, i) => (
+                <LinhaDetalhe
+                  key={i}
+                  titulo={p.alunos?.nome ?? "Aluno"}
+                  subtitulo={`Vence ${formatData(p.vencimento)}`}
+                  valor={formatBRL(p.valor)}
+                  badge={<StatusPagamento status={p.status} />}
+                />
+              ))}
+            </ul>
+          )}
+        </StatCardDialog>
+
+        <StatCardDialog
           titulo="Recebido no mês"
           valor={formatBRL(recebidoMes)}
           icone={CheckCircle2}
           tomIcone="sucesso"
-        />
-        <StatCard
+          descricao="Pagamentos confirmados neste mês (pela data em que entraram)."
+        >
+          {recebidoMesLista.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              Nenhum pagamento recebido neste mês ainda.
+            </p>
+          ) : (
+            <ul className="divide-y rounded-lg border">
+              {recebidoMesLista.map((p, i) => (
+                <LinhaDetalhe
+                  key={i}
+                  titulo={p.alunos?.nome ?? "Aluno"}
+                  subtitulo={`${rotuloCompetencia(p.competencia)}${
+                    p.data_pagamento ? ` · pago ${formatData(p.data_pagamento)}` : ""
+                  }${p.forma_pagamento ? ` · ${p.forma_pagamento}` : ""}`}
+                  valor={formatBRL(p.valor)}
+                />
+              ))}
+            </ul>
+          )}
+        </StatCardDialog>
+
+        <StatCardDialog
           titulo="Em aberto"
           valor={formatBRL(totalAberto)}
           icone={Wallet}
           tomIcone="alerta"
-        />
-        <StatCard
+          descricao="Mensalidades pendentes e vencidas de todos os alunos."
+        >
+          {abertos.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              Tudo em dia! Nenhuma mensalidade em aberto.
+            </p>
+          ) : (
+            <ul className="divide-y rounded-lg border">
+              {abertos.map((p) => (
+                <LinhaDetalhe
+                  key={p.id}
+                  titulo={p.alunos?.nome ?? "Aluno"}
+                  subtitulo={`${rotuloCompetencia(p.competencia)} · vence ${formatData(p.vencimento)}`}
+                  valor={formatBRL(p.valor)}
+                  badge={<StatusPagamento status={p.status} />}
+                />
+              ))}
+            </ul>
+          )}
+        </StatCardDialog>
+
+        <StatCardDialog
           titulo="Inadimplentes"
           valor={String(inadimplentes)}
           icone={AlertTriangle}
           tomIcone="perigo"
-        />
+          descricao="Alunos com pelo menos uma mensalidade vencida, e o total devido de cada um."
+        >
+          {listaInadimplentes.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              Nenhum aluno inadimplente. 🎉
+            </p>
+          ) : (
+            <ul className="divide-y rounded-lg border">
+              {listaInadimplentes.map((a, i) => (
+                <LinhaDetalhe
+                  key={i}
+                  titulo={a.nome}
+                  subtitulo="Total vencido"
+                  valor={formatBRL(a.valor)}
+                />
+              ))}
+            </ul>
+          )}
+        </StatCardDialog>
       </div>
 
       <MensalidadesAbertas abertos={abertos} hoje={hoje} />

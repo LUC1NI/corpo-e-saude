@@ -28,6 +28,11 @@ export function AvaliacoesSection({
   avaliacoes: AvaliacaoFisica[];
   somenteLeitura?: boolean;
 }) {
+  // Última altura conhecida (avaliacoes vem em ordem decrescente) para
+  // pré-preencher o formulário — a altura raramente muda e é o que faltava
+  // para o IMC calcular.
+  const alturaPadrao = avaliacoes.find((a) => a.altura != null)?.altura ?? null;
+
   // Gráfico em ordem cronológica (asc); tabela em ordem decrescente.
   const asc = [...avaliacoes].reverse();
   const pontos: PontoAvaliacao[] = asc.map((a) => ({
@@ -51,7 +56,7 @@ export function AvaliacoesSection({
       {!somenteLeitura ? (
         <div className="rounded-lg border p-4">
           <p className="mb-4 text-sm font-semibold">Nova avaliação</p>
-          <AvaliacaoForm alunoId={alunoId} />
+          <AvaliacaoForm alunoId={alunoId} alturaPadrao={alturaPadrao} />
         </div>
       ) : null}
 

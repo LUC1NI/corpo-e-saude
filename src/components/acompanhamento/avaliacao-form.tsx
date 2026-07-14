@@ -14,20 +14,55 @@ import { Textarea } from "@/components/ui/textarea";
 import { CampoForm } from "@/components/ui-extra/campo-form";
 import { criarAvaliacao } from "@/lib/acoes-acompanhamento";
 import { hojeISO } from "@/lib/financeiro";
-import { avaliacaoSchema, MEDIDAS_CAMPOS, type AvaliacaoInput } from "@/lib/schemas";
+import {
+  avaliacaoSchema,
+  MEDIDAS_CAMPOS,
+  normalizarAltura,
+  type AvaliacaoInput,
+} from "@/lib/schemas";
 
-export function AvaliacaoForm({ alunoId }: { alunoId: string }) {
+/** IMC ao vivo: peso / altura². Só calcula com os dois valores válidos. */
+function calcularIMC(peso?: string, altura?: string): number | null {
+  const p = Number(String(peso ?? "").replace(",", "."));
+  const a = normalizarAltura(altura) ?? 0;
+  if (!p || !a || p <= 0 || a <= 0) return null;
+  return Math.round((p / (a * a)) * 10) / 10;
+}
+
+/** Faixa do IMC (OMS) para dar um contexto rápido ao número. */
+function faixaIMC(imc: number): { rotulo: string; cor: string } {
+  if (imc < 18.5) return { rotulo: "Abaixo do peso", cor: "text-amber-600" };
+  if (imc < 25) return { rotulo: "Peso normal", cor: "text-emerald-600" };
+  if (imc < 30) return { rotulo: "Sobrepeso", cor: "text-amber-600" };
+  return { rotulo: "Obesidade", cor: "text-red-600" };
+}
+
+export function AvaliacaoForm({
+  alunoId,
+  alturaPadrao,
+}: {
+  alunoId: string;
+  /** Última altura conhecida do aluno — pré-preenche o campo (facilita o IMC). */
+  alturaPadrao?: number | null;
+}) {
   const router = useRouter();
   const [salvando, setSalvando] = useState(false);
 
-  const { register, handleSubmit, reset } = useForm<
+  const { register, handleSubmit, reset, watch } = useForm<
     z.input<typeof avaliacaoSchema>,
     unknown,
     AvaliacaoInput
   >({
     resolver: zodResolver(avaliacaoSchema),
-    defaultValues: { data: hojeISO() },
+    defaultValues: {
+      data: hojeISO(),
+      altura: alturaPadrao != null ? String(alturaPadrao) : undefined,
+    },
   });
+
+  const pesoAtual = watch("peso");
+  const alturaAtual = watch("altura");
+  const imc = calcularIMC(pesoAtual as string, alturaAtual as string);
 
   async function onSubmit(values: AvaliacaoInput) {
     setSalvando(true);
@@ -35,7 +70,10 @@ export function AvaliacaoForm({ alunoId }: { alunoId: string }) {
     setSalvando(false);
     if (res.ok) {
       toast.success("Avaliação registrada.");
-      reset({ data: hojeISO() });
+      reset({
+        data: hojeISO(),
+        altura: alturaAtual as string | undefined,
+      });
       router.refresh();
     } else {
       toast.error(res.erro);
@@ -51,7 +89,11 @@ export function AvaliacaoForm({ alunoId }: { alunoId: string }) {
         <CampoForm label="Peso (kg)" htmlFor="peso">
           <Input id="peso" type="number" step="0.1" {...register("peso")} />
         </CampoForm>
-        <CampoForm label="Altura (m)" htmlFor="altura">
+        <CampoForm
+          label="Altura"
+          htmlFor="altura"
+          dica="Ex.: 1,86 ou 186. Necessária para o IMC."
+        >
           <Input
             id="altura"
             type="number"
@@ -68,6 +110,24 @@ export function AvaliacaoForm({ alunoId }: { alunoId: string }) {
             {...register("percentual_gordura")}
           />
         </CampoForm>
+      </div>
+
+      {/* IMC calculado ao vivo — deixa claro que ele depende de peso + altura. */}
+      <div className="flex items-center gap-3 rounded-lg border bg-muted/40 px-4 py-3">
+        <span className="text-sm font-medium text-muted-foreground">IMC</span>
+        {imc != null ? (
+          <>
+            <span className="text-lg font-bold tabular-nums">{imc}</span>
+            <span className={`text-xs font-medium ${faixaIMC(imc).cor}`}>
+              {faixaIMC(imc).rotulo}
+            </span>
+          </>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            Preencha <strong>peso</strong> e <strong>altura</strong> para
+            calcular automaticamente.
+          </span>
+        )}
       </div>
 
       <div>

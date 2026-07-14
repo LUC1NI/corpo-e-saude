@@ -21,7 +21,9 @@ export function PageHeader({
           <p className="mt-1 text-sm text-muted-foreground">{subtitulo}</p>
         ) : null}
       </div>
-      {acoes ? <div className="flex items-center gap-2">{acoes}</div> : null}
+      {acoes ? (
+        <div className="flex items-center gap-2 max-sm:w-full">{acoes}</div>
+      ) : null}
     </div>
   );
 }

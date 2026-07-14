@@ -104,14 +104,37 @@ export type AnamneseInput = z.infer<typeof anamneseSchema>;
 // Avaliação física (histórico)
 // ---------------------------------------------------------------------------
 const numeroOpcional = z.preprocess(
-  (v) => (v === "" || v === null || v === undefined ? undefined : v),
+  (v) => {
+    if (v === "" || v === null || v === undefined) return undefined;
+    // Aceita vírgula como separador decimal (padrão brasileiro): "73,5" → 73.5.
+    if (typeof v === "string") return v.trim().replace(",", ".");
+    return v;
+  },
+  z.coerce.number().positive().optional(),
+);
+
+/**
+ * Normaliza a altura para METROS, tolerando o jeito que as pessoas digitam:
+ * - vírgula ou ponto ("1,86" e "1.86" → 1.86);
+ * - centímetros sem separador ("186" → 1.86).
+ * Regra: valores ≥ 3 são tratados como centímetros (ninguém tem 3 m).
+ */
+export function normalizarAltura(v: unknown): number | undefined {
+  if (v === "" || v === null || v === undefined) return undefined;
+  const n = Number(String(v).trim().replace(",", "."));
+  if (!Number.isFinite(n) || n <= 0) return undefined;
+  return n >= 3 ? n / 100 : n;
+}
+
+const alturaOpcional = z.preprocess(
+  normalizarAltura,
   z.coerce.number().positive().optional(),
 );
 
 export const avaliacaoSchema = z.object({
   data: z.string().min(1, "Informe a data."),
   peso: numeroOpcional, // kg
-  altura: numeroOpcional, // metros
+  altura: alturaOpcional, // metros (aceita vírgula e centímetros)
   percentual_gordura: numeroOpcional,
   observacoes: opcional(z.string()),
   // Medidas (cm) — viram um JSON em `medidas`.

@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { AcompanhamentoCards } from "@/components/acompanhamento/acompanhamento-cards";
+import { FrequenciaInline } from "@/components/ui-extra/frequencia";
+import { TreinoPresencial } from "@/components/treino/treino-presencial";
 import { TreinosEditor } from "@/components/treino/treinos-editor";
 import {
   Card,
@@ -12,6 +14,7 @@ import {
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { aguardandoPrimeiroAcesso } from "@/lib/acesso";
 import { requireUsuario } from "@/lib/auth";
+import { getFrequenciaDoAluno } from "@/lib/frequencia";
 import { createClient } from "@/lib/supabase/server";
 import { ExecucoesLista } from "@/components/treino/execucoes-lista";
 import {
@@ -42,6 +45,7 @@ export default async function ProfessorAlunoDetalhe({
     exercicios,
     modelos,
     execucoes,
+    frequencia,
   ] = await Promise.all([
     supabase.from("alunos").select("*").eq("id", id).maybeSingle(),
     supabase.from("anamneses").select("*").eq("aluno_id", id).maybeSingle(),
@@ -54,6 +58,7 @@ export default async function ProfessorAlunoDetalhe({
     getExerciciosBiblioteca(),
     getModelosTreino(),
     getExecucoesDoAluno(id),
+    getFrequenciaDoAluno(supabase, id),
   ]);
 
   if (!alunoData) notFound();
@@ -68,6 +73,7 @@ export default async function ProfessorAlunoDetalhe({
       <PageHeader
         titulo={aluno.nome}
         subtitulo="Acompanhamento do aluno: anamnese e avaliação física."
+        acoes={<FrequenciaInline pct={frequencia.freq.pct} />}
       />
 
       <div className="space-y-6">
@@ -118,22 +124,31 @@ export default async function ProfessorAlunoDetalhe({
 
         <Card id="treino">
           <CardHeader>
-            <CardTitle>
-              {online ? "Ficha de treino" : "Ficha de treino (opcional)"}
-            </CardTitle>
-            <CardDescription>
-              {online
-                ? "Aplique um treino pronto e ajuste, ou monte do zero: dias de treino (A/B/C) e exercícios. O aluno treina pelo app e envia o retorno."
-                : "Aluno presencial: o treino é conduzido na aula. Prescrever aqui é opcional — se preencher, o aluno vê a ficha no app para consultar; se deixar em branco, ele vê um aviso de que o treino é no estúdio."}
-            </CardDescription>
+            <CardTitle>{online ? "Ficha de treino" : "Treino"}</CardTitle>
+            {online ? (
+              <CardDescription>
+                Aplique um treino pronto e ajuste, ou monte do zero: dias de
+                treino (A/B/C) e exercícios. O aluno treina pelo app e envia o
+                retorno.
+              </CardDescription>
+            ) : null}
           </CardHeader>
           <CardContent>
-            <TreinosEditor
-              alunoId={aluno.id}
-              treinos={treinos}
-              exercicios={exercicios}
-              modelos={modelos}
-            />
+            {online ? (
+              <TreinosEditor
+                alunoId={aluno.id}
+                treinos={treinos}
+                exercicios={exercicios}
+                modelos={modelos}
+              />
+            ) : (
+              <TreinoPresencial
+                alunoId={aluno.id}
+                treinos={treinos}
+                exercicios={exercicios}
+                modelos={modelos}
+              />
+            )}
           </CardContent>
         </Card>
 

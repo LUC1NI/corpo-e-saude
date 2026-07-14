@@ -1,13 +1,17 @@
-import { CalendarCheck, Clock } from "lucide-react";
+import { CalendarCheck, Clock, TrendingUp } from "lucide-react";
+import Link from "@/components/ui-extra/link";
 
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardHeader, CardTitle } from "@/components/ui/card";
+import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
+import { FrequenciaBadge } from "@/components/ui-extra/frequencia";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
+import { PresencasAgrupadas } from "@/components/ui-extra/presencas-agrupadas";
 import { StatCard } from "@/components/ui-extra/stat-card";
-import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { requireUsuario } from "@/lib/auth";
 import { hojeISO } from "@/lib/financeiro";
 import { formatData } from "@/lib/formato";
+import { getFrequenciaAlunos } from "@/lib/frequencia";
 import { createClient } from "@/lib/supabase/server";
 import { DIAS_SEMANA, horaCurta } from "@/lib/tipos";
 
@@ -41,6 +45,7 @@ export default async function AdminPresencaPage({
     { data: horsDiaData },
     { data: vincData },
     { data: presDiaData },
+    { data: alunosAtivosData },
   ] = await Promise.all([
     supabase
       .from("presencas")
@@ -66,9 +71,25 @@ export default async function AdminPresencaPage({
       .from("presencas")
       .select("aluno_id, professor_id, hora")
       .eq("data", data),
+    supabase
+      .from("alunos")
+      .select("id, nome")
+      .eq("status", "ativo")
+      .order("nome"),
   ]);
 
   const recentes = (recentesData ?? []) as unknown as PresencaLinha[];
+
+  // Frequência (assiduidade) dos alunos ativos nas últimas 8 semanas.
+  const alunosAtivos = (alunosAtivosData ?? []) as { id: string; nome: string }[];
+  const freqMap = await getFrequenciaAlunos(
+    supabase,
+    alunosAtivos.map((a) => a.id),
+  );
+  const frequencias = alunosAtivos
+    .map((a) => ({ ...a, freq: freqMap.get(a.id) }))
+    .filter((a) => a.freq && a.freq.pct !== null)
+    .sort((a, b) => (a.freq!.pct ?? 0) - (b.freq!.pct ?? 0));
 
   // Aulas do dia selecionado (todos os professores).
   const horsDia = (horsDiaData ?? []) as unknown as {
@@ -195,9 +216,53 @@ export default async function AdminPresencaPage({
         )}
       </Card>
 
+      {frequencias.length > 0 ? (
+        <Card className="mb-6 overflow-hidden p-0">
+          <CardHeader className="p-5">
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="size-4 text-primary" />
+              Frequência dos alunos
+            </CardTitle>
+            <CardAction>
+              <span className="text-xs text-muted-foreground">
+                últimas 8 semanas
+              </span>
+            </CardAction>
+          </CardHeader>
+          <ul className="divide-y border-t">
+            {frequencias.map((a) => (
+              <li key={a.id}>
+                <Link
+                  href={`/admin/alunos/${a.id}`}
+                  className="flex items-center justify-between gap-3 px-5 py-2.5 transition-colors hover:bg-muted/50"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <AvatarIniciais nome={a.nome} tamanho="sm" />
+                    <span className="truncate text-sm font-medium">
+                      {a.nome}
+                    </span>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {a.freq!.presente}/{a.freq!.esperado}
+                    </span>
+                    <FrequenciaBadge pct={a.freq!.pct} />
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
       <Card className="overflow-hidden p-0">
         <CardHeader className="p-5">
           <CardTitle>Presenças recentes</CardTitle>
+          <CardAction>
+            <span className="text-xs text-muted-foreground">
+              agrupadas por dia · toque para abrir
+            </span>
+          </CardAction>
         </CardHeader>
         {recentes.length === 0 ? (
           <PageEmpty
@@ -206,26 +271,16 @@ export default async function AdminPresencaPage({
             descricao="As presenças marcadas pelos professores aparecem aqui."
           />
         ) : (
-          <div className="p-3 sm:p-0">
-            <TabelaResponsiva
-              dados={recentes}
-              getKey={(p) => p.id}
-              colunas={[
-                {
-                  cabecalho: "Aluno",
-                  principal: true,
-                  celula: (p) => p.alunos?.nome ?? "-",
-                },
-                {
-                  cabecalho: "Professor",
-                  celula: (p) => p.professores?.nome ?? "-",
-                },
-                { cabecalho: "Data", celula: (p) => formatData(p.data) },
-                {
-                  cabecalho: "Horário",
-                  celula: (p) => (p.hora ? horaCurta(p.hora) : "-"),
-                },
-              ]}
+          <div className="border-t">
+            <PresencasAgrupadas
+              itens={recentes}
+              hoje={hoje}
+              renderPrincipal={(p) => p.alunos?.nome ?? "-"}
+              renderSecundario={(p) =>
+                `${p.professores?.nome ?? "—"}${
+                  p.hora ? ` · ${horaCurta(p.hora)}` : ""
+                }`
+              }
             />
           </div>
         )}

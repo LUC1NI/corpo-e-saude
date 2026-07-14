@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { mensagemEmailEmUso } from "@/lib/acesso";
 import { assertPapel } from "@/lib/auth";
 import { falha, sucesso, type ResultadoAcao } from "@/lib/acoes";
 import { gerarSenhaProvisoria } from "@/lib/senha";
@@ -43,11 +44,10 @@ export async function criarProfessor(
     user_metadata: { senha_provisoria: true, nome },
   });
   if (errAuth || !criado.user) {
-    return falha(
-      errAuth?.message?.includes("already")
-        ? "Já existe um usuário com este e-mail."
-        : "Não foi possível criar o acesso.",
-    );
+    if (errAuth?.message?.includes("already")) {
+      return falha(await mensagemEmailEmUso(admin, email));
+    }
+    return falha("Não foi possível criar o acesso.");
   }
   const userId = criado.user.id;
 

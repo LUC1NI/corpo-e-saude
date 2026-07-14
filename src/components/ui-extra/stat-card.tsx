@@ -24,6 +24,8 @@ export interface StatCardProps {
   tomRodape?: "neutro" | "sucesso" | "perigo";
   /** Se informado, o cartão vira um link para a área de detalhe. */
   href?: string;
+  /** Classes extras no contêiner (ex.: col-span-2 em grades responsivas). */
+  className?: string;
 }
 
 export function StatCard({
@@ -34,15 +36,18 @@ export function StatCard({
   rodape,
   tomRodape = "neutro",
   href,
+  className,
 }: StatCardProps) {
   const conteudo = (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium text-muted-foreground">{titulo}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-medium text-muted-foreground sm:text-sm">
+          {titulo}
+        </p>
         {Icone ? (
           <span
             className={cn(
-              "inline-flex size-8 items-center justify-center rounded-lg",
+              "inline-flex size-7 shrink-0 items-center justify-center rounded-lg sm:size-8",
               TOM_ICONE[tomIcone],
             )}
           >
@@ -50,7 +55,7 @@ export function StatCard({
           </span>
         ) : null}
       </div>
-      <p className="mt-2 text-3xl font-bold tracking-tight text-foreground">
+      <p className="mt-1.5 text-xl font-bold tracking-tight text-foreground sm:mt-2 sm:text-3xl">
         {valor}
       </p>
       {rodape ? (
@@ -72,9 +77,12 @@ export function StatCard({
     return (
       <Link
         href={href}
-        className="group block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        className={cn(
+          "group block h-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+          className,
+        )}
       >
-        <Card className="relative gap-0 p-5 transition-all group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-md">
+        <Card className="relative h-full gap-0 p-4 transition-all group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-md sm:p-5">
           <ArrowUpRight className="absolute right-4 bottom-4 size-4 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100" />
           {conteudo}
         </Card>
@@ -82,5 +90,7 @@ export function StatCard({
     );
   }
 
-  return <Card className="gap-0 p-5">{conteudo}</Card>;
+  return (
+    <Card className={cn("h-full gap-0 p-4 sm:p-5", className)}>{conteudo}</Card>
+  );
 }

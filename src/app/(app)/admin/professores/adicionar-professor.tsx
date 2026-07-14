@@ -1,6 +1,7 @@
 "use client";
 
-import { Plus, UserPlus } from "lucide-react";
+import { Dumbbell, Mail, Phone, Plus, User, UserPlus } from "lucide-react";
+import type { ComponentProps, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -20,6 +21,24 @@ import { Input } from "@/components/ui/input";
 import { CampoForm } from "@/components/ui-extra/campo-form";
 
 import { criarProfessor } from "./actions";
+
+/** Input com ícone à esquerda — dá contraste e identifica o campo de relance. */
+function InputIcone({
+  icone,
+  ...props
+}: ComponentProps<typeof Input> & { icone: ReactNode }) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+        {icone}
+      </span>
+      <Input
+        {...props}
+        className="h-11 bg-background pl-9 shadow-sm ring-1 ring-border focus-visible:ring-2"
+      />
+    </div>
+  );
+}
 
 export function AdicionarProfessor() {
   const router = useRouter();
@@ -118,46 +137,63 @@ export function AdicionarProfessor() {
                 Cria o acesso do professor com senha provisória.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <CampoForm label="Nome completo" htmlFor="pnome" obrigatorio>
-                <Input
-                  id="pnome"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  placeholder="Nome do professor"
-                />
-              </CampoForm>
-              <CampoForm
-                label="E-mail"
-                htmlFor="pemail"
-                obrigatorio
-                dica="Será o login do professor."
-              >
-                <Input
-                  id="pemail"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="professor@exemplo.com"
-                />
-              </CampoForm>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <CampoForm label="Telefone" htmlFor="ptel">
-                  <Input
-                    id="ptel"
-                    value={telefone}
-                    onChange={(e) => setTelefone(e.target.value)}
-                    placeholder="(47) 99999-0000"
+            <div className="space-y-5">
+              {/* Bloco "Acesso": campos obrigatórios do login, destacados. */}
+              <div className="space-y-4 rounded-xl border bg-muted/40 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Acesso do professor
+                </p>
+                <CampoForm label="Nome completo" htmlFor="pnome" obrigatorio>
+                  <InputIcone
+                    id="pnome"
+                    icone={<User className="size-4" />}
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    placeholder="Nome do professor"
                   />
                 </CampoForm>
-                <CampoForm label="Especialidade" htmlFor="pesp">
-                  <Input
-                    id="pesp"
-                    value={especialidade}
-                    onChange={(e) => setEspecialidade(e.target.value)}
-                    placeholder="ex.: Musculação"
+                <CampoForm
+                  label="E-mail"
+                  htmlFor="pemail"
+                  obrigatorio
+                  dica="Será o login do professor."
+                >
+                  <InputIcone
+                    id="pemail"
+                    type="email"
+                    icone={<Mail className="size-4" />}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="professor@exemplo.com"
                   />
                 </CampoForm>
+              </div>
+
+              {/* Bloco "Detalhes": campos opcionais, visualmente separados. */}
+              <div className="space-y-4 rounded-xl border bg-muted/40 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Detalhes <span className="font-normal">(opcional)</span>
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <CampoForm label="Telefone" htmlFor="ptel">
+                    <InputIcone
+                      id="ptel"
+                      icone={<Phone className="size-4" />}
+                      value={telefone}
+                      onChange={(e) => setTelefone(e.target.value)}
+                      placeholder="(47) 99999-0000"
+                    />
+                  </CampoForm>
+                  <CampoForm label="Especialidade" htmlFor="pesp">
+                    <InputIcone
+                      id="pesp"
+                      icone={<Dumbbell className="size-4" />}
+                      value={especialidade}
+                      onChange={(e) => setEspecialidade(e.target.value)}
+                      placeholder="ex.: Musculação"
+                    />
+                  </CampoForm>
+                </div>
               </div>
             </div>
             <DialogFooter>

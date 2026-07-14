@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 /**
  * Mede a largura do container e a repassa em pixels para o gráfico.
@@ -21,13 +21,18 @@ export function ChartBox({
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
 
-  useEffect(() => {
+  // useLayoutEffect + medida imediata: o gráfico aparece já no primeiro
+  // paint, sem depender do primeiro tick do ResizeObserver (que em alguns
+  // ambientes demora ou não dispara na montagem).
+  useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
+    const medir = () => {
       const w = el.clientWidth;
       setWidth((prev) => (prev !== w ? w : prev));
-    });
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
     ro.observe(el);
     return () => ro.disconnect();
   }, []);

@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
+import { PresencasAgrupadas } from "@/components/ui-extra/presencas-agrupadas";
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
@@ -253,38 +253,25 @@ export default async function PresencaPage({
             descricao="As presenças marcadas aparecem aqui."
           />
         ) : (
-          <div className="p-3 sm:p-0">
-            <TabelaResponsiva
-              dados={historico}
-              getKey={(p) => p.id}
-              colunas={[
-                {
-                  cabecalho: "Aluno",
-                  principal: true,
-                  celula: (p) => p.alunos?.nome ?? "-",
-                },
-                { cabecalho: "Data", celula: (p) => formatData(p.data) },
-                {
-                  cabecalho: "Horário",
-                  celula: (p) => (p.hora ? horaCurta(p.hora) : "Sem horário"),
-                },
-                {
-                  cabecalho: "Ações",
-                  alinhar: "right",
-                  semRotuloMobile: true,
-                  celula: (p) => (
-                    <div className="flex items-center justify-end gap-1">
-                      <EditarPresencaButton
-                        id={p.id}
-                        nome={p.alunos?.nome ?? "aluno"}
-                        data={p.data}
-                        hora={p.hora}
-                      />
-                      <RemoverPresencaButton id={p.id} />
-                    </div>
-                  ),
-                },
-              ]}
+          <div className="border-t">
+            <PresencasAgrupadas
+              itens={historico}
+              hoje={hojeISO()}
+              renderPrincipal={(p) => p.alunos?.nome ?? "-"}
+              renderSecundario={(p) =>
+                p.hora ? horaCurta(p.hora) : "Sem horário"
+              }
+              renderAcoes={(p) => (
+                <>
+                  <EditarPresencaButton
+                    id={p.id}
+                    nome={p.alunos?.nome ?? "aluno"}
+                    data={p.data}
+                    hora={p.hora}
+                  />
+                  <RemoverPresencaButton id={p.id} />
+                </>
+              )}
             />
           </div>
         )}

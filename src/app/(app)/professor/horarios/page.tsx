@@ -54,7 +54,7 @@ export default async function HorariosPage() {
       .order("hora_inicio"),
     supabase
       .from("alunos")
-      .select("id, nome")
+      .select("id, nome, tipo")
       .eq("professor_id", professor.id)
       .eq("status", "ativo")
       .order("nome"),
@@ -67,7 +67,10 @@ export default async function HorariosPage() {
     hora_fim: string;
     capacidade: number | null;
   }[];
-  const alunos = (alunosData ?? []) as { id: string; nome: string }[];
+  // Só alunos presenciais entram em aulas do estúdio (online treina pelo app).
+  const alunos = (
+    (alunosData ?? []) as { id: string; nome: string; tipo: string }[]
+  ).filter((a) => a.tipo === "presencial");
 
   // Alunos atribuídos por horário.
   const horIds = horarios.map((h) => h.id);

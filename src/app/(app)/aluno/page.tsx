@@ -101,12 +101,15 @@ export default async function AlunoHome() {
         .select("id", { count: "exact", head: true })
         .eq("aluno_id", aluno.id)
         .gte("finalizado_em", `${hoje}T00:00:00`),
-      supabase
-        .from("aluno_horarios")
-        .select(
-          "horarios(dia_semana, hora_inicio, hora_fim, professores(nome))",
-        )
-        .eq("aluno_id", aluno.id),
+      // Aluno online não tem aula no estúdio — não busca (nem mostra) agenda.
+      online
+        ? Promise.resolve({ data: [] as unknown[] })
+        : supabase
+            .from("aluno_horarios")
+            .select(
+              "horarios(dia_semana, hora_inicio, hora_fim, professores(nome))",
+            )
+            .eq("aluno_id", aluno.id),
     ]);
     treinos = treinosData;
     pendencias = pend ?? 0;
@@ -397,7 +400,9 @@ export default async function AlunoHome() {
           <p className="text-xs text-muted-foreground">
             {presencasMes > 0
               ? "Continue nesse ritmo! 💪"
-              : "Conclua treinos no app ou marque presença no estúdio."}
+              : online
+                ? "Conclua treinos no app para contar aqui."
+                : "Sua presença é registrada pelo professor nas aulas."}
           </p>
         </div>
       </Card>

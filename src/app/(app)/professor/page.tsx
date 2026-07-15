@@ -94,7 +94,7 @@ export default async function ProfessorDashboard() {
       .eq("data", hoje),
     supabase
       .from("alunos")
-      .select("id, nome")
+      .select("id, nome, tipo")
       .eq("professor_id", professor.id)
       .eq("status", "ativo")
       .order("nome"),
@@ -105,7 +105,13 @@ export default async function ProfessorDashboard() {
       .order("hora_inicio"),
   ]);
 
-  const alunos = (alunosData ?? []) as { id: string; nome: string }[];
+  const todosAlunos = (alunosData ?? []) as {
+    id: string;
+    nome: string;
+    tipo: string;
+  }[];
+  // Aulas no estúdio são para alunos presenciais — online não entra na grade.
+  const alunos = todosAlunos.filter((a) => a.tipo === "presencial");
   const horarios = (horsData ?? []) as {
     id: string;
     dia_semana: number;
@@ -133,12 +139,16 @@ export default async function ProfessorDashboard() {
     atribuidosPorHorario.set(v.horario_id, lista);
   }
 
-  // Aulas de hoje (para a chamada em um clique) e alunos sem ficha ativa.
+  // Aulas de hoje (para a chamada em um clique) e alunos ONLINE sem ficha
+  // ativa. Só o online é cobrado: a ficha no app é a entrega do treino dele.
+  // O presencial é conduzido pelo professor na aula — ficha é opcional.
   const aulasHoje = horarios.filter((h) => h.dia_semana === diaHoje);
   const comFicha = new Set(
     ((fichasData ?? []) as { aluno_id: string }[]).map((f) => f.aluno_id),
   );
-  const alunosSemFicha = alunos.filter((a) => !comFicha.has(a.id));
+  const alunosSemFicha = todosAlunos.filter(
+    (a) => a.tipo === "online" && !comFicha.has(a.id),
+  );
 
   // Matriz da semana: linhas = faixas de horário, colunas = dias.
   const faixasMap = new Map<string, { inicio: string; fim: string }>();
@@ -236,18 +246,19 @@ export default async function ProfessorDashboard() {
         )}
       </section>
 
-      {/* Atenção: alunos da carteira ainda sem ficha de treino. Cada nome
-          leva direto à seção de treino do aluno — onde a ficha é montada. */}
+      {/* Atenção: alunos ONLINE ainda sem ficha de treino — para eles a ficha
+          no app É o treino. Cada nome leva à seção onde a ficha é montada. */}
       {alunosSemFicha.length > 0 ? (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
             <div className="min-w-0 text-sm">
               <p className="font-medium text-amber-900">
-                {alunosSemFicha.length} aluno(s) sem ficha de treino
+                {alunosSemFicha.length} aluno(s) online sem ficha de treino
               </p>
               <p className="text-amber-800/80">
-                Toque no aluno para montar o treino dele.
+                O aluno online treina pela ficha do app. Toque no aluno para
+                montar o treino dele.
               </p>
               <div className="mt-2.5 flex flex-wrap gap-1.5">
                 {alunosSemFicha.slice(0, 6).map((a) => (

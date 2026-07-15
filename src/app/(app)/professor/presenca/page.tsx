@@ -99,7 +99,7 @@ export default async function PresencaPage({
         .eq("horario_id", slotSelecionado.id)
     : supabase
         .from("alunos")
-        .select("id, nome, status")
+        .select("id, nome, status, tipo")
         .eq("professor_id", professor.id)
         .eq("status", "ativo")
         .order("nome");
@@ -140,7 +140,7 @@ export default async function PresencaPage({
         )
         .map((a) => ({ id: a.id, nome: a.nome }))
         .sort((x, y) => x.nome.localeCompare(y.nome))
-    : ((alunosData ?? []) as { id: string; nome: string }[]);
+    : ((alunosData ?? []) as { id: string; nome: string; tipo?: string }[]);
   const presentes = new Set(
     ((presencasData ?? []) as { aluno_id: string }[]).map((p) => p.aluno_id),
   );
@@ -222,6 +222,11 @@ export default async function PresencaPage({
                   <div className="flex items-center gap-3">
                     <AvatarIniciais nome={aluno.nome} tamanho="sm" />
                     <span className="text-sm font-medium">{aluno.nome}</span>
+                    {"tipo" in aluno && aluno.tipo === "online" ? (
+                      <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground uppercase">
+                        online
+                      </span>
+                    ) : null}
                   </div>
                   <PresencaToggle
                     alunoId={aluno.id}

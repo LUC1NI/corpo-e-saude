@@ -1,0 +1,96 @@
+name: Backup diário do banco
+
+# Backup lógico diário do Postgres (Supabase), CRIPTOGRAFADO e guardado como
+# artifact do GitHub Actions. Custo: R$0 (Actions grátis no repo privado; o
+# dump de um estúdio pequeno tem poucos MB).
+#
+# Por que criptografar: o dump carrega dados financeiros e de SAÚDE (anamnese) —
+# sensíveis pela LGPD. Guardamos sempre cifrado (AES256); só quem tem a senha lê.
+#
+# ---------------------------------------------------------------------------
+# PRÉ-REQUISITOS — configurar em GitHub → Settings → Secrets and variables →
+# Actions → New repository secret:
+#
+#   SUPABASE_DB_URL     = a connection string do "Session pooler"
+#                         (Supabase → Project Settings → Database → Connection
+#                          string → "Session pooler", que casa com o pg_dump).
+#                         Formato: postgresql://postgres.<ref>:<senha>@aws-...
+#                                  .pooler.supabase.com:5432/postgres
+#
+#   BACKUP_PASSPHRASE   = uma senha FORTE só pra cifrar o backup. GUARDE-A em
+#                         lugar seguro (gerenciador de senhas). Sem ela NÃO é
+#                         possível restaurar. Não reaproveite senha de banco.
+#
+# Rode uma vez em "Actions → Backup diário do banco → Run workflow" pra testar.
+# Depois é só deixar o cron trabalhar.
+#
+# Como restaurar: veja supabase/BACKUP.md
+# ---------------------------------------------------------------------------
+
+on:
+  schedule:
+    # Todo dia às 06:40 UTC (~03:40 em Mafra/SC — estúdio fechado, banco ocioso).
+    - cron: "40 6 * * *"
+  workflow_dispatch: {}
+
+# Evita dois backups rodando ao mesmo tempo (ex.: cron + disparo manual).
+concurrency:
+  group: backup-db
+  cancel-in-progress: false
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Instala o pg_dump 17 (casa com o Postgres do Supabase)
+        run: |
+          set -euo pipefail
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+            https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client-17
+          pg_dump --version
+
+      - name: Gera, comprime e criptografa o dump
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::Falta o secret SUPABASE_DB_URL. Veja o cabeçalho deste workflow."
+            exit 1
+          fi
+          if [ -z "${BACKUP_PASSPHRASE:-}" ]; then
+            echo "::error::Falta o secret BACKUP_PASSPHRASE. Veja o cabeçalho deste workflow."
+            exit 1
+          fi
+          STAMP="$(date -u +%Y-%m-%d)"
+          FILE="backup-corpo-e-saude-${STAMP}.sql.gz.gpg"
+
+          # Dump lógico completo. --no-owner/--no-privileges deixam a restauração
+          # portátil (não amarra a roles específicos do projeto de origem).
+          pg_dump "$SUPABASE_DB_URL" \
+            --no-owner --no-privileges \
+            | gzip -9 \
+            | gpg --batch --yes --symmetric --cipher-algo AES256 \
+                  --passphrase "$BACKUP_PASSPHRASE" \
+                  -o "$FILE"
+
+          ls -lh "$FILE"
+          # Sanidade: o arquivo cifrado não pode estar vazio.
+          test -s "$FILE"
+          echo "ARQUIVO=$FILE" >> "$GITHUB_ENV"
+
+      - name: Sobe o backup como artifact (retenção 90 dias)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARQUIVO }}
+          path: ${{ env.ARQUIVO }}
+          retention-days: 90
+          if-no-files-found: error

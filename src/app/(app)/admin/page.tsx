@@ -47,7 +47,7 @@ interface VencendoItem {
 }
 
 export default async function AdminDashboard() {
-  await requireUsuario(["admin"]);
+  const usuario = await requireUsuario(["admin"]);
   const supabase = await createClient();
   const hoje = hojeISO();
   const agora = new Date();
@@ -145,10 +145,98 @@ export default async function AdminDashboard() {
 
   return (
     <>
-      <PageHeader
-        titulo="Visão Geral"
-        subtitulo={hojeExtenso[0]!.toUpperCase() + hojeExtenso.slice(1)}
-      />
+      {/* Mobile: hero navy com o número do dia (recebido × previsto). No
+          desktop o cabeçalho segue o mockup aprovado. */}
+      <section className="mb-5 rounded-2xl bg-gradient-to-br from-[#033373] to-[#0a4d8f] p-5 text-white shadow-sm lg:hidden">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm text-white/70">Olá,</p>
+            <p className="text-xl font-bold">
+              {usuario.nome.split(" ")[0]} 👋
+            </p>
+          </div>
+          <p className="mt-1 text-xs text-white/60">
+            {hojeExtenso[0]!.toUpperCase() + hojeExtenso.slice(1)}
+          </p>
+        </div>
+
+        <div className="mt-4">
+          <p className="text-xs font-semibold tracking-wide text-white/60 uppercase">
+            Recebido no mês
+          </p>
+          <p className="text-3xl font-extrabold tabular-nums">
+            {formatBRL(recebidoMes)}
+          </p>
+          {pctRecebido !== null ? (
+            <>
+              <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#0090D8] to-[#00A8E4]"
+                  style={{ width: `${Math.min(100, pctRecebido)}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-white/70">
+                {pctRecebido}% do previsto ({formatBRL(faturamentoMes)})
+              </p>
+            </>
+          ) : (
+            <p className="mt-1.5 text-xs text-white/70">
+              Sem cobranças na competência.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-2.5">
+          <Link
+            href="/admin/alunos"
+            className="flex items-center gap-2.5 rounded-xl bg-white/10 p-3 transition-colors hover:bg-white/15"
+          >
+            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#0090D8]/90">
+              <Users className="size-4" />
+            </span>
+            <span className="min-w-0 leading-tight">
+              <span className="block text-lg font-bold tabular-nums">
+                {alunosAtivos ?? 0}
+              </span>
+              <span className="block truncate text-[11px] text-white/60">
+                alunos ativos
+              </span>
+            </span>
+          </Link>
+          <Link
+            href="/admin/financeiro/inadimplentes"
+            className="flex items-center gap-2.5 rounded-xl bg-white/10 p-3 transition-colors hover:bg-white/15"
+          >
+            <span
+              className={cn(
+                "inline-flex size-8 shrink-0 items-center justify-center rounded-lg",
+                inadimplentes > 0 ? "bg-amber-500" : "bg-emerald-500/90",
+              )}
+            >
+              {inadimplentes > 0 ? (
+                <AlertTriangle className="size-4" />
+              ) : (
+                <CheckCircle2 className="size-4" />
+              )}
+            </span>
+            <span className="min-w-0 leading-tight">
+              <span className="block text-lg font-bold tabular-nums">
+                {inadimplentes}
+              </span>
+              <span className="block truncate text-[11px] text-white/60">
+                inadimplente(s)
+              </span>
+            </span>
+          </Link>
+        </div>
+      </section>
+
+      <div className="hidden lg:block">
+        <PageHeader
+          titulo="Visão Geral"
+          subtitulo={hojeExtenso[0]!.toUpperCase() + hojeExtenso.slice(1)}
+        />
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -172,32 +260,37 @@ export default async function AdminDashboard() {
           rodape={`${mes.length} cobrança(s) na competência`}
           href="/admin/financeiro"
         />
-        <StatCard
-          titulo="Recebido no mês"
-          valor={formatBRL(recebidoMes)}
-          icone={CheckCircle2}
-          tomIcone="sucesso"
-          rodape={
-            pctRecebido === null
-              ? "Sem cobranças no mês"
-              : `${pctRecebido}% do previsto`
-          }
-          tomRodape={pctRecebido !== null && pctRecebido >= 100 ? "sucesso" : "neutro"}
-          href="/admin/financeiro"
-        />
-        <StatCard
-          titulo="Inadimplentes"
-          valor={String(inadimplentes)}
-          icone={AlertTriangle}
-          tomIcone="perigo"
-          rodape={
-            inadimplentes > 0
-              ? `${formatBRL(valorAtraso)} em atraso`
-              : "Ninguém em atraso"
-          }
-          tomRodape={inadimplentes > 0 ? "perigo" : "sucesso"}
-          href="/admin/financeiro"
-        />
+        {/* No mobile o hero já mostra recebido e inadimplência — sem repetir. */}
+        <div className="hidden lg:block">
+          <StatCard
+            titulo="Recebido no mês"
+            valor={formatBRL(recebidoMes)}
+            icone={CheckCircle2}
+            tomIcone="sucesso"
+            rodape={
+              pctRecebido === null
+                ? "Sem cobranças no mês"
+                : `${pctRecebido}% do previsto`
+            }
+            tomRodape={pctRecebido !== null && pctRecebido >= 100 ? "sucesso" : "neutro"}
+            href="/admin/financeiro"
+          />
+        </div>
+        <div className="hidden lg:block">
+          <StatCard
+            titulo="Inadimplentes"
+            valor={String(inadimplentes)}
+            icone={AlertTriangle}
+            tomIcone="perigo"
+            rodape={
+              inadimplentes > 0
+                ? `${formatBRL(valorAtraso)} em atraso`
+                : "Ninguém em atraso"
+            }
+            tomRodape={inadimplentes > 0 ? "perigo" : "sucesso"}
+            href="/admin/financeiro"
+          />
+        </div>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">

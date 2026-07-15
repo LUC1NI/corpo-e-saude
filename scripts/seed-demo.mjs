@@ -147,17 +147,44 @@ async function main() {
   for (const dia of [2, 4]) { // ter, qui
     horariosDef.push({ professor_id: prof.id, dia_semana: dia, hora_inicio: "07:00", hora_fim: "08:00", capacidade: 5 });
   }
-  await db.from("horarios").insert(horariosDef);
+  const { data: horariosCriados } = await db
+    .from("horarios")
+    .insert(horariosDef)
+    .select("id, dia_semana, hora_inicio");
   console.log(`✓ Horários: ${horariosDef.length}`);
 
-  // ---------------- PRESENÇAS (últimos dias) ----------------
-  const presencaAlunos = ["João Pereira", "Ana Souza", "Diego Rocha"];
+  // ---------------- AGENDA (aluno × horário) ----------------
+  // Só alunos PRESENCIAIS entram na grade do estúdio (online treina pelo app).
+  // João de manhã (a anamnese dele diz "Seg/Qua/Sex de manhã"); Ana e Carla à
+  // noite. É essa agenda que faz a presença e a frequência fazerem sentido.
+  const agendaDef = [
+    { nome: "João Pereira", hora: "06:00" },
+    { nome: "Ana Souza", hora: "18:00" },
+    { nome: "Carla Mendes", hora: "18:00" },
+  ];
+  let nVinc = 0;
+  for (const ag of agendaDef) {
+    for (const h of horariosCriados.filter((x) => x.hora_inicio.startsWith(ag.hora))) {
+      await db.from("aluno_horarios").insert({ aluno_id: alunos[ag.nome], horario_id: h.id });
+      nVinc++;
+    }
+  }
+  console.log(`✓ Agenda (aluno × horário): ${nVinc}`);
+
+  // ---------------- PRESENÇAS (últimos 14 dias, SÓ em dia de aula) ----------------
+  // Presença coerente com a agenda: apenas alunos presenciais, apenas nos dias
+  // de aula deles (seg/qua/sex) e no horário da aula. Faltas ocasionais para a
+  // frequência variar. Nada de presença para aluno online.
   let nPres = 0;
-  for (let d = 1; d <= 6; d++) {
-    const dia = ISO(new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - d));
-    for (const nome of presencaAlunos) {
-      if ((d + nome.length) % 2 === 0) continue; // varia um pouco
-      await db.from("presencas").insert({ aluno_id: alunos[nome], professor_id: prof.id, data: dia, hora: "18:00" });
+  for (let d = 1; d <= 14; d++) {
+    const dt = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - d);
+    if (![1, 3, 5].includes(dt.getDay())) continue; // aulas só seg/qua/sex
+    const dia = ISO(dt);
+    for (const ag of agendaDef) {
+      if ((d + ag.nome.length) % 3 === 0) continue; // falta ocasional
+      await db.from("presencas").insert({
+        aluno_id: alunos[ag.nome], professor_id: prof.id, data: dia, hora: ag.hora,
+      });
       nPres++;
     }
   }

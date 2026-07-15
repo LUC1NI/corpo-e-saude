@@ -1,4 +1,5 @@
-import { Mail, Phone, UserCog } from "lucide-react";
+import { ChevronRight, Mail, Phone, UserCog } from "lucide-react";
+import Link from "@/components/ui-extra/link";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
@@ -61,31 +62,42 @@ export default async function ProfessoresPage() {
           {professores.map((p) => (
             <Card key={p.id} className="p-0">
               <CardContent className="space-y-3 p-5">
-                <div className="flex items-start gap-3">
-                  <AvatarIniciais nome={p.nome} tamanho="md" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{p.nome}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {p.especialidade || "Professor"}
-                    </p>
+                {/* Área clicável: abre o detalhe (cadastro, carteira, grade). */}
+                <Link
+                  href={`/admin/professores/${p.id}`}
+                  className="group -m-2 block space-y-3 rounded-xl p-2 transition-colors hover:bg-muted/50"
+                >
+                  <div className="flex items-start gap-3">
+                    <AvatarIniciais nome={p.nome} tamanho="md" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold group-hover:text-primary">
+                        {p.nome}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {p.especialidade || "Professor"}
+                      </p>
+                    </div>
+                    <StatusBadge tom="info">
+                      {contagem.get(p.id) ?? 0} aluno(s)
+                    </StatusBadge>
+                    <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground/40" />
                   </div>
-                  <StatusBadge tom="info">
-                    {contagem.get(p.id) ?? 0} aluno(s)
-                  </StatusBadge>
-                </div>
 
-                <div className="space-y-1 text-sm">
-                  <p className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="size-3.5 shrink-0" />
-                    <span className="truncate">{p.usuarios?.email ?? "-"}</span>
-                  </p>
-                  {p.telefone ? (
+                  <div className="space-y-1 text-sm">
                     <p className="flex items-center gap-2 text-muted-foreground">
-                      <Phone className="size-3.5 shrink-0" />
-                      {p.telefone}
+                      <Mail className="size-3.5 shrink-0" />
+                      <span className="truncate">
+                        {p.usuarios?.email ?? "-"}
+                      </span>
                     </p>
-                  ) : null}
-                </div>
+                    {p.telefone ? (
+                      <p className="flex items-center gap-2 text-muted-foreground">
+                        <Phone className="size-3.5 shrink-0" />
+                        {p.telefone}
+                      </p>
+                    ) : null}
+                  </div>
+                </Link>
 
                 <div className="border-t pt-3">
                   <ToggleAtivoProfessor id={p.id} ativo={p.ativo} />

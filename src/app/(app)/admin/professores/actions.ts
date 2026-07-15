@@ -76,6 +76,36 @@ export async function criarProfessor(
   return sucesso({ senha, email });
 }
 
+/**
+ * Atualiza o cadastro do professor (nome, telefone, especialidade). O e-mail
+ * é o login (Auth) e não muda por aqui. Admin apenas.
+ */
+export async function atualizarProfessor(
+  id: string,
+  input: Omit<ProfessorInput, "email">,
+): Promise<ResultadoAcao> {
+  await assertPapel(["admin"]);
+  const parsed = professorSchema.omit({ email: true }).safeParse(input);
+  if (!parsed.success) {
+    return falha(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("professores")
+    .update({
+      nome: parsed.data.nome,
+      telefone: parsed.data.telefone || null,
+      especialidade: parsed.data.especialidade || null,
+    })
+    .eq("id", id);
+  if (error) return falha("Não foi possível atualizar o professor.");
+
+  revalidatePath("/admin/professores");
+  revalidatePath(`/admin/professores/${id}`);
+  return sucesso();
+}
+
 export async function alternarAtivoProfessor(
   id: string,
   ativo: boolean,

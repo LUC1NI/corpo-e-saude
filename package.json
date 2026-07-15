@@ -13,6 +13,7 @@
     "seed:treinos": "node scripts/seed-treinos.mjs",
     "seed:biblioteca": "node scripts/seed-biblioteca.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
+    "seed:mariana": "node scripts/seed-mariana.mjs",
     "seed:aulas-hoje": "node scripts/seed-aulas-hoje.mjs",
     "seed:professores": "node scripts/seed-professores-demo.mjs",
     "preview:cf": "opennextjs-cloudflare build && opennextjs-cloudflare preview",

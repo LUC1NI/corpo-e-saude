@@ -12,7 +12,8 @@ import { createClient } from "@supabase/supabase-js";
  *
  * O que cria (idempotente, limpa e recria os dados DELA):
  *  - cadastro completo (telefone, e-mail, nascimento) + anamnese
- *  - matrícula ativa no Mensal Presencial com 5 mensalidades pagas (em dia)
+ *  - matrícula ativa: 4 mensalidades pagas + mês atual EM ABERTO (demonstra
+ *    o alerta na área da aluna e a baixa do pagamento na área do dono)
  *  - agenda seg/qua/sex 18h com o professor dela
  *  - ficha ativa A/B/C casada com a agenda, com cargas e mídia da biblioteca
  *  - avaliações mensais (peso/%gordura/medidas) para o gráfico de evolução
@@ -115,23 +116,27 @@ async function main() {
     renovacao_automatica: true,
     status: "ativa",
   }).select("id").single();
-  const formas = ["PIX", "PIX", "Cartão", "PIX", "PIX"];
+  // Meses anteriores pagos; o mês ATUAL fica EM ABERTO (pendente, vencendo em
+  // alguns dias) para demonstrar o fluxo: alerta na área da aluna e baixa do
+  // pagamento na área do dono.
+  const formas = ["PIX", "PIX", "Cartão", "PIX"];
   for (let m = 4; m >= 0; m--) {
     const comp = primeiroDoMes(-m);
+    const atual = m === 0;
     const pag = new Date(`${comp}T00:00:00`);
-    pag.setDate(3); // paga sempre no dia 3
+    pag.setDate(3); // pagava sempre no dia 3
     await db.from("pagamentos").insert({
       matricula_id: mat.id,
       aluno_id: aluna.id,
       competencia: comp,
       valor: plano.valor,
-      vencimento: comp,
-      data_pagamento: ISO(pag),
-      status: "pago",
-      forma_pagamento: formas[m],
+      vencimento: atual ? ISO(diasAtras(-5)) : comp, // atual vence daqui a 5 dias
+      data_pagamento: atual ? null : ISO(pag),
+      status: atual ? "pendente" : "pago",
+      forma_pagamento: atual ? null : formas[m - 1],
     });
   }
-  console.log("✓ Matrícula ativa + 5 mensalidades pagas");
+  console.log("✓ Matrícula ativa + 4 pagas + mês atual EM ABERTO (vence em 5 dias)");
 
   // ---------------- AGENDA (aulas 18h de seg/qua/sex do professor dela) ----------------
   const { data: horsData } = await db

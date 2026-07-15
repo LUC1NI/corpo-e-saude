@@ -150,6 +150,13 @@ export function TreinoPlayer({
   const completos = exercicios.filter(
     (ex) => (feitas[ex.id] ?? 0) >= Math.max(ex.series ?? 1, 1),
   ).length;
+  const seriesFeitasTotal = Object.values(feitas).reduce((s, n) => s + n, 0);
+  // Exercício "da vez": o primeiro ainda incompleto (guia o olho na lista e
+  // aparece como "a seguir" no card de descanso).
+  const proximo =
+    exercicios.find(
+      (ex) => (feitas[ex.id] ?? 0) < Math.max(ex.series ?? 1, 1),
+    ) ?? null;
   const duracaoSeg = Math.floor((agora - iniciadoEm) / 1000);
 
   const marcarSerie = useCallback(
@@ -234,11 +241,33 @@ export function TreinoPlayer({
                 Bom treino!
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {divisao.nome}
-                {divisao.foco ? ` · ${divisao.foco}` : ""} —{" "}
-                {fmtTempo(duracaoFinal)} de treino, {completos} de{" "}
-                {totalExercicios} exercício(s) completos.
+                Treino {divisao.nome}
+                {divisao.foco ? ` · ${divisao.foco}` : ""}
               </p>
+            </div>
+
+            {/* Números da sessão */}
+            <div className="mt-6 grid grid-cols-3 gap-2">
+              {[
+                { valor: fmtTempo(duracaoFinal), rotulo: "de treino" },
+                {
+                  valor: `${completos}/${totalExercicios}`,
+                  rotulo: "exercícios",
+                },
+                { valor: String(seriesFeitasTotal), rotulo: "séries feitas" },
+              ].map((s) => (
+                <div
+                  key={s.rotulo}
+                  className="rounded-xl border bg-secondary/40 px-2 py-3 text-center"
+                >
+                  <p className="text-lg font-extrabold tabular-nums">
+                    {s.valor}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {s.rotulo}
+                  </p>
+                </div>
+              ))}
             </div>
 
             <div className="mt-8">
@@ -362,14 +391,17 @@ export function TreinoPlayer({
             const previstas = Math.max(ex.series ?? 1, 1);
             const feitasEx = feitas[ex.id] ?? 0;
             const completo = feitasEx >= previstas;
+            const ehDaVez = !completo && ex.id === proximo?.id;
             return (
               <li
                 key={ex.id}
                 className={cn(
-                  "rounded-2xl border p-4 transition-colors",
+                  "rounded-2xl border p-4 transition-all",
                   completo
                     ? "border-emerald-200 bg-emerald-50/60"
-                    : "bg-card",
+                    : ehDaVez
+                      ? "border-[#0090D8]/50 bg-card shadow-[0_4px_16px_rgba(0,144,216,0.14)]"
+                      : "bg-card",
                 )}
               >
                 <div className="flex items-start gap-3">
@@ -385,6 +417,11 @@ export function TreinoPlayer({
                       )}
                     >
                       {ex.exercicio?.nome ?? "Exercício"}
+                      {ehDaVez ? (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-2 py-0.5 align-middle text-[10px] font-bold text-white uppercase">
+                          agora
+                        </span>
+                      ) : null}
                     </p>
                     <p className="mt-0.5 text-sm text-muted-foreground">
                       {previstas}x{ex.repeticoes ?? "-"}
@@ -488,6 +525,16 @@ export function TreinoPlayer({
                   }}
                 />
               </div>
+              {proximo ? (
+                <p className="mt-2.5 truncate text-xs text-white/70">
+                  A seguir:{" "}
+                  <span className="font-semibold text-white">
+                    {proximo.exercicio?.nome ?? "Exercício"}
+                  </span>{" "}
+                  · série {(feitas[proximo.id] ?? 0) + 1}/
+                  {Math.max(proximo.series ?? 1, 1)}
+                </p>
+              ) : null}
             </div>
           ) : (
             <Button

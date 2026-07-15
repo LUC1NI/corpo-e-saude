@@ -23,8 +23,9 @@ function Chip({ rotulo, valor }: { rotulo: string; valor: string | number }) {
  * agenda do professor) e permite alternar entre as divisões em abas.
  *
  * `permitirIniciar` liga o "modo treino" (player com timer e retorno ao
- * professor) — usado pelo aluno ONLINE. O presencial treina no estúdio com
- * o professor, então só consulta a prescrição (botão oculto).
+ * professor). Vale para QUALQUER aluno com ficha ativa: o online treina
+ * sempre pelo app e o presencial usa quando treina fora do estúdio (viagem,
+ * treino por conta). Na aula, o professor conduz.
  */
 export function TreinoDoAluno({
   treino,

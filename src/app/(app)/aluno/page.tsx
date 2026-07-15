@@ -116,8 +116,8 @@ export default async function AlunoHome() {
     temAvaliacoes = (avals ?? 0) > 0;
     // Presenças marcadas pelo professor + treinos concluídos no app.
     presencasMes = (pres ?? 0) + (execs ?? 0);
-    // Só o aluno online conclui treinos pelo app (registra execução).
-    treinoConcluidoHoje = online && (execHoje ?? 0) > 0;
+    // Qualquer aluno com ficha pode concluir treino pelo app (modo treino).
+    treinoConcluidoHoje = (execHoje ?? 0) > 0;
 
     // Próximos treinos: a próxima ocorrência de cada horário agendado, a
     // partir de agora. À noite, o horário de hoje já passou → aparece o de

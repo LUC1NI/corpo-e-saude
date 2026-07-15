@@ -14,17 +14,17 @@ export default async function AlunoTreinoPage() {
   await requireUsuario(["aluno"]);
 
   const aluno = await getAlunoAtual();
-  // Online: modo treino completo (player + retorno). Presencial: só consulta.
   const online = aluno?.tipo === "online";
 
+  // Regra: quem tem ficha ativa pode usar o MODO TREINO, presencial ou
+  // online. O presencial viajando (ou treinando por fora) faz o treino que
+  // o professor passou pelo app e o professor recebe o retorno igual.
   let ativos: TreinoComTudo[] = [];
   let execucoes: TreinoExecucao[] = [];
   if (aluno) {
     const [todos, execs] = await Promise.all([
       getTreinosDoAluno(aluno.id),
-      // Histórico de execuções só faz sentido para o online (é ele quem
-      // registra treinos pelo app).
-      online ? getExecucoesDoAluno(aluno.id) : Promise.resolve([]),
+      getExecucoesDoAluno(aluno.id),
     ]);
     ativos = todos.filter((t) => t.ativo);
     execucoes = execs;
@@ -32,8 +32,9 @@ export default async function AlunoTreinoPage() {
   const principal = ativos[0] ?? null;
   const diaHoje = diaDaSemanaHoje();
   const hoje = hojeISO();
-  const concluidoHoje =
-    online && execucoes.some((e) => e.finalizado_em.startsWith(hoje));
+  const concluidoHoje = execucoes.some((e) =>
+    e.finalizado_em.startsWith(hoje),
+  );
 
   return (
     <div className="space-y-5">
@@ -93,8 +94,9 @@ export default async function AlunoTreinoPage() {
                   Treino prescrito pelo seu professor
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Este é o treino do dia para você seguir na sua aula no
-                  estúdio. Qualquer dúvida, é só falar com seu professor.
+                  Na aula, seu professor conduz tudo. Viajando ou treinando por
+                  conta? Toque em Iniciar treino e registre: ele recebe o
+                  retorno.
                 </p>
               </div>
             </div>
@@ -106,13 +108,13 @@ export default async function AlunoTreinoPage() {
           <TreinoDoAluno
             treino={principal}
             diaHoje={diaHoje}
-            permitirIniciar={online}
+            permitirIniciar
           />
         </>
       )}
 
-      {/* Histórico: o aluno online consulta o que já treinou pelo app. */}
-      {online && execucoes.length > 0 ? (
+      {/* Histórico: o que o aluno já treinou e registrou pelo app. */}
+      {execucoes.length > 0 ? (
         <section className="space-y-3 pt-2">
           <div className="flex items-center gap-2">
             <History className="size-4 text-muted-foreground" />

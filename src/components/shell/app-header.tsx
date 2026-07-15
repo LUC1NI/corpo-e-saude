@@ -12,10 +12,12 @@ export function AppHeader({
   papel,
   nome,
   alertas,
+  mensagemVazia,
 }: {
   papel: Papel;
   nome: string;
   alertas: AlertaNotificacao[];
+  mensagemVazia: string;
 }) {
   const basePath = papel === "professor" ? "/professor/alunos" : "/admin/alunos";
 
@@ -35,7 +37,7 @@ export function AppHeader({
             className="h-9 w-56 rounded-lg border bg-secondary/60 pr-3 pl-9 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
           />
         </form>
-        <NotificacoesButton itens={alertas} basePath={basePath} />
+        <NotificacoesButton itens={alertas} mensagemVazia={mensagemVazia} />
       </div>
     </header>
   );

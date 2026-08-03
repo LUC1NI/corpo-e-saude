@@ -14,6 +14,11 @@ import { Rodape } from "@/components/landing/rodape";
 import { Sobre } from "@/components/landing/sobre";
 import { WhatsAppFlutuante } from "@/components/landing/whatsapp-flutuante";
 
+// Landing 100% estática: é pré-renderizada no build e servida do cache da
+// borda (Cloudflare), sem rodar o Worker/SSR a cada acesso. Assim um flood
+// na página pública bate no cache, não na sua cota de compute nem no banco.
+export const dynamic = "force-static";
+
 const TITULO = "Corpo & Saúde | Personal Trainer Studio em Mafra/SC";
 const DESCRICAO =
   "Estúdio de personal trainer em Mafra/SC. Treino personalizado presencial e online, avaliação física completa e acompanhamento de perto. Agende sua aula experimental pelo WhatsApp.";
@@ -80,7 +85,11 @@ export default function LandingPage() {
     <div className="bg-white">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        // Escapa `<` para que nenhum texto (ex.: uma resposta de FAQ futura)
+        // consiga fechar a tag <script> e injetar HTML no JSON-LD.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(JSON_LD).replace(/</g, "\\u003c"),
+        }}
       />
       <LandingHeader />
       <main>

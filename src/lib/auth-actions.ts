@@ -45,6 +45,17 @@ export async function loginAction(
   }
 
   const ip = await clienteIp();
+  // Trava por IP primeiro: pega o flood que troca de e-mail a cada tentativa
+  // (um atacante de um só IP não passa de 20 tentativas/min, não importa quantos
+  // e-mails diferentes use). Curto-circuita ANTES da trava por e-mail, para nem
+  // criar registros de rate-limit para cada e-mail forjado.
+  const porIp = await rateLimit(`login-ip:${ip}`, 20, 60_000);
+  if (!porIp.ok) {
+    return {
+      erro: `Muitas tentativas. Tente novamente em ${porIp.retornaEmSeg}s.`,
+    };
+  }
+  // Trava por conta: protege UM e-mail específico de ataque de senha.
   const rl = await rateLimit(`login:${ip}:${parsed.data.email}`, 5, 60_000);
   if (!rl.ok) {
     return {
@@ -97,6 +108,11 @@ export async function recuperarSenhaAction(
   if (!parsed.success) return { ok: true };
 
   const ip = await clienteIp();
+  // Trava por IP: barra o abuso de disparar muitos e-mails de reset (custo +
+  // spam nas vítimas) trocando o e-mail a cada chamada. 10/hora por IP é
+  // folgado para uso real. Silencioso (ok:true) para não sinalizar o bloqueio.
+  const porIp = await rateLimit(`reset-ip:${ip}`, 10, 3_600_000);
+  if (!porIp.ok) return { ok: true };
   const rl = await rateLimit(`reset:${ip}:${parsed.data.email}`, 3, 300_000);
   if (!rl.ok) {
     return {

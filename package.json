@@ -10,12 +10,7 @@
     "icons": "node scripts/generate-icons.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
     "criar-usuario": "node scripts/criar-usuario.mjs",
-    "seed:treinos": "node scripts/seed-treinos.mjs",
     "seed:biblioteca": "node scripts/seed-biblioteca.mjs",
-    "seed:demo": "node scripts/seed-demo.mjs",
-    "seed:mariana": "node scripts/seed-mariana.mjs",
-    "seed:aulas-hoje": "node scripts/seed-aulas-hoje.mjs",
-    "seed:professores": "node scripts/seed-professores-demo.mjs",
     "preview:cf": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy:cf": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { mensagemEmailEmUso } from "@/lib/acesso";
 import { assertPapel } from "@/lib/auth";
 import { falha, sucesso, type ResultadoAcao } from "@/lib/acoes";
+import { telefoneSchema } from "@/lib/schemas";
 import { gerarSenhaProvisoria } from "@/lib/senha";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -13,7 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 const professorSchema = z.object({
   nome: z.string().trim().min(2, "Informe o nome do professor."),
   email: z.string().trim().email("E-mail inválido."),
-  telefone: z.string().trim().optional(),
+  telefone: telefoneSchema,
   especialidade: z.string().trim().optional(),
 });
 

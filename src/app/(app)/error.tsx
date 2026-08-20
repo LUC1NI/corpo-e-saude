@@ -13,8 +13,16 @@ export default function AppError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Em produção, ligar a um serviço de monitoramento (ex.: Sentry).
     console.error(error);
+    fetch("/api/log-erro", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        origem: "app-error",
+        mensagem: error.message,
+        url: window.location.pathname,
+      }),
+    }).catch(() => {});
   }, [error]);
 
   return (

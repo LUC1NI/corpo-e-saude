@@ -7,13 +7,18 @@ const opcional = (schema: z.ZodString) =>
     schema.optional(),
   );
 
+/** Telefone brasileiro no formato da máscara: (47) 99999-0000 ou (47) 3333-0000. */
+export const telefoneSchema = opcional(
+  z.string().regex(/^\(\d{2}\) \d{4,5}-\d{4}$/, "Telefone inválido. Use o formato (47) 99999-0000."),
+);
+
 // ---------------------------------------------------------------------------
 // Aluno
 // ---------------------------------------------------------------------------
 export const alunoSchema = z.object({
   nome: z.string().trim().min(2, "Informe o nome completo."),
   data_nascimento: opcional(z.string()),
-  telefone: opcional(z.string()),
+  telefone: telefoneSchema,
   email: opcional(z.string().email("E-mail inválido.")),
   tipo: z.enum(["presencial", "online"]),
   professor_id: opcional(z.string().uuid()),

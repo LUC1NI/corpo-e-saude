@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
@@ -32,8 +32,9 @@ export function AnamneseForm({
 }) {
   const router = useRouter();
   const [salvando, setSalvando] = useState(false);
+  const chaveRascunho = `anamnese-rascunho:${alunoId}`;
 
-  const { register, handleSubmit, control } = useForm<
+  const { register, handleSubmit, control, watch, reset } = useForm<
     z.input<typeof anamneseSchema>,
     unknown,
     AnamneseInput
@@ -50,11 +51,41 @@ export function AnamneseForm({
     },
   });
 
+  // Restaura rascunho local (se houver) uma vez, ao montar — protege contra
+  // reload acidental num formulário longo com dado sensível de saúde.
+  useEffect(() => {
+    const salvo = localStorage.getItem(chaveRascunho);
+    if (!salvo) return;
+    try {
+      reset(JSON.parse(salvo));
+      toast.info("Rascunho recuperado — havia alterações não salvas.");
+    } catch {
+      localStorage.removeItem(chaveRascunho);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chaveRascunho]);
+
+  // Autosave local (debounced) a cada alteração, enquanto não for salvo de fato.
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const assinatura = watch((valores) => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        localStorage.setItem(chaveRascunho, JSON.stringify(valores));
+      }, 500);
+    });
+    return () => {
+      assinatura.unsubscribe();
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [watch, chaveRascunho]);
+
   async function onSubmit(values: AnamneseInput) {
     setSalvando(true);
     const res = await salvarAnamnese(alunoId, values);
     setSalvando(false);
     if (res.ok) {
+      localStorage.removeItem(chaveRascunho);
       toast.success("Anamnese salva.");
       router.refresh();
     } else {

@@ -23,9 +23,10 @@
     "binding": "ASSETS"
   },
   "observability": { "enabled": true },
-  // Renovação automática diária (06:00 UTC ≈ 03:00 em Mafra/SC).
-  // Dispara o handler `scheduled` do worker.ts → /api/cron/renovar.
-  "triggers": { "crons": ["0 6 * * *"] },
+  // Renovação automática (06:00 UTC) e backup diário (06:10 UTC) — ambos
+  // ≈ madrugada em Mafra/SC. O handler `scheduled` do worker.ts distingue
+  // qual cron disparou e chama /api/cron/renovar ou /api/cron/backup.
+  "triggers": { "crons": ["0 6 * * *", "10 6 * * *"] },
   "vars": {
     // Somente valores públicos aqui (os mesmos NEXT_PUBLIC_* do .env.local).
     "NEXT_PUBLIC_SUPABASE_URL": "https://mbcfwykwtdpeanzuwhsq.supabase.co",

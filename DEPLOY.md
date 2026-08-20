@@ -133,14 +133,48 @@ A ação manual "Gerar cobranças" no painel continua disponível.
 
 ## 6. Backup automático (LGPD / dados sensíveis)
 
-O sistema guarda dados financeiros e de saúde (anamnese). Configure no Supabase
-**antes do go-live**:
+O sistema guarda dados financeiros e de saúde (anamnese). O **plano Free do
+Supabase não inclui backup automático** (só a partir do Pro, US$25/mês) — para
+não gerar custo mensal, montamos um backup próprio, sem custo:
 
-- **Database → Backups**: habilite o **PITR (Point-in-Time Recovery)** ou os
-  **backups diários** (depende do plano). Guarde a política de retenção.
-- Faça um **teste de restauração** ao menos uma vez.
-- Opcional: export periódico (`pg_dump` via `SUPABASE_DB_URL`) para um destino
-  externo, se quiser uma cópia fora do Supabase.
+- **Cron diário (06:10 UTC)**, já agendado no `wrangler.jsonc` junto com o de
+  renovação, bate em `/api/cron/backup` (`src/app/api/cron/backup/route.ts`).
+- A rota (`src/lib/backup.ts`) exporta **todas as tabelas de dado real** em um
+  único JSON e sobe pro bucket privado `backups` do próprio Supabase Storage
+  (plano Free inclui 1 GB — de sobra para isso).
+- Mantém os **últimos 14 dumps** e apaga o resto sozinho.
+- **Restauração:** é manual (baixar o JSON do bucket e reinserir via script) —
+  não é um PITR de verdade. Se o estúdio crescer e o custo deixar de ser
+  problema, migrar para o **Supabase Pro** dá PITR de verdade e restauração
+  em 1 clique; até lá, isto cobre a lacuna.
+- Teste a restauração manual ao menos uma vez para saber o caminho na hora
+  que precisar.
+
+---
+
+## 6.1 Monitoramento de erros (sem custo)
+
+Sentry (o padrão de mercado) tem plano gratuito (5 mil erros/mês), mas exige
+criar uma conta nova — isso fica pra você decidir/fazer quando quiser, não é
+algo que dá pra automatizar sem sua ação. Enquanto isso, o sistema já loga
+erros sozinho, sem depender de conta de terceiro:
+
+- Tabela `logs_erro` no próprio Supabase (migration `20260820000001`).
+- Erros de servidor (crons) e de tela (client, via `error.tsx` /
+  `global-error.tsx` → `POST /api/log-erro`, com rate limit por IP) caem lá.
+- Veja em **`/admin/erros`** (não está no menu lateral de propósito, pra não
+  poluir o dia a dia — acesse direto pela URL quando quiser checar).
+
+**Se no futuro quiser upgrade para Sentry** (opcional, gratuito até 5 mil
+erros/mês, 1 usuário): criar conta em sentry.io → projeto Next.js → `npx
+@sentry/wizard@latest -i nextjs` → cole o DSN gerado. Ele substitui/completa
+o log caseiro, com replay de sessão e alertas por e-mail.
+
+Uptime (o site cair de madrugada e ninguém saber): **UptimeRobot** tem plano
+gratuito (50 monitores, checagem a cada 5 min, alerta por e-mail) — também
+exige conta própria, então fica documentado aqui como próximo passo opcional:
+criar conta grátis em uptimerobot.com → adicionar monitor HTTP(s) apontando
+para `https://corpo-e-saude.lucinij3.workers.dev/`.
 
 ---
 
@@ -153,7 +187,9 @@ O sistema guarda dados financeiros e de saúde (anamnese). Configure no Supabase
 - [ ] Site URL / Redirect URLs do Supabase apontando para produção.
 - [ ] Rate limit durável ativo (tabela `rate_limits` + função `rl_hit`).
 - [ ] Senha do admin inicial trocada (não-provisória).
-- [ ] Backups/PITR ligados e testados.
+- [x] Backup diário automático (cron → Supabase Storage) — ver seção 6. Teste
+      a restauração manual ao menos uma vez.
+- [ ] (Opcional) Sentry e/ou UptimeRobot configurados — ver seção 6.1.
 
 ---
 

@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CampoForm } from "@/components/ui-extra/campo-form";
+import { formatarTelefone } from "@/lib/mascaras";
 import { alunoSchema, type AlunoInput } from "@/lib/schemas";
 import { cn } from "@/lib/utils";
 
@@ -198,11 +199,20 @@ export function AlunoForm({
             htmlFor="telefone"
             erro={errors.telefone?.message}
           >
-            <CampoComIcone
-              id="telefone"
-              icone={Phone}
-              {...register("telefone")}
-              placeholder="(47) 99999-0000"
+            <Controller
+              control={control}
+              name="telefone"
+              render={({ field }) => (
+                <CampoComIcone
+                  id="telefone"
+                  icone={Phone}
+                  inputMode="numeric"
+                  value={(field.value as string | undefined) ?? ""}
+                  onChange={(e) => field.onChange(formatarTelefone(e.target.value))}
+                  onBlur={field.onBlur}
+                  placeholder="(47) 99999-0000"
+                />
+              )}
             />
           </CampoForm>
         </div>

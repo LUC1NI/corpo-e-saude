@@ -11,6 +11,15 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error(error);
+    fetch("/api/log-erro", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        origem: "global-error",
+        mensagem: error.message,
+        url: window.location.pathname,
+      }),
+    }).catch(() => {});
   }, [error]);
 
   return (

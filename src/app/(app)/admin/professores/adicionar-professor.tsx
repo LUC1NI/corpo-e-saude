@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { CampoForm } from "@/components/ui-extra/campo-form";
+import { formatarTelefone } from "@/lib/mascaras";
 
 import { criarProfessor } from "./actions";
 
@@ -179,8 +180,9 @@ export function AdicionarProfessor() {
                     <InputIcone
                       id="ptel"
                       icone={<Phone className="size-4" />}
+                      inputMode="numeric"
                       value={telefone}
-                      onChange={(e) => setTelefone(e.target.value)}
+                      onChange={(e) => setTelefone(formatarTelefone(e.target.value))}
                       placeholder="(47) 99999-0000"
                     />
                   </CampoForm>

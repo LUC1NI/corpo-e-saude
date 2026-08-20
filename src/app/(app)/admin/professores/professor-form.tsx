@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CampoForm } from "@/components/ui-extra/campo-form";
+import { formatarTelefone } from "@/lib/mascaras";
 import { atualizarProfessor } from "./actions";
 
 /** Edição do cadastro do professor (o e-mail é o login e não muda aqui). */
@@ -58,8 +59,9 @@ export function ProfessorForm({
         <CampoForm label="Telefone" htmlFor="prof-telefone">
           <Input
             id="prof-telefone"
+            inputMode="numeric"
             value={vTelefone}
-            onChange={(e) => setTelefone(e.target.value)}
+            onChange={(e) => setTelefone(formatarTelefone(e.target.value))}
             placeholder="(47) 99999-9999"
           />
         </CampoForm>

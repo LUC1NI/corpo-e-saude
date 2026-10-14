@@ -23,6 +23,9 @@ const TABELAS = [
   "treino_divisoes",
   "treino_exercicios",
   "treino_execucoes",
+  "alunos_dados_fiscais",
+  "config_fiscal",
+  "notas_fiscais",
 ] as const;
 
 /**

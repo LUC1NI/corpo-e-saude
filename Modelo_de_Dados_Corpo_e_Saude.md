@@ -193,6 +193,31 @@ Os exercícios de cada divisão, com séries/repetições/carga.
 
 ---
 
+## 5.1 Notificações push
+
+### `push_inscricoes`
+Um registro por navegador/aparelho que ativou as notificações.
+- `id` (PK)
+- `usuario_id` (FK → usuarios)
+- `endpoint` — único (URL do push service)
+- `p256dh`, `auth` — chaves de criptografia do navegador
+- `user_agent`
+- `criado_em`
+
+> RLS: o usuário gerencia só as próprias. O envio usa service_role no
+> servidor; inscrição que responde 404/410 é apagada.
+
+### `notificacoes_enviadas`
+Trava para nunca enviar o mesmo aviso duas vezes.
+- `id` (PK)
+- `aluno_id` (FK → alunos)
+- `tipo` — `mensalidade_antes` | `mensalidade_dia` | `mensalidade_atraso` | `treino_novo`
+- `referencia_id` — id do pagamento, ou `<treino_id>:<data>` (treino: 1 aviso por ficha por dia)
+- `enviada_em`
+- único (`tipo`, `referencia_id`)
+
+---
+
 ## 6. Mapa de relações (resumo)
 
 - `usuarios` 1—1 `professores` / `alunos` (papel define o acesso)

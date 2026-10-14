@@ -8,6 +8,7 @@
  *   3. Cadastre os SEGREDOS fora do repo:
  *        npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
  *        npx wrangler secret put CRON_SECRET
+ *        npx wrangler secret put VAPID_PRIVATE_KEY
  *   4. `npm run deploy:cf`
  *
  * Guia completo: DEPLOY.md.
@@ -31,6 +32,8 @@
     // Somente valores públicos aqui (os mesmos NEXT_PUBLIC_* do .env.local).
     "NEXT_PUBLIC_SUPABASE_URL": "https://mbcfwykwtdpeanzuwhsq.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1iY2Z3eWt3dGRwZWFuenV3aHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0ODEyNDMsImV4cCI6MjA5ODA1NzI0M30.97YXknyl7mySZXnJoGQKIj3P8NTYYLVzr3_vlUmr6Jc",
-    "NEXT_PUBLIC_SITE_URL": "https://corpo-e-saude.lucinij3.workers.dev"
+    "NEXT_PUBLIC_SITE_URL": "https://corpo-e-saude.lucinij3.workers.dev",
+    // Chave PÚBLICA do Web Push (a privada é o secret VAPID_PRIVATE_KEY).
+    "NEXT_PUBLIC_VAPID_PUBLIC_KEY": "BCVsQy2FjKPCEd3j7MUC7Xmu2ZgC2RlSTbj6JbGJHWjdgGdUaOEVNwNEQcvHkdxiSElj1-Dv0apouAZyY1qTRrw"
   }
 }

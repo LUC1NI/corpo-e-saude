@@ -12,6 +12,7 @@ import {
 import Link from "@/components/ui-extra/link";
 
 import { SituacaoMensalidadeCard } from "@/components/aluno/situacao-mensalidade";
+import { AtivarNotificacoes } from "@/components/pwa/ativar-notificacoes";
 import { Card } from "@/components/ui/card";
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 import { requireUsuario } from "@/lib/auth";
@@ -204,6 +205,8 @@ export default async function AlunoHome() {
       )}
 
       <SituacaoMensalidadeCard situacao={situacao} />
+
+      <AtivarNotificacoes />
 
       {/* Frequência do mês */}
       <Card className="flex-row items-center gap-3 p-5">

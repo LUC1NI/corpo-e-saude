@@ -62,6 +62,28 @@ async function main() {
     .png()
     .toFile(path.join(outDir, "favicon-32.png"));
 
+  // Badge das notificações (Android): silhueta BRANCA sobre transparente da
+  // figura do logo (parte esquerda). O Android usa só o canal alfa.
+  const { width, height } = await sharp(src).metadata();
+  const figura = await sharp(src)
+    // (margem de 12px: o JPG tem cantos escuros arredondados)
+    .extract({ left: 12, top: 12, width: Math.round(width * 0.27) - 12, height: height - 24 })
+    .resize(72, 72, { fit: "contain", background: "#ffffff" })
+    .flatten({ background: "#ffffff" })
+    .greyscale()
+    // (o sharp aplica threshold ANTES do negate, seja qual for a ordem aqui)
+    .threshold(225) // fundo branco = 255, figura = 0
+    .negate() // inverte: figura opaca, fundo transparente
+    .toColourspace("b-w")
+    .raw()
+    .toBuffer();
+  await sharp({
+    create: { width: 72, height: 72, channels: 3, background: "#ffffff" },
+  })
+    .joinChannel(figura, { raw: { width: 72, height: 72, channels: 1 } })
+    .png()
+    .toFile(path.join(outDir, "badge-72.png"));
+
   console.log("Ícones gerados em public/icons/");
 }
 

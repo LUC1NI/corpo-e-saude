@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { autorizarCron } from "@/lib/cron-auth";
 import { registrarErro } from "@/lib/logs";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { enviarLembretesMensalidade } from "@/lib/push";
 import { executarRenovacao } from "@/lib/renovacao";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +27,9 @@ export async function GET(request: Request): Promise<Response> {
     const { geradas } = await executarRenovacao(supabase);
     // Limpeza oportunista das janelas de rate-limit expiradas.
     await supabase.rpc("rl_limpar");
-    return NextResponse.json({ ok: true, geradas });
+    // Lembretes de mensalidade (push), depois da renovação.
+    const lembretes = await enviarLembretesMensalidade(supabase);
+    return NextResponse.json({ ok: true, geradas, lembretes });
   } catch (e) {
     console.error("cron/renovar falhou:", e);
     await registrarErro("cron/renovar", e);

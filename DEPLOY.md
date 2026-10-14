@@ -106,6 +106,8 @@ Environment Variables. Veja `.env.local.example` para referência:
 | `SUPABASE_SERVICE_ROLE_KEY` | **Server** | Segredo. Nunca expor no front |
 | `NEXT_PUBLIC_SITE_URL` | Client + Server | Ex.: `https://app.corpoesaude.com` |
 | `CRON_SECRET` | **Server** | Segredo aleatório forte (cron) |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Client + Server | Chave pública do Web Push |
+| `VAPID_PRIVATE_KEY` | **Server** | Segredo (JWK em JSON) do Web Push |
 | `SUPABASE_DB_URL` | Local apenas | Só para rodar migrations |
 
 > A `service_role` e o `CRON_SECRET` são segredos: marque o escopo como
@@ -163,6 +165,34 @@ npm run criar-usuario -- admin dono@studio.com SenhaForte123 "Nome do Dono" prov
 Em todos os casos: roda diariamente ~06:00 UTC (~03:00 BRT), gera os
 `pagamentos` pendentes (catch-up por período em atraso) e marca os vencidos.
 A ação manual "Gerar cobranças" no painel continua disponível.
+
+---
+
+## 5.1 Notificações push (Web Push)
+
+Avisos de mensalidade (3 dias antes, no dia, 3 dias depois de vencer, uma
+vez só cada) e de treino atualizado (aluno online). Saem do cron diário e
+das ações de treino, pelo `src/lib/push.ts`. Testado com envio real (FCM)
+de dentro do runtime do Workers.
+
+**Chaves VAPID** (um par por sistema; trocar o par invalida as inscrições
+existentes, os alunos teriam de reativar):
+
+1. Gerar: `npx @pushforge/builder vapid` (imprime a pública e a privada em
+   JSON/JWK).
+2. Pública: em `wrangler.jsonc` → `vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY` (e no
+   `.env.local`).
+3. Privada: **só** como secret, nunca no repo:
+   `npx wrangler secret put VAPID_PRIVATE_KEY` e cole o JSON inteiro
+   (`{"alg":"ES256",...,"d":"..."}`). No `.env.local` vai na linha
+   `VAPID_PRIVATE_KEY=`.
+4. `npm run deploy:cf`.
+
+> O par atual já foi gerado: a pública está no `wrangler.jsonc` e a privada
+> no seu `.env.local`. Falta só o passo 3 (secret) e publicar.
+
+Sem as chaves, o sistema funciona normalmente e só não envia avisos. No
+iPhone, o aluno precisa ter adicionado o app à tela de início (iOS 16.4+).
 
 ---
 

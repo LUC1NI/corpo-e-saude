@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 
 import { assertPapel } from "@/lib/auth";
 import { falha, sucesso, type ResultadoAcao } from "@/lib/acoes";
@@ -15,6 +16,8 @@ import {
   type TreinoExercicioInput,
   type TreinoInput,
 } from "@/lib/schemas";
+import { avisarTreinoAtualizado } from "@/lib/push";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -25,6 +28,10 @@ function revalidarAluno(alunoId: string | null) {
   if (alunoId) {
     revalidatePath(`/admin/alunos/${alunoId}`);
     revalidatePath(`/professor/alunos/${alunoId}`);
+    revalidatePath("/aluno/treino");
+    // Push "treino atualizado" (só aluno online). Roda depois da resposta,
+    // sem atrasar quem está editando a ficha.
+    after(() => avisarTreinoAtualizado(createAdminClient(), alunoId));
   }
   revalidarBiblioteca();
 }

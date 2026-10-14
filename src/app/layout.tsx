@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { BarraProgressoNavegacao } from "@/components/ui-extra/progresso-navegacao";
 import { Toaster } from "@/components/ui/sonner";
+import { SITE_URL } from "@/lib/site";
 
 import "./globals.css";
 
@@ -15,8 +16,6 @@ const geistMono = Geist_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
 });
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

@@ -58,6 +58,41 @@ sem remote, o cron do worker já cumpre o papel).
 
 ---
 
+## 1.1 Trocar para domínio próprio (ex.: `app.corpoesaude.com.br`)
+
+O endereço do site vem de **uma variável só**: `NEXT_PUBLIC_SITE_URL` no
+`wrangler.jsonc`. Links, QR code da recepção, metadata/SEO, sitemap e os
+links dos e-mails de senha derivam dela. Nenhum código muda.
+
+> Por que precisa publicar de novo: o Next grava os `NEXT_PUBLIC_*` no código
+> durante o build. O `npm run deploy:cf` já faz o build lendo os `vars` do
+> `wrangler.jsonc` (script `scripts/com-vars-wrangler.mjs`), então basta
+> editar o arquivo e publicar. O `.env.local` (localhost) não vaza mais para
+> produção.
+
+1. **Cloudflare → domínio:** o domínio precisa estar numa zona da sua conta
+   Cloudflare (DNS gerenciado pela Cloudflare). Depois: Workers & Pages →
+   `corpo-e-saude` → Settings → Domains & Routes → **Add → Custom domain** →
+   `app.seudominio.com.br`. A Cloudflare cria o DNS e o certificado HTTPS
+   sozinha (leva alguns minutos).
+2. **`wrangler.jsonc`:** troque `"NEXT_PUBLIC_SITE_URL"` para
+   `https://app.seudominio.com.br` (sem barra no final).
+3. **Supabase → Authentication → URL Configuration:**
+   - **Site URL** = `https://app.seudominio.com.br`
+   - **Redirect URLs**: adicione `https://app.seudominio.com.br/auth/callback`
+     (pode manter a do `workers.dev` durante a transição).
+4. **Publicar:** `npm run deploy:cf`. Na saída aparece
+   `> NEXT_PUBLIC_SITE_URL=...` confirmando o endereço usado no build.
+5. **Conferir:** abrir `https://app.seudominio.com.br/robots.txt` (o sitemap
+   deve citar o domínio novo), testar "esqueci minha senha" (o link do e-mail
+   deve abrir o domínio novo) e **reimprimir o QR code** da recepção
+   (Admin → Acesso dos alunos), que agora aponta para o endereço novo.
+6. Quem já instalou o app pelo endereço antigo precisa instalar de novo pelo
+   novo (o PWA fica preso à origem em que foi instalado). As notificações
+   também: cada aluno reativa no endereço novo.
+
+---
+
 ## 2. Variáveis de ambiente (produção)
 
 No Cloudflare: `vars` públicos no `wrangler.jsonc` + segredos via

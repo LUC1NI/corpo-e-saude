@@ -129,3 +129,4 @@ Construir e validar um módulo por vez, na ordem acima. Não pular para módulos
 - Nomes de domínio em português (alinhados ao modelo de dados).
 - Commits pequenos e descritivos.
 - Nunca commitar segredos. Sempre revisar `.gitignore`.
+- **Nenhuma URL absoluta hardcoded.** Endereço do site só via `SITE_URL`/`urlAbsoluta()` (`src/lib/site.ts`), que lê `NEXT_PUBLIC_SITE_URL`. No deploy a fonte é o `wrangler.jsonc` (`scripts/com-vars-wrangler.mjs` injeta no build). Trocar de domínio: `DEPLOY.md` §1.1.

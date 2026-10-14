@@ -13,6 +13,7 @@ import { Modalidades } from "@/components/landing/modalidades";
 import { Rodape } from "@/components/landing/rodape";
 import { Sobre } from "@/components/landing/sobre";
 import { WhatsAppFlutuante } from "@/components/landing/whatsapp-flutuante";
+import { SITE_URL, urlAbsoluta } from "@/lib/site";
 
 // Landing 100% estática: é pré-renderizada no build e servida do cache da
 // borda (Cloudflare), sem rodar o Worker/SSR a cada acesso. Assim um flood
@@ -53,7 +54,8 @@ const JSON_LD = {
       "@type": "ExerciseGym",
       name: "Corpo & Saúde Personal Trainer Studio",
       description: DESCRICAO,
-      image: "/logo.jpg",
+      url: SITE_URL,
+      image: urlAbsoluta("/logo.jpg"),
       sameAs: [INSTAGRAM.url],
       telephone: `+${TELEFONES[0].numero}`,
       address: {

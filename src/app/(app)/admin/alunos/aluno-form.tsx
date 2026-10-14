@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { LucideIcon } from "lucide-react";
-import { Calendar, Mail, Phone, User } from "lucide-react";
+import { Calendar, FileText, Mail, MapPin, Phone, User } from "lucide-react";
 import Link from "@/components/ui-extra/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -20,13 +20,41 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CampoForm } from "@/components/ui-extra/campo-form";
-import { formatarTelefone } from "@/lib/mascaras";
-import { alunoSchema, type AlunoInput } from "@/lib/schemas";
+import { formatarCep, formatarCpfDigitando, formatarTelefone } from "@/lib/mascaras";
+import {
+  alunoSchema,
+  dadosFiscaisSchema,
+  type AlunoInput,
+  type DadosFiscaisInput,
+} from "@/lib/schemas";
 import { cn } from "@/lib/utils";
 
 import { atualizarAluno, criarAluno } from "./actions";
 
 const SEM_PROFESSOR = "__none__";
+
+/** Aluno + dados fiscais (CPF/endereço) no mesmo formulário. */
+const formSchema = alunoSchema.extend({ fiscal: dadosFiscaisSchema.optional() });
+type FormOutput = z.infer<typeof formSchema>;
+
+/** Endereço pelo CEP (ViaCEP). Falhou? Não bloqueia: o admin digita. */
+async function buscarCep(cep: string): Promise<{
+  logradouro: string;
+  bairro: string;
+  localidade: string;
+  uf: string;
+  ibge: string;
+} | null> {
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    const json = await res.json();
+    return json?.erro ? null : json;
+  } catch {
+    return null;
+  }
+}
 
 /** Altura/contraste padrão dos controles deste formulário. */
 const CONTROLE = "h-10 bg-secondary/40 data-[size=default]:h-10";
@@ -70,6 +98,8 @@ export function AlunoForm({
   mostrarProfessor = true,
   destinoBase = "/admin/alunos",
   hashAposCriar = "",
+  mostrarFiscal = false,
+  fiscalInicial,
 }: {
   alunoId?: string;
   valoresIniciais?: Partial<AlunoInput>;
@@ -80,6 +110,9 @@ export function AlunoForm({
   destinoBase?: string;
   /** Âncora ao abrir o aluno recém-criado (ex.: "#anamnese"). */
   hashAposCriar?: string;
+  /** CPF + endereço para a nota fiscal (só admin; LGPD). */
+  mostrarFiscal?: boolean;
+  fiscalInicial?: Partial<Record<keyof DadosFiscaisInput, string | null>>;
 }) {
   const router = useRouter();
   const [salvando, setSalvando] = useState(false);
@@ -88,9 +121,10 @@ export function AlunoForm({
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
-  } = useForm<z.input<typeof alunoSchema>, unknown, AlunoInput>({
-    resolver: zodResolver(alunoSchema),
+  } = useForm<z.input<typeof formSchema>, unknown, FormOutput>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       nome: "",
       email: "",
@@ -99,14 +133,46 @@ export function AlunoForm({
       tipo: "presencial",
       status: "ativo",
       ...valoresIniciais,
+      fiscal: mostrarFiscal
+        ? {
+            cpf: formatarCpfDigitando(fiscalInicial?.cpf ?? ""),
+            cep: formatarCep(fiscalInicial?.cep ?? ""),
+            logradouro: fiscalInicial?.logradouro ?? "",
+            numero: fiscalInicial?.numero ?? "",
+            complemento: fiscalInicial?.complemento ?? "",
+            bairro: fiscalInicial?.bairro ?? "",
+            cidade: fiscalInicial?.cidade ?? "",
+            uf: fiscalInicial?.uf ?? "",
+            codigo_municipio: fiscalInicial?.codigo_municipio ?? "",
+          }
+        : undefined,
     },
   });
+  const [buscandoCep, setBuscandoCep] = useState(false);
 
-  async function onSubmit(values: AlunoInput) {
+  async function aoMudarCep(valor: string) {
+    const cep = valor.replace(/\D/g, "");
+    if (cep.length !== 8) return;
+    setBuscandoCep(true);
+    const end = await buscarCep(cep);
+    setBuscandoCep(false);
+    if (!end) {
+      toast.info("CEP não encontrado. Preencha o endereço manualmente.");
+      return;
+    }
+    const opts = { shouldValidate: true } as const;
+    if (end.logradouro) setValue("fiscal.logradouro", end.logradouro, opts);
+    if (end.bairro) setValue("fiscal.bairro", end.bairro, opts);
+    setValue("fiscal.cidade", end.localidade, opts);
+    setValue("fiscal.uf", end.uf, opts);
+    setValue("fiscal.codigo_municipio", end.ibge, opts);
+  }
+
+  async function onSubmit({ fiscal, ...values }: FormOutput) {
     setSalvando(true);
     const res = alunoId
-      ? await atualizarAluno(alunoId, values)
-      : await criarAluno(values);
+      ? await atualizarAluno(alunoId, values, fiscal)
+      : await criarAluno(values, fiscal);
     setSalvando(false);
 
     if (res.ok) {
@@ -281,6 +347,102 @@ export function AlunoForm({
           </CampoForm>
         </div>
       </SecaoForm>
+
+      {mostrarFiscal ? (
+        <SecaoForm titulo="Nota fiscal (CPF e endereço)">
+          <p className="-mt-2 text-xs text-muted-foreground">
+            Opcional no cadastro, mas sem isto a nota fiscal da mensalidade não
+            é emitida. Só o administrador vê estes dados.
+          </p>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <CampoForm label="CPF" htmlFor="cpf" erro={errors.fiscal?.cpf?.message}>
+              <Controller
+                control={control}
+                name="fiscal.cpf"
+                render={({ field }) => (
+                  <CampoComIcone
+                    id="cpf"
+                    icone={FileText}
+                    inputMode="numeric"
+                    value={(field.value as string | undefined) ?? ""}
+                    onChange={(e) => field.onChange(formatarCpfDigitando(e.target.value))}
+                    onBlur={field.onBlur}
+                    placeholder="000.000.000-00"
+                  />
+                )}
+              />
+            </CampoForm>
+            <CampoForm
+              label="CEP"
+              htmlFor="cep"
+              dica={buscandoCep ? "Buscando endereço…" : "Preenche o endereço sozinho."}
+              erro={errors.fiscal?.cep?.message}
+            >
+              <Controller
+                control={control}
+                name="fiscal.cep"
+                render={({ field }) => (
+                  <CampoComIcone
+                    id="cep"
+                    icone={MapPin}
+                    inputMode="numeric"
+                    value={(field.value as string | undefined) ?? ""}
+                    onChange={(e) => {
+                      const v = formatarCep(e.target.value);
+                      field.onChange(v);
+                      void aoMudarCep(v);
+                    }}
+                    onBlur={field.onBlur}
+                    placeholder="00000-000"
+                  />
+                )}
+              />
+            </CampoForm>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-[1fr_8rem]">
+            <CampoForm
+              label="Logradouro"
+              htmlFor="logradouro"
+              erro={errors.fiscal?.logradouro?.message}
+            >
+              <Input id="logradouro" className={CONTROLE} {...register("fiscal.logradouro")} />
+            </CampoForm>
+            <CampoForm label="Número" htmlFor="numero" erro={errors.fiscal?.numero?.message}>
+              <Input id="numero" className={CONTROLE} {...register("fiscal.numero")} />
+            </CampoForm>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <CampoForm
+              label="Complemento"
+              htmlFor="complemento"
+              erro={errors.fiscal?.complemento?.message}
+            >
+              <Input id="complemento" className={CONTROLE} {...register("fiscal.complemento")} />
+            </CampoForm>
+            <CampoForm label="Bairro" htmlFor="bairro" erro={errors.fiscal?.bairro?.message}>
+              <Input id="bairro" className={CONTROLE} {...register("fiscal.bairro")} />
+            </CampoForm>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-[1fr_5rem]">
+            <CampoForm label="Cidade" htmlFor="cidade" erro={errors.fiscal?.cidade?.message}>
+              <Input id="cidade" className={CONTROLE} {...register("fiscal.cidade")} />
+            </CampoForm>
+            <CampoForm label="UF" htmlFor="uf" erro={errors.fiscal?.uf?.message}>
+              <Input
+                id="uf"
+                maxLength={2}
+                className={cn(CONTROLE, "uppercase")}
+                {...register("fiscal.uf")}
+              />
+            </CampoForm>
+          </div>
+          {errors.fiscal?.codigo_municipio?.message ? (
+            <p className="text-xs text-destructive">
+              {errors.fiscal.codigo_municipio.message} Digite o CEP de novo.
+            </p>
+          ) : null}
+        </SecaoForm>
+      ) : null}
 
       <div className="flex items-center gap-3 border-t pt-5">
         <Button type="submit" loading={salvando}>

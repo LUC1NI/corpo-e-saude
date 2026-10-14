@@ -16,7 +16,8 @@ const csp = [
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  // viacep: autocompletar endereço pelo CEP (cadastro do aluno, nota fiscal).
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://viacep.com.br",
   // Mapa do Google incorporado na landing (seção "Onde estamos").
   "frame-src https://www.google.com",
   "worker-src 'self'",

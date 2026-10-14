@@ -108,6 +108,8 @@ Environment Variables. Veja `.env.local.example` para referência:
 | `CRON_SECRET` | **Server** | Segredo aleatório forte (cron) |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Client + Server | Chave pública do Web Push |
 | `VAPID_PRIVATE_KEY` | **Server** | Segredo (JWK em JSON) do Web Push |
+| `FOCUS_NFE_TOKEN` | **Server** | Token da Focus NFe (sem ele, NFS-e desligada) |
+| `NFSE_WEBHOOK_SECRET` | **Server** | Segredo do gatilho da Focus |
 | `SUPABASE_DB_URL` | Local apenas | Só para rodar migrations |
 
 > A `service_role` e o `CRON_SECRET` são segredos: marque o escopo como
@@ -193,6 +195,51 @@ existentes, os alunos teriam de reativar):
 
 Sem as chaves, o sistema funciona normalmente e só não envia avisos. No
 iPhone, o aluno precisa ter adicionado o app à tela de início (iOS 16.4+).
+
+---
+
+## 5.2 Nota fiscal de serviço (NFS-e) pela Focus NFe
+
+Tudo pronto e **desligado**: sem token, cada baixa registra a nota como
+"Aguardando API". Ao ligar, o botão **Emitir notas pendentes**
+(Financeiro → Recebimentos) emite o atrasado.
+
+**Segredos (fora do banco e do repo):**
+```bash
+npx wrangler secret put FOCUS_NFE_TOKEN        # token da Focus (painel → API)
+npx wrangler secret put NFSE_WEBHOOK_SECRET    # gere um aleatório forte
+```
+No `.env.local` (para testar local) use as mesmas linhas. O **certificado
+digital A1** é enviado direto no painel da Focus; nunca passa pelo sistema.
+
+**Ligar, passo a passo:**
+1. Admin → Financeiro → **Nota fiscal**: CNPJ, inscrição municipal, regime,
+   código de serviço (LC 116), alíquota de ISS, natureza da operação
+   (Mafra: 101 a 112) e a descrição. Ambiente **Homologação**. Ligue
+   "Emissão ligada".
+2. Cadastrar o secret `FOCUS_NFE_TOKEN` com o token de **homologação** e
+   publicar (`npm run deploy:cf`).
+3. Cadastrar o gatilho (webhook) na Focus, apontando para o sistema:
+   ```bash
+   curl -u "SEU_TOKEN:" -X POST https://homologacao.focusnfe.com.br/v2/hooks      -H "content-type: application/json"      -d '{"cnpj":"CNPJ_DO_ESTUDIO","event":"nfse","url":"https://SEU-ENDERECO/api/nfse/webhook","authorization":"O_MESMO_NFSE_WEBHOOK_SECRET"}'
+   ```
+   (`event` = `nfsen` se o tipo configurado for NFS-e Nacional.) Sem o
+   gatilho também funciona: o cron diário consulta as notas paradas em
+   "processando" há mais de 1 hora.
+4. Dar baixa numa mensalidade de teste e conferir a nota (PDF) em
+   Recebimentos. Testar o cancelamento.
+5. Tudo certo: trocar o token pelo de **produção**, mudar o Ambiente para
+   **Produção**, refazer o gatilho no host `api.focusnfe.com.br` e publicar.
+
+**Municipal × Nacional:** Mafra emite pela NFS-e municipal (Publica/ABRASF,
+endpoint `/v2/nfse`). O guia da Focus diz que a migração para o Ambiente
+Nacional foi adiada para 31/07/2026. Quando a prefeitura migrar, troque o
+"Tipo de NFS-e" para **Nacional** e preencha o código de tributação
+nacional; nenhum código muda.
+
+**Segurança do webhook:** além do segredo (comparado em tempo constante), o
+sistema não confia no corpo da chamada: usa só a `ref` e consulta a Focus com
+o próprio token antes de mudar qualquer status.
 
 ---
 

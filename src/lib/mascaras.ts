@@ -13,3 +13,25 @@ export function formatarTelefone(valor: string): string {
 
   return parte2 ? `(${ddd}) ${parte1}-${parte2}` : `(${ddd}) ${parte1}`;
 }
+
+/** Máscara genérica: "#" = dígito. Ex.: mascara("12345678909", "###.###.###-##"). */
+function mascara(valor: string, padrao: string): string {
+  const d = valor.replace(/\D/g, "");
+  let saida = "";
+  let i = 0;
+  for (const c of padrao) {
+    if (i >= d.length) break;
+    saida += c === "#" ? d[i++] : c;
+  }
+  return saida;
+}
+
+/** CPF conforme digita: 000.000.000-00. */
+export function formatarCpfDigitando(valor: string): string {
+  return mascara(valor, "###.###.###-##");
+}
+
+/** CEP conforme digita: 00000-000. */
+export function formatarCep(valor: string): string {
+  return mascara(valor, "#####-###");
+}

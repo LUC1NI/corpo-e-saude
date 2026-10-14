@@ -6,7 +6,12 @@ import { mensagemEmailEmUso } from "@/lib/acesso";
 import { assertPapel } from "@/lib/auth";
 import { falha, sucesso, type ResultadoAcao } from "@/lib/acoes";
 import { getProfessorAtual } from "@/lib/professor";
-import { alunoSchema, type AlunoInput } from "@/lib/schemas";
+import {
+  alunoSchema,
+  dadosFiscaisSchema,
+  type AlunoInput,
+  type DadosFiscaisInput,
+} from "@/lib/schemas";
 import { gerarSenhaProvisoria } from "@/lib/senha";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -32,13 +37,46 @@ function dadosAluno(input: AlunoInput) {
   };
 }
 
+/**
+ * Grava CPF/endereço (tomador da nota fiscal). Só o ADMIN: o professor não
+ * vê nem edita dado fiscal (LGPD). Tabela separada com RLS só admin + aluno.
+ */
+async function salvarDadosFiscais(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  alunoId: string,
+  fiscal: DadosFiscaisInput,
+): Promise<string | null> {
+  const { error } = await supabase.from("alunos_dados_fiscais").upsert({
+    aluno_id: alunoId,
+    cpf: fiscal.cpf ?? null,
+    cep: fiscal.cep ?? null,
+    logradouro: fiscal.logradouro ?? null,
+    numero: fiscal.numero ?? null,
+    complemento: fiscal.complemento ?? null,
+    bairro: fiscal.bairro ?? null,
+    cidade: fiscal.cidade ?? null,
+    uf: fiscal.uf ?? null,
+    codigo_municipio: fiscal.codigo_municipio ?? null,
+    atualizado_em: new Date().toISOString(),
+  });
+  return error ? "Aluno salvo, mas os dados fiscais (CPF/endereço) não foram gravados." : null;
+}
+
 export async function criarAluno(
   input: AlunoInput,
+  fiscalInput?: DadosFiscaisInput,
 ): Promise<ResultadoAcao<{ id: string }>> {
   const usuario = await assertPapel(["admin", "professor"]);
   const parsed = alunoSchema.safeParse(input);
   if (!parsed.success) {
     return falha(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+  }
+  const fiscal =
+    usuario.papel === "admin" && fiscalInput
+      ? dadosFiscaisSchema.safeParse(fiscalInput)
+      : null;
+  if (fiscal && !fiscal.success) {
+    return falha(fiscal.error.issues[0]?.message ?? "Dados fiscais inválidos.");
   }
 
   const dados = dadosAluno(parsed.data);
@@ -57,6 +95,11 @@ export async function criarAluno(
     .single();
   if (error || !data) return falha("Não foi possível cadastrar o aluno.");
 
+  if (fiscal?.success) {
+    const erro = await salvarDadosFiscais(supabase, data.id as string, fiscal.data);
+    if (erro) return falha(erro);
+  }
+
   revalidarListas();
   return sucesso({ id: data.id as string });
 }
@@ -64,11 +107,19 @@ export async function criarAluno(
 export async function atualizarAluno(
   id: string,
   input: AlunoInput,
+  fiscalInput?: DadosFiscaisInput,
 ): Promise<ResultadoAcao> {
   const usuario = await assertPapel(["admin", "professor"]);
   const parsed = alunoSchema.safeParse(input);
   if (!parsed.success) {
     return falha(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+  }
+  const fiscal =
+    usuario.papel === "admin" && fiscalInput
+      ? dadosFiscaisSchema.safeParse(fiscalInput)
+      : null;
+  if (fiscal && !fiscal.success) {
+    return falha(fiscal.error.issues[0]?.message ?? "Dados fiscais inválidos.");
   }
 
   const dados = dadosAluno(parsed.data);
@@ -82,6 +133,11 @@ export async function atualizarAluno(
   const supabase = await createClient();
   const { error } = await supabase.from("alunos").update(dados).eq("id", id);
   if (error) return falha("Não foi possível salvar o aluno.");
+
+  if (fiscal?.success) {
+    const erro = await salvarDadosFiscais(supabase, id, fiscal.data);
+    if (erro) return falha(erro);
+  }
 
   revalidarListas(id);
   return sucesso();
@@ -102,6 +158,18 @@ export async function excluirAluno(id: string): Promise<ResultadoAcao> {
     .eq("id", id)
     .maybeSingle();
   if (!aluno) return falha("Aluno não encontrado.");
+
+  // Nota fiscal é registro fiscal: aluno com nota não é apagado (o banco
+  // também impede). Inativar mantém o histórico.
+  const { count: notas } = await supabase
+    .from("notas_fiscais")
+    .select("id", { count: "exact", head: true })
+    .eq("aluno_id", id);
+  if ((notas ?? 0) > 0) {
+    return falha(
+      "Este aluno tem nota fiscal registrada e não pode ser excluído. Inative o aluno em vez de excluir.",
+    );
+  }
 
   const { error } = await supabase.from("alunos").delete().eq("id", id);
   if (error) return falha("Não foi possível excluir o aluno.");

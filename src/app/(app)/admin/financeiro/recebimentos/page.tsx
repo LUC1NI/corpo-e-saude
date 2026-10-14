@@ -18,6 +18,7 @@ import { formatBRL, formatData } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
 
 import { NavFinanceiro } from "../nav-financeiro";
+import { EmitirPendentesButton, NotaAcoes, type NotaResumo } from "../nota-acoes";
 import { resolverMes } from "../periodo";
 import { SeletorMes } from "../seletor-mes";
 
@@ -60,6 +61,30 @@ export default async function RecebimentosPage({
     .limit(300);
 
   const recebidos = (data ?? []) as unknown as Recebido[];
+
+  // Notas dos pagamentos listados (1 consulta) + total pendente para o lote.
+  const ids = recebidos.map((p) => p.id);
+  const [{ data: notasData }, { count: pendentes }] = await Promise.all([
+    ids.length
+      ? supabase
+          .from("notas_fiscais")
+          .select("id, pagamento_id, status, numero, url_pdf, mensagem_erro, criado_em")
+          .in("pagamento_id", ids)
+          .order("criado_em", { ascending: false })
+      : Promise.resolve({ data: [] }),
+    supabase
+      .from("notas_fiscais")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["aguardando_configuracao", "erro"]),
+  ]);
+  // A nota "da vez" é a não cancelada; se só houver canceladas, a mais recente.
+  const notaPorPagamento = new Map<string, NotaResumo>();
+  for (const n of (notasData ?? []) as (NotaResumo & { pagamento_id: string })[]) {
+    const atual = notaPorPagamento.get(n.pagamento_id);
+    if (!atual || (atual.status === "cancelada" && n.status !== "cancelada")) {
+      notaPorPagamento.set(n.pagamento_id, n);
+    }
+  }
   const total = recebidos.reduce((s, p) => s + Number(p.valor), 0);
 
   // Quebra por forma de pagamento (Pix, Dinheiro, Cartão…).
@@ -109,8 +134,12 @@ export default async function RecebimentosPage({
         <CardHeader>
           <CardTitle>Pagamentos confirmados</CardTitle>
           <CardDescription>
-            Ordenados do mais recente. Toque no nome para abrir o aluno.
+            Ordenados do mais recente. Toque no nome para abrir o aluno. A
+            coluna Nota mostra a nota fiscal de cada mensalidade.
           </CardDescription>
+          <div className="pt-2">
+            <EmitirPendentesButton quantidade={pendentes ?? 0} />
+          </div>
         </CardHeader>
         <CardContent>
           {recebidos.length === 0 ? (
@@ -122,33 +151,40 @@ export default async function RecebimentosPage({
           ) : (
             <ul className="divide-y rounded-lg border">
               {recebidos.map((p) => (
-                <li key={p.id}>
+                <li
+                  key={p.id}
+                  className="flex flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between"
+                >
                   <Link
                     href={`/admin/alunos/${p.aluno_id}`}
-                    className="flex items-center justify-between gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
+                    className="min-w-0 rounded-md transition-colors hover:text-primary"
                   >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">
-                        {p.alunos?.nome ?? "Aluno"}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        Competência {rotuloCompetencia(p.competencia)}
-                        {p.data_pagamento
-                          ? ` · pago ${formatData(p.data_pagamento)}`
-                          : ""}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      {p.forma_pagamento ? (
-                        <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-                          {p.forma_pagamento}
-                        </span>
-                      ) : null}
-                      <span className="text-sm font-semibold tabular-nums text-emerald-700">
-                        + {formatBRL(p.valor)}
-                      </span>
-                    </div>
+                    <p className="truncate text-sm font-medium">
+                      {p.alunos?.nome ?? "Aluno"}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      Competência {rotuloCompetencia(p.competencia)}
+                      {p.data_pagamento
+                        ? ` · pago ${formatData(p.data_pagamento)}`
+                        : ""}
+                    </p>
                   </Link>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+                    {p.forma_pagamento ? (
+                      <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+                        {p.forma_pagamento}
+                      </span>
+                    ) : null}
+                    <span className="text-sm font-semibold tabular-nums text-emerald-700">
+                      + {formatBRL(p.valor)}
+                    </span>
+                    <div className="sm:max-w-72">
+                      <NotaAcoes
+                        pagamentoId={p.id}
+                        nota={notaPorPagamento.get(p.id) ?? null}
+                      />
+                    </div>
+                  </div>
                 </li>
               ))}
             </ul>

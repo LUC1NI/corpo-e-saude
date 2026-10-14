@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   BarChart3,
   CheckCircle2,
+  FileText,
   LayoutDashboard,
   Wallet,
 } from "lucide-react";
@@ -28,6 +29,11 @@ const ABAS: { href: string; rotulo: string; icone: LucideIcon }[] = [
     href: "/admin/financeiro/recebimentos",
     rotulo: "Recebimentos",
     icone: CheckCircle2,
+  },
+  {
+    href: "/admin/financeiro/nota-fiscal",
+    rotulo: "Nota fiscal",
+    icone: FileText,
   },
 ];
 

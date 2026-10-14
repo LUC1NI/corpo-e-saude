@@ -20,6 +20,7 @@ export default async function NovoAlunoPage() {
       <Card>
         <CardContent>
           <AlunoForm
+            mostrarFiscal
             professores={(data ?? []) as { id: string; nome: string }[]}
           />
         </CardContent>

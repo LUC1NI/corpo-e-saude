@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, Wallet } from "lucide-react";
+import { AlertCircle, CheckCircle2, FileDown, Wallet } from "lucide-react";
 
 import {
   Card,
@@ -46,10 +46,11 @@ export default async function AlunoMensalidadePage() {
   const aluno = await getAlunoAtual();
   let pagamentos: PagamentoAluno[] = [];
   let matricula: MatriculaAtiva | null = null;
+  const pdfPorPagamento = new Map<string, string>();
 
   if (aluno) {
     const supabase = await createClient();
-    const [{ data: pagamentosData }, { data: matriculaData }] =
+    const [{ data: pagamentosData }, { data: matriculaData }, { data: notasData }] =
       await Promise.all([
         supabase
           .from("pagamentos")
@@ -65,7 +66,16 @@ export default async function AlunoMensalidadePage() {
           .eq("aluno_id", aluno.id)
           .eq("status", "ativa")
           .maybeSingle(),
+        // RLS: o aluno só enxerga as próprias notas AUTORIZADAS.
+        supabase
+          .from("notas_fiscais")
+          .select("pagamento_id, url_pdf")
+          .eq("aluno_id", aluno.id)
+          .eq("status", "autorizada"),
       ]);
+    for (const n of (notasData ?? []) as { pagamento_id: string; url_pdf: string | null }[]) {
+      if (n.url_pdf) pdfPorPagamento.set(n.pagamento_id, n.url_pdf);
+    }
 
     pagamentos = (pagamentosData ?? []) as PagamentoAluno[];
     if (matriculaData) {
@@ -201,6 +211,26 @@ export default async function AlunoMensalidadePage() {
                   cabecalho: "Situação",
                   alinhar: "right",
                   celula: (p) => <StatusPagamento status={efetivo(p)} />,
+                },
+                {
+                  cabecalho: "Nota fiscal",
+                  alinhar: "right",
+                  celula: (p) => {
+                    const pdf = pdfPorPagamento.get(p.id);
+                    return pdf ? (
+                      <a
+                        href={pdf}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                      >
+                        <FileDown className="size-4" />
+                        Baixar nota fiscal
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    );
+                  },
                 },
               ]}
             />

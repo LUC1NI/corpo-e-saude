@@ -15,6 +15,7 @@ import {
   type DespesaInput,
   type MatriculaInput,
 } from "@/lib/schemas";
+import { carregarConfigFiscal, emitirNotaDoPagamento } from "@/lib/nfse/servico";
 import { createClient } from "@/lib/supabase/server";
 import type { Periodicidade } from "@/lib/tipos";
 
@@ -126,7 +127,7 @@ export async function cancelarMatricula(
 export async function marcarPagamentoPago(
   pagamentoId: string,
   formaPagamento?: string,
-): Promise<ResultadoAcao> {
+): Promise<ResultadoAcao<{ avisoNota?: string }>> {
   await assertPapel(["admin"]);
   const supabase = await createClient();
   const { error } = await supabase
@@ -139,8 +140,21 @@ export async function marcarPagamentoPago(
     .eq("id", pagamentoId);
   if (error) return falha("Não foi possível dar baixa no pagamento.");
 
+  // Nota fiscal depois da baixa. A baixa NUNCA falha por causa da nota:
+  // qualquer problema vira status/mensagem na própria nota.
+  let avisoNota: string | undefined;
+  try {
+    const config = await carregarConfigFiscal(supabase);
+    if (config?.emitir_automaticamente_na_baixa) {
+      avisoNota = (await emitirNotaDoPagamento(supabase, pagamentoId)).mensagem;
+    }
+  } catch {
+    avisoNota = "Pagamento confirmado, mas a nota não foi gerada. Emita em Recebimentos.";
+  }
+
   revalidatePath("/admin/financeiro");
-  return sucesso();
+  revalidatePath("/admin/financeiro/recebimentos");
+  return sucesso({ avisoNota });
 }
 
 /**

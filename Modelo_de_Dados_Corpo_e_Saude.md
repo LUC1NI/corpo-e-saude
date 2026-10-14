@@ -92,6 +92,41 @@ Categorias pré-cadastradas para agilizar o lançamento (aluguel, material, etc.
 - `id` (PK)
 - `nome`
 
+### `alunos_dados_fiscais`
+CPF e endereço do aluno (tomador da nota fiscal). Tabela separada de `alunos`
+porque o professor lê a linha de `alunos` e não deve ver CPF (LGPD).
+- `aluno_id` (PK, FK → alunos)
+- `cpf` — só dígitos (validado pelos dígitos verificadores)
+- `cep`, `logradouro`, `numero`, `complemento`, `bairro`, `cidade`, `uf`
+- `codigo_municipio` — IBGE (vem do ViaCEP; exigido pela API)
+- `atualizado_em`
+
+> RLS: admin total; aluno lê só o próprio; professor sem acesso.
+
+### `config_fiscal`
+Linha única com a configuração da NFS-e (segredos ficam fora do banco).
+- `ativo`, `ambiente` (`homologacao` | `producao`)
+- `api_nfse` — `nfse` (municipal) | `nfsen` (Nacional)
+- `regime` — `mei` | `simples_nacional` | `outro`
+- `cnpj`, `inscricao_municipal`
+- `codigo_servico` (LC 116), `codigo_tributacao_nacional` (só Nacional)
+- `aliquota_iss`, `natureza_operacao` (Mafra: 101 a 112)
+- `descricao_servico_padrao` — template com {plano}, {mes}, {ano}, {aluno}
+- `emitir_automaticamente_na_baixa`, `atualizado_em`
+
+### `notas_fiscais`
+Uma NFS-e por mensalidade paga.
+- `id` (PK), `pagamento_id` (FK → pagamentos), `aluno_id` (FK → alunos)
+- `referencia` — única e idempotente (`pag-{pagamento_id}`)
+- `status` — `aguardando_configuracao` | `processando` | `autorizada` | `erro` | `cancelada`
+- `numero`, `codigo_verificacao`, `url_pdf`, `url_xml`, `valor`
+- `mensagem_erro`, `emitida_em`, `cancelada_em`, `justificativa_cancelamento`
+- `criado_em`, `atualizado_em`
+
+> No máximo uma nota não cancelada por pagamento (índice único parcial).
+> RLS: admin total; aluno lê só as próprias `autorizada`; professor sem
+> acesso. Aluno com nota não é excluído (só inativado).
+
 ---
 
 ## 3. Presença e horários

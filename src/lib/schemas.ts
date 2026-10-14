@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cpfValido } from "@/lib/cpf";
 
 /** Transforma string vazia em undefined (campos opcionais de formulário). */
 const opcional = (schema: z.ZodString) =>
@@ -243,3 +244,72 @@ export const execucaoSchema = z.object({
 });
 
 export type ExecucaoInput = z.infer<typeof execucaoSchema>;
+
+// ---------------------------------------------------------------------------
+// NFS-e — dados fiscais do aluno (tomador) e configuração fiscal
+// ---------------------------------------------------------------------------
+/** Texto opcional que vira só dígitos ("123.456.789-09" -> "12345678909"). */
+const digitosOpcional = (tamanho: number, msg: string) =>
+  z.preprocess(
+    (v) => {
+      if (typeof v !== "string") return v;
+      const d = v.replace(/\D/g, "");
+      return d === "" ? undefined : d;
+    },
+    z.string().length(tamanho, msg).optional(),
+  );
+
+export const dadosFiscaisSchema = z.object({
+  cpf: digitosOpcional(11, "CPF deve ter 11 dígitos.").refine(
+    (v) => v === undefined || cpfValido(v),
+    "CPF inválido (confira os dígitos).",
+  ),
+  cep: digitosOpcional(8, "CEP deve ter 8 dígitos."),
+  logradouro: opcional(z.string().trim().max(120)),
+  numero: opcional(z.string().trim().max(10, "Número: até 10 caracteres.")),
+  complemento: opcional(z.string().trim().max(60)),
+  bairro: opcional(z.string().trim().max(60)),
+  cidade: opcional(z.string().trim().max(60)),
+  uf: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() ? v.trim().toUpperCase() : undefined),
+    z.string().regex(/^[A-Z]{2}$/, "UF inválida.").optional(),
+  ),
+  codigo_municipio: digitosOpcional(7, "Código IBGE inválido."),
+});
+
+export type DadosFiscaisInput = z.infer<typeof dadosFiscaisSchema>;
+
+export const configFiscalSchema = z.object({
+  ativo: z.boolean(),
+  ambiente: z.enum(["homologacao", "producao"]),
+  api_nfse: z.enum(["nfse", "nfsen"]),
+  regime: z.enum(["mei", "simples_nacional", "outro"]),
+  cnpj: digitosOpcional(14, "CNPJ deve ter 14 dígitos."),
+  inscricao_municipal: opcional(z.string().trim().max(30)),
+  codigo_servico: opcional(
+    z.string().trim().regex(/^\d{2}\.\d{2}$/, "Use o formato do item da LC 116, ex.: 06.04."),
+  ),
+  codigo_tributacao_nacional: opcional(
+    z.string().trim().regex(/^\d{6}$/, "Código nacional tem 6 dígitos, ex.: 060401."),
+  ),
+  aliquota_iss: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : Number(String(v).replace(",", "."))),
+    z.number().min(0).max(5, "Alíquota de ISS vai de 0 a 5%.").optional(),
+  ),
+  natureza_operacao: opcional(
+    z.string().trim().regex(/^1(0[1-9]|1[0-2])$/, "Mafra usa natureza de 101 a 112."),
+  ),
+  descricao_servico_padrao: z.string().trim().min(5, "Descreva o serviço.").max(500),
+  emitir_automaticamente_na_baixa: z.boolean(),
+});
+
+export type ConfigFiscalInput = z.infer<typeof configFiscalSchema>;
+
+export const cancelarNotaSchema = z.object({
+  notaId: z.string().uuid(),
+  justificativa: z
+    .string()
+    .trim()
+    .min(15, "A justificativa precisa de pelo menos 15 caracteres.")
+    .max(255),
+});

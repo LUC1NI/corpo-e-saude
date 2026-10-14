@@ -35,6 +35,7 @@ export function BaixaButton({ pagamentoId }: { pagamentoId: string }) {
     if (res.ok) {
       setAberto(false);
       toast.success("Pagamento confirmado.");
+      if (res.dados?.avisoNota) toast.info(res.dados.avisoNota);
       router.refresh();
     } else {
       toast.error(res.erro);

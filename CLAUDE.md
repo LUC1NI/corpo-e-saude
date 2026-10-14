@@ -38,7 +38,7 @@ Idioma do domínio: **português** (tabelas, campos e termos de negócio em pt-B
 
 A fonte de verdade é `Modelo_de_Dados_Corpo_e_Saude.md`. Resumo das tabelas:
 `usuarios`, `professores`, `alunos`, `planos`, `matriculas`, `pagamentos`, `despesas`, `categorias_despesa`, `horarios`, `presencas`, `anamneses`, `avaliacoes_fisicas`, `exercicios`, `treinos`, `treino_divisoes`, `treino_exercicios`.
-Tabelas adicionadas depois (também no modelo): `aluno_horarios`, `treino_execucoes`, `rate_limits`, `logs_erro`, `push_inscricoes`, `notificacoes_enviadas`.
+Tabelas adicionadas depois (também no modelo): `aluno_horarios`, `treino_execucoes`, `rate_limits`, `logs_erro`, `push_inscricoes`, `notificacoes_enviadas`, `alunos_dados_fiscais`, `config_fiscal`, `notas_fiscais`.
 
 Não invente tabelas ou campos fora do modelo; se algo for necessário, proponha antes de criar.
 
@@ -52,6 +52,7 @@ Não invente tabelas ou campos fora do modelo; se algo for necessário, proponha
 - **Notificações push** (Web Push, `src/lib/push.ts` com `@pushforge/builder`, que roda no Workers): lembretes de mensalidade 3 dias antes / no dia / 3 dias depois (cron diário, após a renovação) e "treino atualizado" para aluno online (gancho em `revalidarAluno` de `acoes-treino.ts`, via `after()`). Nunca duplica (`notificacoes_enviadas`). Permissão só por clique (card `AtivarNotificacoes`).
 - **Inadimplência e alertas:** derivam de `pagamentos` com status `pendente`/`vencido`; exibidos no painel do dono e na área do aluno.
 - **Financeiro manual:** entradas e despesas são lançadas no sistema. **Sem integração bancária** (decisão de custo). Lançamento deve ser rápido (categorias pré-cadastradas, valor pré-preenchido na baixa).
+- **Nota fiscal (NFS-e) por mensalidade paga:** a baixa manual dispara a nota (`emitir_automaticamente_na_baixa`), via Focus NFe atrás da interface `ProvedorNfse` (`src/lib/nfse/`). **A baixa nunca falha por causa da nota.** Sem `FOCUS_NFE_TOKEN` (ou `ativo=false`) a nota fica `aguardando_configuracao` e é emitida depois em lote. Referência idempotente `pag-{pagamento_id}`. CPF/endereço do aluno em `alunos_dados_fiscais` (só admin + o próprio aluno). Webhook `/api/nfse/webhook` + fallback no cron. Modo simulação só fora de produção.
 - **Aluno presencial × online:** campo `tipo`, resolvido no servidor (layout do aluno). Menu do **presencial**: Início · Horários · Evolução · Mensalidade (uso principal: ver os próprios horários e a mensalidade; treina na aula, sem ficha no app). Menu do **online**: Início · Treino · Evolução · Mensalidade (ficha + modo treino). Presencial em `/aluno/treino` e online em `/aluno/horarios` veem estado vazio amigável.
 - **Faltas** não são gravadas: falta = aula fixa (`aluno_horarios`) já passada sem `presenca` no dia (`src/lib/historico-aulas.ts`).
 - **Datas "de hoje"** sempre no fuso do estúdio: `hojeISO()`/`agoraNoEstudio()` (`src/lib/financeiro.ts`). O servidor (Workers) roda em UTC.
@@ -121,6 +122,7 @@ Visual moderno, limpo e profissional — referência são os mockups já aprovad
 8. **Treino** — biblioteca de exercícios, fichas, divisões (A/B/C), prescrição/ajuste.
 9. **Área do aluno** (mobile/PWA) — treinos, evolução, presenças, situação financeira, alertas.
 10. **Acabamento** — instalação PWA, backup automático, revisão de segurança/performance, deploy.
+11. **Melhorias out/2026** — endereço centralizado (Fase 0), área do aluno por tipo (1), caminhos de acesso + QR + guia de instalação (2), notificações push (3), NFS-e pronta e desligada até o token (4).
 
 Construir e validar um módulo por vez, na ordem acima. Não pular para módulos avançados antes da base (auth + RLS) estar sólida.
 

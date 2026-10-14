@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { autorizarCron } from "@/lib/cron-auth";
 import { registrarErro } from "@/lib/logs";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sincronizarNotasPendentes } from "@/lib/nfse/servico";
 import { enviarLembretesMensalidade } from "@/lib/push";
 import { executarRenovacao } from "@/lib/renovacao";
 
@@ -29,7 +30,9 @@ export async function GET(request: Request): Promise<Response> {
     await supabase.rpc("rl_limpar");
     // Lembretes de mensalidade (push), depois da renovação.
     const lembretes = await enviarLembretesMensalidade(supabase);
-    return NextResponse.json({ ok: true, geradas, lembretes });
+    // Fallback do webhook da NFS-e: notas "processando" há mais de 1 hora.
+    const notasSincronizadas = await sincronizarNotasPendentes(supabase);
+    return NextResponse.json({ ok: true, geradas, lembretes, notasSincronizadas });
   } catch (e) {
     console.error("cron/renovar falhou:", e);
     await registrarErro("cron/renovar", e);

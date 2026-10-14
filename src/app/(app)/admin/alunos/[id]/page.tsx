@@ -75,6 +75,7 @@ export default async function AlunoDetalhePage({
     modelos,
     execucoes,
     frequencia,
+    { data: fiscalData },
   ] = await Promise.all([
     supabase.from("alunos").select("*").eq("id", id).maybeSingle(),
     supabase.from("professores").select("id, nome").eq("ativo", true).order("nome"),
@@ -110,6 +111,7 @@ export default async function AlunoDetalhePage({
     getModelosTreino(),
     getExecucoesDoAluno(id),
     getFrequenciaDoAluno(supabase, id),
+    supabase.from("alunos_dados_fiscais").select("*").eq("aluno_id", id).maybeSingle(),
   ]);
 
   if (!alunoData) notFound();
@@ -247,6 +249,8 @@ export default async function AlunoDetalhePage({
             <AlunoForm
               alunoId={aluno.id}
               professores={professores}
+              mostrarFiscal
+              fiscalInicial={fiscalData ?? undefined}
               valoresIniciais={{
                 nome: aluno.nome,
                 email: aluno.email ?? "",

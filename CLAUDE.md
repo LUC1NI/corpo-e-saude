@@ -49,7 +49,9 @@ Não invente tabelas ou campos fora do modelo; se algo for necessário, proponha
 - **Renovação automática:** a `matricula` mantém a cobrança ativa até ser cancelada. Uma rotina gera os `pagamentos` pendentes com base em `data_proxima_cobranca`.
 - **Inadimplência e alertas:** derivam de `pagamentos` com status `pendente`/`vencido`; exibidos no painel do dono e na área do aluno.
 - **Financeiro manual:** entradas e despesas são lançadas no sistema. **Sem integração bancária** (decisão de custo). Lançamento deve ser rápido (categorias pré-cadastradas, valor pré-preenchido na baixa).
-- **Aluno presencial × online:** campo `tipo`; o aluno online vive na área do aluno (treino + acompanhamento).
+- **Aluno presencial × online:** campo `tipo`, resolvido no servidor (layout do aluno). Menu do **presencial**: Início · Horários · Evolução · Mensalidade (uso principal: ver os próprios horários e a mensalidade; treina na aula, sem ficha no app). Menu do **online**: Início · Treino · Evolução · Mensalidade (ficha + modo treino). Presencial em `/aluno/treino` e online em `/aluno/horarios` veem estado vazio amigável.
+- **Faltas** não são gravadas: falta = aula fixa (`aluno_horarios`) já passada sem `presenca` no dia (`src/lib/historico-aulas.ts`).
+- **Datas "de hoje"** sempre no fuso do estúdio: `hojeISO()`/`agoraNoEstudio()` (`src/lib/financeiro.ts`). O servidor (Workers) roda em UTC.
 - **Horários:** grade por professor, com **visão da quantidade de alunos em cada horário**.
 
 ---

@@ -1,12 +1,16 @@
+import { cache } from "react";
+
 import { createClient } from "@/lib/supabase/server";
 
 /**
  * Retorna o registro de aluno do usuário logado (id + nome + tipo), ou null.
  * Usado para escopar as consultas da área do aluno aos próprios dados. O
  * `tipo` decide a experiência de treino: o online usa o modo treino (player
- * + retorno ao professor); o presencial só consulta o que foi prescrito.
+ * + retorno ao professor); o presencial usa o app para horários e mensalidade.
+ *
+ * `cache()`: layout e página chamam na mesma requisição, mas vai 1x ao banco.
  */
-export async function getAlunoAtual(): Promise<{
+export const getAlunoAtual = cache(async function getAlunoAtual(): Promise<{
   id: string;
   nome: string;
   tipo: "presencial" | "online";
@@ -30,4 +34,4 @@ export async function getAlunoAtual(): Promise<{
       tipo: "presencial" | "online";
     } | null) ?? null
   );
-}
+});

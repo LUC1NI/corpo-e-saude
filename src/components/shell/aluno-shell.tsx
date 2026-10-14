@@ -3,6 +3,7 @@ import { BottomNav } from "@/components/shell/bottom-nav";
 import { LogoMarca } from "@/components/shell/logo-marca";
 import { LogoutButton } from "@/components/logout-button";
 import { PwaInstallReminder } from "@/components/pwa/install-reminder";
+import type { TipoAluno } from "@/lib/navegacao";
 
 /**
  * Shell da área do aluno.
@@ -14,14 +15,16 @@ import { PwaInstallReminder } from "@/components/pwa/install-reminder";
  */
 export function AlunoShell({
   nome,
+  tipo,
   children,
 }: {
   nome: string;
+  tipo: TipoAluno;
   children: React.ReactNode;
 }) {
   return (
     <div className="min-h-dvh bg-background">
-      <AppSidebar papel="aluno" nome={nome} />
+      <AppSidebar papel="aluno" nome={nome} tipoAluno={tipo} />
 
       <div className="lg:pl-64">
         {/* Header só no mobile/tablet (no desktop a marca/sair vivem na sidebar). */}
@@ -36,7 +39,7 @@ export function AlunoShell({
       </div>
 
       <PwaInstallReminder />
-      <BottomNav />
+      <BottomNav tipo={tipo} />
     </div>
   );
 }

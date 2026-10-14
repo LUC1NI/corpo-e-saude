@@ -4,7 +4,7 @@ import { LogoMarca } from "@/components/shell/logo-marca";
 import { SidebarNav } from "@/components/shell/sidebar-nav";
 import { UserCard } from "@/components/shell/user-card";
 import type { Papel } from "@/lib/auth";
-import { navPorPapel } from "@/lib/navegacao";
+import { navPorPapel, type TipoAluno } from "@/lib/navegacao";
 
 /**
  * Conteúdo da sidebar (fundo navy): marca, navegação e card do usuário.
@@ -16,13 +16,15 @@ import { navPorPapel } from "@/lib/navegacao";
 export function SidebarInner({
   papel,
   nome,
+  tipoAluno,
   onNavegar,
 }: {
   papel: Papel;
   nome: string;
+  tipoAluno?: TipoAluno;
   onNavegar?: () => void;
 }) {
-  const itens = navPorPapel(papel);
+  const itens = navPorPapel(papel, tipoAluno);
 
   return (
     <div className="flex h-full flex-col gap-6 bg-[#033373] p-4">

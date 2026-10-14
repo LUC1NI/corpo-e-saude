@@ -41,21 +41,34 @@ export const navProfessor: ItemNav[] = [
   { titulo: "Horários", href: "/professor/horarios", icone: Clock },
 ];
 
-/** Navegação inferior do aluno (mobile-first / PWA). */
-export const navAluno: ItemNav[] = [
-  { titulo: "Início", href: "/aluno", icone: Home },
-  { titulo: "Treino", href: "/aluno/treino", icone: Dumbbell },
-  { titulo: "Evolução", href: "/aluno/evolucao", icone: LineChart },
-  { titulo: "Mensalidade", href: "/aluno/mensalidade", icone: Wallet },
-];
+export type TipoAluno = "presencial" | "online";
 
-export function navPorPapel(papel: Papel): ItemNav[] {
+/**
+ * Navegação do aluno (bottom-nav no celular, sidebar no desktop). Depende do
+ * tipo: o presencial usa o app para ver os HORÁRIOS dele; o online, a ficha
+ * de TREINO (acompanhamento a distância).
+ */
+export function navAluno(tipo: TipoAluno): ItemNav[] {
+  return [
+    { titulo: "Início", href: "/aluno", icone: Home },
+    tipo === "online"
+      ? { titulo: "Treino", href: "/aluno/treino", icone: Dumbbell }
+      : { titulo: "Horários", href: "/aluno/horarios", icone: Clock },
+    { titulo: "Evolução", href: "/aluno/evolucao", icone: LineChart },
+    { titulo: "Mensalidade", href: "/aluno/mensalidade", icone: Wallet },
+  ];
+}
+
+export function navPorPapel(
+  papel: Papel,
+  tipoAluno: TipoAluno = "presencial",
+): ItemNav[] {
   switch (papel) {
     case "admin":
       return navAdmin;
     case "professor":
       return navProfessor;
     case "aluno":
-      return navAluno;
+      return navAluno(tipoAluno);
   }
 }

@@ -3,7 +3,7 @@
 import Link from "@/components/ui-extra/link";
 import { usePathname } from "next/navigation";
 
-import { navAluno } from "@/lib/navegacao";
+import { navAluno, type TipoAluno } from "@/lib/navegacao";
 import { cn } from "@/lib/utils";
 
 function ativo(pathname: string, href: string): boolean {
@@ -13,13 +13,13 @@ function ativo(pathname: string, href: string): boolean {
 }
 
 /** Navegação inferior fixa da área do aluno (mobile/PWA). */
-export function BottomNav() {
+export function BottomNav({ tipo }: { tipo: TipoAluno }) {
   const pathname = usePathname();
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur lg:hidden">
       <div className="mx-auto flex w-full max-w-md items-stretch justify-around px-2 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))]">
-        {navAluno.map((item) => {
+        {navAluno(tipo).map((item) => {
           const Icone = item.icone;
           const selecionado = ativo(pathname, item.href);
           return (

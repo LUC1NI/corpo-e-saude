@@ -1,6 +1,5 @@
 import { format, startOfMonth } from "date-fns";
 import {
-  AlertCircle,
   CalendarCheck,
   CheckCircle2,
   ChevronRight,
@@ -12,22 +11,32 @@ import {
 } from "lucide-react";
 import Link from "@/components/ui-extra/link";
 
+import { SituacaoMensalidadeCard } from "@/components/aluno/situacao-mensalidade";
 import { Card } from "@/components/ui/card";
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 import { requireUsuario } from "@/lib/auth";
 import { getAlunoAtual } from "@/lib/aluno";
-import { hojeISO } from "@/lib/financeiro";
+import {
+  agoraNoEstudio,
+  hojeISO,
+  situacaoMensalidade,
+} from "@/lib/financeiro";
 import { createClient } from "@/lib/supabase/server";
 import { getTreinosDoAluno } from "@/lib/treino";
 import { diaDaSemanaHoje } from "@/lib/treino-utils";
-import { DIAS_SEMANA, horaCurta, type TreinoComTudo } from "@/lib/tipos";
+import {
+  DIAS_SEMANA,
+  horaCurta,
+  type DivisaoComExercicios,
+  type TreinoComTudo,
+} from "@/lib/tipos";
 
 interface ProximoTreino {
-  rotulo: string;
+  /** "Hoje, Segunda" / "Amanhã, Terça" / "Quarta". */
+  quando: string;
   hora_inicio: string;
   hora_fim: string;
   professorNome: string;
-  ehHoje: boolean;
 }
 
 /**
@@ -48,38 +57,44 @@ function proximaOcorrencia(
   return cand;
 }
 
+/**
+ * Início do aluno. Presencial: próximo treino (horário fixo) + mensalidade.
+ * Online: treino do dia (ficha) + mensalidade.
+ */
 export default async function AlunoHome() {
   const usuario = await requireUsuario(["aluno"]);
   const primeiro = usuario.nome.split(" ")[0];
   const diaHoje = diaDaSemanaHoje();
+  const agora = agoraNoEstudio();
+  const hoje = hojeISO();
 
   const aluno = await getAlunoAtual();
   const online = aluno?.tipo === "online";
   let treinos: TreinoComTudo[] = [];
-  let pendencias = 0;
+  let abertos: { vencimento: string; valor: number }[] = [];
   let temAvaliacoes = false;
-  let presencasMes = 0;
-  let aulasHojeDestaque: ProximoTreino[] = [];
-  let proximos: ProximoTreino[] = [];
+  let treinosMes = 0;
+  let proximo: ProximoTreino | null = null;
   let treinoConcluidoHoje = false;
 
   if (aluno) {
     const supabase = await createClient();
-    const inicioMes = format(startOfMonth(new Date()), "yyyy-MM-dd");
-    const hoje = hojeISO();
+    const inicioMes = format(startOfMonth(agora), "yyyy-MM-dd");
+    const vazio = Promise.resolve({ data: [] as unknown[], count: 0 });
     const [
       treinosData,
-      { count: pend },
+      { data: abertosData },
       { count: avals },
       { count: pres },
       { count: execs },
       { count: execHoje },
       { data: agendaData },
     ] = await Promise.all([
-      getTreinosDoAluno(aluno.id),
+      // Ficha de treino é do aluno ONLINE; o presencial treina na aula.
+      online ? getTreinosDoAluno(aluno.id) : Promise.resolve([]),
       supabase
         .from("pagamentos")
-        .select("id", { count: "exact", head: true })
+        .select("vencimento, valor")
         .eq("aluno_id", aluno.id)
         .neq("status", "pago"),
       supabase
@@ -91,19 +106,23 @@ export default async function AlunoHome() {
         .select("id", { count: "exact", head: true })
         .eq("aluno_id", aluno.id)
         .gte("data", inicioMes),
-      supabase
-        .from("treino_execucoes")
-        .select("id", { count: "exact", head: true })
-        .eq("aluno_id", aluno.id)
-        .gte("finalizado_em", inicioMes),
-      supabase
-        .from("treino_execucoes")
-        .select("id", { count: "exact", head: true })
-        .eq("aluno_id", aluno.id)
-        .gte("finalizado_em", `${hoje}T00:00:00`),
-      // Aluno online não tem aula no estúdio — não busca (nem mostra) agenda.
       online
-        ? Promise.resolve({ data: [] as unknown[] })
+        ? supabase
+            .from("treino_execucoes")
+            .select("id", { count: "exact", head: true })
+            .eq("aluno_id", aluno.id)
+            .gte("finalizado_em", `${inicioMes}T00:00:00-03:00`)
+        : vazio,
+      online
+        ? supabase
+            .from("treino_execucoes")
+            .select("id", { count: "exact", head: true })
+            .eq("aluno_id", aluno.id)
+            .gte("finalizado_em", `${hoje}T00:00:00-03:00`)
+        : vazio,
+      // Aluno online não tem aula no estúdio: não busca (nem mostra) agenda.
+      online
+        ? vazio
         : supabase
             .from("aluno_horarios")
             .select(
@@ -112,279 +131,85 @@ export default async function AlunoHome() {
             .eq("aluno_id", aluno.id),
     ]);
     treinos = treinosData;
-    pendencias = pend ?? 0;
+    abertos = (abertosData ?? []) as typeof abertos;
     temAvaliacoes = (avals ?? 0) > 0;
     // Presenças marcadas pelo professor + treinos concluídos no app.
-    presencasMes = (pres ?? 0) + (execs ?? 0);
-    // Qualquer aluno com ficha pode concluir treino pelo app (modo treino).
+    treinosMes = (pres ?? 0) + (execs ?? 0);
     treinoConcluidoHoje = (execHoje ?? 0) > 0;
 
-    // Próximos treinos: a próxima ocorrência de cada horário agendado, a
-    // partir de agora. À noite, o horário de hoje já passou → aparece o de
-    // amanhã (ou o próximo dia com aula).
-    const agora = new Date();
+    // Próximo treino: a próxima ocorrência entre os horários fixos do aluno.
+    // À noite, o de hoje já passou e cai para o próximo dia com aula.
     const inicioHoje = new Date(agora).setHours(0, 0, 0, 0);
-    const eventos = ((agendaData ?? []) as unknown as {
-      horarios: {
-        dia_semana: number;
-        hora_inicio: string;
-        hora_fim: string;
-        professores: { nome: string } | null;
-      } | null;
-    }[])
+    const [primeiroEvento] = (
+      (agendaData ?? []) as unknown as {
+        horarios: {
+          dia_semana: number;
+          hora_inicio: string;
+          hora_fim: string;
+          professores: { nome: string } | null;
+        } | null;
+      }[]
+    )
       .map((r) => r.horarios)
       .filter((h): h is NonNullable<typeof h> => !!h)
-      .map((h) => {
-        const quando = proximaOcorrencia(agora, h.dia_semana, h.hora_inicio);
-        const difDias = Math.round(
-          (new Date(quando).setHours(0, 0, 0, 0) - inicioHoje) / 86_400_000,
-        );
-        const rotulo =
-          difDias === 0
-            ? "Hoje"
-            : difDias === 1
-              ? "Amanhã"
-              : DIAS_SEMANA[quando.getDay()]!;
-        const evento: ProximoTreino = {
-          rotulo,
-          hora_inicio: h.hora_inicio,
-          hora_fim: h.hora_fim,
-          professorNome: h.professores?.nome ?? "Seu professor",
-          ehHoje: difDias === 0,
-        };
-        return { evento, ordem: quando.getTime() };
-      })
-      .sort((a, b) => a.ordem - b.ordem);
-    // Tem aula hoje (ainda por vir) → card de destaque. Senão, a lista dos
-    // próximos dias.
-    aulasHojeDestaque = eventos
-      .filter((e) => e.evento.ehHoje)
-      .map((e) => e.evento);
-    proximos = eventos
-      .filter((e) => !e.evento.ehHoje)
-      .slice(0, 4)
-      .map((e) => e.evento);
+      .map((h) => ({
+        h,
+        data: proximaOcorrencia(agora, h.dia_semana, h.hora_inicio),
+      }))
+      .sort((a, b) => a.data.getTime() - b.data.getTime());
+    if (primeiroEvento) {
+      const { h, data } = primeiroEvento;
+      const difDias = Math.round(
+        (new Date(data).setHours(0, 0, 0, 0) - inicioHoje) / 86_400_000,
+      );
+      const dia = DIAS_SEMANA[data.getDay()]!;
+      proximo = {
+        quando:
+          difDias === 0 ? `Hoje, ${dia}` : difDias === 1 ? `Amanhã, ${dia}` : dia,
+        hora_inicio: h.hora_inicio,
+        hora_fim: h.hora_fim,
+        professorNome: h.professores?.nome ?? "Seu professor",
+      };
+    }
   }
 
-  const ativos = treinos.filter((t) => t.ativo);
-  const principal = ativos[0] ?? null;
+  const principal = treinos.find((t) => t.ativo) ?? null;
   const divisaoHoje =
     principal?.divisoes.find((d) => d.dias_semana.includes(diaHoje)) ?? null;
-  const emDia = pendencias === 0;
+  const situacao = situacaoMensalidade(abertos, hoje);
 
   return (
     <div className="space-y-5">
-      <section className="rounded-2xl bg-[#033373] p-5 text-white shadow-sm lg:p-7">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-white/70">Olá,</p>
-            <p className="text-xl font-bold lg:text-2xl">{primeiro} 👋</p>
-          </div>
-          <AvatarIniciais
-            nome={usuario.nome}
-            tamanho="lg"
-            className="ring-2 ring-white/20"
-          />
+      <section className="flex items-center justify-between rounded-2xl bg-[#033373] p-5 text-white shadow-sm lg:p-7">
+        <div>
+          <p className="text-sm text-white/70">Olá,</p>
+          <p className="text-xl font-bold lg:text-2xl">{primeiro} 👋</p>
         </div>
-
-        <Link
-          href="/aluno/mensalidade"
-          className="mt-4 flex items-center gap-3 rounded-xl bg-white/10 p-3 transition-colors hover:bg-white/15 lg:max-w-sm"
-        >
-          <span
-            className={
-              emDia
-                ? "inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/90 text-white"
-                : "inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-white"
-            }
-          >
-            {emDia ? (
-              <CheckCircle2 className="size-4" />
-            ) : (
-              <AlertCircle className="size-4" />
-            )}
-          </span>
-          <div className="flex-1 text-sm leading-tight">
-            <p className="font-medium">Situação financeira</p>
-            <p className="text-xs text-white/60">
-              {emDia ? "Tudo em dia" : `${pendencias} mensalidade(s) em aberto`}
-            </p>
-          </div>
-          <ChevronRight className="size-4 text-white/50" />
-        </Link>
+        <AvatarIniciais
+          nome={usuario.nome}
+          tamanho="lg"
+          className="ring-2 ring-white/20"
+        />
       </section>
 
-      {/* Aula(s) de hoje: card em destaque, logo abaixo do card principal. */}
-      {aulasHojeDestaque.length > 0 ? (
-        <section>
-          <h2 className="mb-2 font-heading text-base font-bold">
-            {aulasHojeDestaque.length > 1
-              ? "Suas aulas de hoje"
-              : "Sua aula de hoje"}
-          </h2>
-          <div className="space-y-2.5">
-            {aulasHojeDestaque.map((a, i) => (
-              <div
-                key={`hoje-${a.hora_inicio}-${i}`}
-                className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0090D8] to-[#00A8E4] p-5 text-white shadow-[0_10px_30px_rgba(0,144,216,0.35)]"
-              >
-                {/* brilho decorativo no canto */}
-                <span className="pointer-events-none absolute -top-8 -right-8 size-28 rounded-full bg-white/10 blur-xl" />
-                <div className="relative flex items-center gap-4">
-                  <span className="inline-flex size-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
-                    <Clock className="size-7" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold tracking-wide text-white/70 uppercase">
-                      Hoje · {DIAS_SEMANA[diaHoje]}
-                    </p>
-                    <p className="text-2xl leading-tight font-extrabold tabular-nums">
-                      {horaCurta(a.hora_inicio)}–{horaCurta(a.hora_fim)}
-                    </p>
-                    <p className="mt-0.5 flex items-center gap-1.5 text-sm text-white/85">
-                      <UserRound className="size-3.5" />
-                      {a.professorNome}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : proximos.length > 0 ? (
-        <section>
-          <h2 className="mb-2 font-heading text-base font-bold">
-            Próximos treinos
-          </h2>
-          <div className="space-y-2">
-            {proximos.map((a, i) => (
-              <Card
-                key={`${a.rotulo}-${a.hora_inicio}-${i}`}
-                className="flex-row items-center gap-3 p-4"
-              >
-                <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Clock className="size-5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold">
-                    {a.rotulo}
-                    <span className="ml-2 font-normal tabular-nums text-muted-foreground">
-                      {horaCurta(a.hora_inicio)}–{horaCurta(a.hora_fim)}
-                    </span>
-                  </p>
-                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <UserRound className="size-3" />
-                    {a.professorNome}
-                  </p>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      {online ? (
+        <TreinoDeHoje
+          divisaoHoje={divisaoHoje}
+          temFicha={!!principal}
+          concluido={treinoConcluidoHoje}
+          diaHoje={diaHoje}
+        />
+      ) : (
+        <ProximoTreinoCard proximo={proximo} />
+      )}
 
-      {/* Treino de hoje */}
-      <section>
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <h2 className="font-heading text-base font-bold">Treino de hoje</h2>
-          {treinoConcluidoHoje ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-              <CheckCircle2 className="size-3.5" />
-              Concluído hoje
-            </span>
-          ) : null}
-        </div>
-
-        {divisaoHoje ? (
-          <Link href="/aluno/treino">
-            <Card className="gap-3 p-5 transition-colors hover:border-primary/40 hover:bg-secondary/30">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg font-bold text-primary">
-                  {divisaoHoje.nome}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold">
-                    {divisaoHoje.foco || `Treino ${divisaoHoje.nome}`}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {divisaoHoje.exercicios.length} exercício(s) ·{" "}
-                    {DIAS_SEMANA[diaHoje]}
-                  </p>
-                </div>
-                <ChevronRight className="size-5 text-muted-foreground" />
-              </div>
-
-              {divisaoHoje.exercicios.length ? (
-                <ul className="flex flex-wrap gap-1.5">
-                  {divisaoHoje.exercicios.slice(0, 5).map((ex) => (
-                    <li
-                      key={ex.id}
-                      className="rounded-md bg-secondary px-2 py-0.5 text-xs"
-                    >
-                      {ex.exercicio?.nome ?? "Exercício"}
-                    </li>
-                  ))}
-                  {divisaoHoje.exercicios.length > 5 ? (
-                    <li className="rounded-md bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
-                      +{divisaoHoje.exercicios.length - 5}
-                    </li>
-                  ) : null}
-                </ul>
-              ) : null}
-            </Card>
-          </Link>
-        ) : principal ? (
-          <Link href="/aluno/treino">
-            <Card className="flex-row items-center gap-3 p-5 transition-colors hover:border-primary/40 hover:bg-secondary/30">
-              <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
-                <Moon className="size-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold">Dia de descanso</p>
-                <p className="text-xs text-muted-foreground">
-                  Nada agendado para hoje. Toque para ver sua ficha completa.
-                </p>
-              </div>
-              <ChevronRight className="size-5 text-muted-foreground" />
-            </Card>
-          </Link>
-        ) : online ? (
-          <Card className="flex-row items-center gap-3 p-5">
-            <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
-              <Dumbbell className="size-5" />
-            </span>
-            <div>
-              <p className="font-semibold">Treino em breve</p>
-              <p className="text-xs text-muted-foreground">
-                Seu treino aparece aqui quando o professor montar a ficha.
-              </p>
-            </div>
-          </Card>
-        ) : (
-          // Presencial sem ficha no app: o treino é conduzido na aula.
-          <Link href="/aluno/treino">
-            <Card className="flex-row items-center gap-3 p-5 transition-colors hover:border-primary/40 hover:bg-secondary/30">
-              <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Dumbbell className="size-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold">Treino no estúdio</p>
-                <p className="text-xs text-muted-foreground">
-                  Seu professor conduz o treino na sua aula. Veja seus próximos
-                  horários acima.
-                </p>
-              </div>
-              <ChevronRight className="size-5 text-muted-foreground" />
-            </Card>
-          </Link>
-        )}
-      </section>
+      <SituacaoMensalidadeCard situacao={situacao} />
 
       {/* Frequência do mês */}
       <Card className="flex-row items-center gap-3 p-5">
         <span
           className={
-            presencasMes > 0
+            treinosMes > 0
               ? "inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"
               : "inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground"
           }
@@ -393,12 +218,12 @@ export default async function AlunoHome() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-semibold">
-            {presencasMes > 0
-              ? `${presencasMes} treino${presencasMes > 1 ? "s" : ""} este mês`
+            {treinosMes > 0
+              ? `${treinosMes} treino${treinosMes > 1 ? "s" : ""} este mês`
               : "Nenhum treino este mês"}
           </p>
           <p className="text-xs text-muted-foreground">
-            {presencasMes > 0
+            {treinosMes > 0
               ? "Continue nesse ritmo! 💪"
               : online
                 ? "Conclua treinos no app para contar aqui."
@@ -425,5 +250,147 @@ export default async function AlunoHome() {
         </Card>
       </Link>
     </div>
+  );
+}
+
+const DESTAQUE =
+  "relative block overflow-hidden rounded-2xl bg-gradient-to-br from-[#0090D8] to-[#00A8E4] p-5 text-white shadow-[0_10px_30px_rgba(0,144,216,0.35)] transition-transform hover:-translate-y-0.5";
+
+/** Presencial: destaque do próximo treino (dia, hora e professor). */
+function ProximoTreinoCard({ proximo }: { proximo: ProximoTreino | null }) {
+  if (!proximo) {
+    return (
+      <Card className="flex-row items-center gap-3 p-5">
+        <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+          <Clock className="size-5" />
+        </span>
+        <div>
+          <p className="font-semibold">Nenhum horário fixo ainda</p>
+          <p className="text-xs text-muted-foreground">
+            Quando o estúdio agendar seus horários, o próximo treino aparece
+            aqui.
+          </p>
+        </div>
+      </Card>
+    );
+  }
+  return (
+    <Link href="/aluno/horarios" className={DESTAQUE}>
+      {/* brilho decorativo no canto */}
+      <span className="pointer-events-none absolute -top-8 -right-8 size-28 rounded-full bg-white/10 blur-xl" />
+      <div className="relative flex items-center gap-4">
+        <span className="inline-flex size-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+          <Clock className="size-7" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold tracking-wide text-white/75 uppercase">
+            Próximo treino · {proximo.quando}
+          </p>
+          <p className="text-2xl leading-tight font-extrabold tabular-nums">
+            {horaCurta(proximo.hora_inicio)} às {horaCurta(proximo.hora_fim)}
+          </p>
+          <p className="mt-0.5 flex items-center gap-1.5 text-sm text-white/85">
+            <UserRound className="size-3.5" />
+            {proximo.professorNome}
+          </p>
+        </div>
+        <ChevronRight className="size-5 shrink-0 text-white/70" />
+      </div>
+    </Link>
+  );
+}
+
+/** Online: destaque do treino do dia (ou descanso / ficha em preparo). */
+function TreinoDeHoje({
+  divisaoHoje,
+  temFicha,
+  concluido,
+  diaHoje,
+}: {
+  divisaoHoje: DivisaoComExercicios | null;
+  temFicha: boolean;
+  concluido: boolean;
+  diaHoje: number;
+}) {
+  return (
+    <section>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h2 className="font-heading text-base font-bold">Treino de hoje</h2>
+        {concluido ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+            <CheckCircle2 className="size-3.5" />
+            Concluído hoje
+          </span>
+        ) : null}
+      </div>
+
+      {divisaoHoje ? (
+        <Link href="/aluno/treino" className={DESTAQUE}>
+          <span className="pointer-events-none absolute -top-8 -right-8 size-28 rounded-full bg-white/10 blur-xl" />
+          <div className="relative flex items-center gap-4">
+            <span className="inline-flex size-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-2xl font-extrabold backdrop-blur">
+              {divisaoHoje.nome}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold tracking-wide text-white/75 uppercase">
+                {DIAS_SEMANA[diaHoje]}
+              </p>
+              <p className="truncate text-xl leading-tight font-extrabold">
+                {divisaoHoje.foco || `Treino ${divisaoHoje.nome}`}
+              </p>
+              <p className="mt-0.5 text-sm text-white/85">
+                {divisaoHoje.exercicios.length} exercício(s) ·{" "}
+                {concluido ? "feito hoje" : "toque para começar"}
+              </p>
+            </div>
+            <ChevronRight className="size-5 shrink-0 text-white/70" />
+          </div>
+          {divisaoHoje.exercicios.length ? (
+            <ul className="relative mt-4 flex flex-wrap gap-1.5">
+              {divisaoHoje.exercicios.slice(0, 5).map((ex) => (
+                <li
+                  key={ex.id}
+                  className="rounded-md bg-white/15 px-2 py-0.5 text-xs"
+                >
+                  {ex.exercicio?.nome ?? "Exercício"}
+                </li>
+              ))}
+              {divisaoHoje.exercicios.length > 5 ? (
+                <li className="rounded-md bg-white/15 px-2 py-0.5 text-xs">
+                  +{divisaoHoje.exercicios.length - 5}
+                </li>
+              ) : null}
+            </ul>
+          ) : null}
+        </Link>
+      ) : temFicha ? (
+        <Link href="/aluno/treino">
+          <Card className="flex-row items-center gap-3 p-5 transition-colors hover:border-primary/40 hover:bg-secondary/30">
+            <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+              <Moon className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">Dia de descanso</p>
+              <p className="text-xs text-muted-foreground">
+                Nada agendado para hoje. Toque para ver sua ficha completa.
+              </p>
+            </div>
+            <ChevronRight className="size-5 text-muted-foreground" />
+          </Card>
+        </Link>
+      ) : (
+        <Card className="flex-row items-center gap-3 p-5">
+          <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+            <Dumbbell className="size-5" />
+          </span>
+          <div>
+            <p className="font-semibold">Treino em breve</p>
+            <p className="text-xs text-muted-foreground">
+              Seu treino aparece aqui quando o professor montar a ficha.
+            </p>
+          </div>
+        </Card>
+      )}
+    </section>
   );
 }

@@ -1,8 +1,9 @@
+import { agoraNoEstudio } from "@/lib/financeiro";
 import type { DivisaoComExercicios, TreinoComTudo } from "@/lib/tipos";
 
-/** Dia da semana de hoje (0=domingo .. 6=sábado), no fuso do servidor. */
+/** Dia da semana de hoje (0=domingo .. 6=sábado), no fuso do estúdio. */
 export function diaDaSemanaHoje(): number {
-  return new Date().getDay();
+  return agoraNoEstudio().getDay();
 }
 
 /** Divisões agendadas para um dia da semana (achatando as fichas dadas). */

@@ -233,6 +233,8 @@ export default async function AlunoDetalhePage({
               temAcesso={Boolean(aluno.usuario_id)}
               aguardandoPrimeiroAcesso={aguardandoAcesso}
               email={aluno.email}
+              nome={aluno.nome}
+              telefone={aluno.telefone}
             />
           </CardContent>
         </Card>

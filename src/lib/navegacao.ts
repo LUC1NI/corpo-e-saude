@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LineChart,
   type LucideIcon,
+  QrCode,
   UserCog,
   Users,
   Wallet,
@@ -30,6 +31,7 @@ export const navAdmin: ItemNav[] = [
   { titulo: "Alunos", href: "/admin/alunos", icone: Users },
   { titulo: "Professores", href: "/admin/professores", icone: UserCog },
   { titulo: "Planos", href: "/admin/planos", icone: CreditCard },
+  { titulo: "Acesso dos alunos", href: "/admin/acesso-alunos", icone: QrCode },
 ];
 
 /** Navegação do professor — apenas a própria carteira de alunos. */

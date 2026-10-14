@@ -191,6 +191,9 @@ export async function redefinirSenhaAction(
     return { erro: "Escolha uma senha diferente do seu e-mail." };
   }
 
+  // Primeiro acesso = ainda estava com a senha provisória.
+  const primeiroAcesso = user.user_metadata?.senha_provisoria === true;
+
   const { error } = await supabase.auth.updateUser({
     password: parsed.data.senha,
     data: { senha_provisoria: false },
@@ -205,10 +208,11 @@ export async function redefinirSenhaAction(
     .eq("id", user.id)
     .maybeSingle();
 
+  if (!usuario) redirect("/login");
+  const papel = usuario.papel as "admin" | "professor" | "aluno";
+  // Aluno no 1º acesso: guia de instalação do app antes da área dele.
   redirect(
-    usuario
-      ? homePorPapel(usuario.papel as "admin" | "professor" | "aluno")
-      : "/login",
+    papel === "aluno" && primeiroAcesso ? "/aluno/bem-vindo" : homePorPapel(papel),
   );
 }
 

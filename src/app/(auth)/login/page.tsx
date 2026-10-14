@@ -10,7 +10,11 @@ import { getUsuarioAtual, homePorPapel } from "@/lib/auth";
 
 import { LoginForm } from "./login-form";
 
-export const metadata: Metadata = { title: "Entrar" };
+export const metadata: Metadata = {
+  title: "Entrar na área do aluno",
+  description:
+    "Entre na área do aluno do Corpo & Saúde, estúdio de personal trainer em Mafra/SC: horários, treinos, evolução e mensalidade.",
+};
 
 const DESTAQUES = [
   "Personal do seu lado em cada série",

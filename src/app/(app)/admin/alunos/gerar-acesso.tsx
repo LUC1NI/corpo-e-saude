@@ -1,10 +1,12 @@
 "use client";
 
-import { CheckCircle2, Clock, KeyRound, RefreshCw } from "lucide-react";
+import { CheckCircle2, Clock, Copy, KeyRound, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { IconeWhatsApp } from "@/components/landing/icone-whatsapp";
 import { Button } from "@/components/ui/button";
+import { urlAbsoluta } from "@/lib/site";
 
 import { gerarAcessoAluno, redefinirSenhaProvisoria } from "./actions";
 
@@ -13,12 +15,17 @@ export function GerarAcesso({
   temAcesso,
   aguardandoPrimeiroAcesso = false,
   email,
+  nome,
+  telefone,
 }: {
   alunoId: string;
   temAcesso: boolean;
   /** Tem acesso, mas o aluno ainda não definiu a própria senha. */
   aguardandoPrimeiroAcesso?: boolean;
   email: string | null;
+  nome: string;
+  /** Telefone do aluno no formato da máscara, para o link wa.me. */
+  telefone: string | null;
 }) {
   const [carregando, setCarregando] = useState(false);
   const [senha, setSenha] = useState<string | null>(null);
@@ -58,7 +65,12 @@ export function GerarAcesso({
           Repasse estes dados ao aluno: ele definirá a própria senha no
           primeiro login.
         </p>
-        <CredencialBox email={emailGerado} senha={senha} />
+        <CredencialBox
+          email={emailGerado}
+          senha={senha}
+          nome={nome}
+          telefone={telefone}
+        />
       </div>
     );
   }
@@ -125,13 +137,52 @@ export function GerarAcesso({
   );
 }
 
+/** Mensagem pronta para o estúdio mandar ao aluno pelo WhatsApp. */
+function mensagemAcesso(nome: string, email: string | null, senha: string) {
+  const primeiro = nome.split(" ")[0];
+  return [
+    `Olá, ${primeiro}! Sua área do aluno do Corpo & Saúde está pronta. 💪`,
+    "",
+    `Acesse: ${urlAbsoluta("/entrar")}`,
+    `E-mail: ${email ?? ""}`,
+    `Senha provisória: ${senha}`,
+    "",
+    "No primeiro acesso você cria a sua própria senha. Depois é só adicionar o app à tela de início do celular.",
+  ].join("\n");
+}
+
+/** (47) 99999-0000 → 5547999990000 (formato do wa.me). */
+function telefoneWhatsApp(telefone: string | null): string | null {
+  const digitos = (telefone ?? "").replace(/\D/g, "");
+  if (digitos.length < 10) return null;
+  return digitos.startsWith("55") && digitos.length > 11 ? digitos : `55${digitos}`;
+}
+
 function CredencialBox({
   email,
   senha,
+  nome,
+  telefone,
 }: {
   email: string | null;
   senha: string;
+  nome: string;
+  telefone: string | null;
 }) {
+  const mensagem = mensagemAcesso(nome, email, senha);
+  const fone = telefoneWhatsApp(telefone);
+  // Sem telefone, o wa.me abre o WhatsApp para escolher o contato.
+  const linkWhatsApp = `https://wa.me/${fone ?? ""}?text=${encodeURIComponent(mensagem)}`;
+
+  async function copiar(texto: string, aviso: string) {
+    try {
+      await navigator.clipboard.writeText(texto);
+      toast.success(aviso);
+    } catch {
+      toast.error("Não foi possível copiar. Selecione o texto e copie.");
+    }
+  }
+
   return (
     <>
       <div className="rounded-lg border bg-secondary/60 p-4 text-sm">
@@ -144,19 +195,42 @@ function CredencialBox({
           <strong className="font-mono">{senha}</strong>
         </p>
       </div>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          navigator.clipboard?.writeText(
-            `E-mail: ${email}\nSenha provisória: ${senha}`,
-          );
-          toast.success("Copiado.");
-        }}
-      >
-        Copiar dados
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <a
+          href={linkWhatsApp}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+        >
+          <IconeWhatsApp className="size-4" />
+          Abrir no WhatsApp
+        </a>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => copiar(mensagem, "Mensagem copiada. Cole no WhatsApp.")}
+        >
+          <Copy className="size-4" />
+          Copiar mensagem para WhatsApp
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() =>
+            copiar(`E-mail: ${email}\nSenha provisória: ${senha}`, "Copiado.")
+          }
+        >
+          Copiar só os dados
+        </Button>
+      </div>
+      {!fone ? (
+        <p className="text-xs text-muted-foreground">
+          Sem telefone no cadastro: o WhatsApp vai pedir para escolher o
+          contato.
+        </p>
+      ) : null}
     </>
   );
 }

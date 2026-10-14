@@ -90,6 +90,8 @@ export default async function ProfessorAlunoDetalhe({
               temAcesso={Boolean(aluno.usuario_id)}
               aguardandoPrimeiroAcesso={aguardandoAcesso}
               email={aluno.email}
+              nome={aluno.nome}
+              telefone={aluno.telefone}
             />
           </CardContent>
         </Card>

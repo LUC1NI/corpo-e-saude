@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: "%s · Corpo & Saúde",
   },
   description:
-    "Sistema de gestão do Corpo & Saúde: alunos, treinos, presença, finanças e avaliação física.",
+    "Corpo & Saúde, estúdio de personal trainer em Mafra/SC. Área do aluno com horários, treinos, evolução e mensalidade.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

@@ -51,6 +51,11 @@ const nextConfig: NextConfig = {
   // no `build --webpack`). Declarar `turbopack` evita o erro do `next dev`
   // por haver config webpack sem config turbopack.
   turbopack: {},
+  // Link curto da recepção/QR code. O /login já manda quem está logado
+  // direto para a área do próprio papel.
+  async redirects() {
+    return [{ source: "/entrar", destination: "/login", permanent: false }];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

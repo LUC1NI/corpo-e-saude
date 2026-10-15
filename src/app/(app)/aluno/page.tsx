@@ -208,8 +208,7 @@ export default async function AlunoHome() {
   return (
     <div className="space-y-5">
       <section className="rounded-2xl bg-brand-navy p-5 text-white shadow-sm lg:p-7">
-        <p className="text-sm text-white/75">Olá,</p>
-        <p className="text-2xl font-bold lg:text-3xl">{primeiro} 👋</p>
+        <p className="text-2xl font-bold lg:text-3xl">Olá, {primeiro} 👋</p>
         <Link
           href="/aluno/mensalidade"
           className={cn(
@@ -253,31 +252,33 @@ export default async function AlunoHome() {
       <AtivarNotificacoes modo="convite" />
 
       {/* Frequência do mês */}
-      <Card className="flex-row items-center gap-3 p-5">
-        <span
-          className={
-            treinosMes > 0
-              ? "inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"
-              : "inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground"
-          }
-        >
-          <CalendarCheck className="size-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold">
-            {treinosMes > 0
-              ? `${treinosMes} treino${treinosMes > 1 ? "s" : ""} este mês`
-              : "Nenhum treino este mês"}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {treinosMes > 0
-              ? "Continue nesse ritmo! 💪"
-              : online
-                ? "Conclua treinos no app para contar aqui."
-                : "Sua presença é registrada pelo professor nas aulas."}
-          </p>
-        </div>
-      </Card>
+      <Link href={online ? "/aluno/treino" : "/aluno/horarios"}>
+        <Card className="flex-row items-center gap-3 p-5 transition-colors hover:border-primary/40 hover:bg-secondary/30">
+          <span
+            className={cn(
+              "inline-flex size-10 shrink-0 items-center justify-center rounded-xl",
+              treinosMes > 0 ? "bg-emerald-50 text-emerald-600" : "bg-secondary text-muted-foreground",
+            )}
+          >
+            <CalendarCheck className="size-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">
+              {treinosMes > 0 ? `${plural(treinosMes, "treino", "treinos")} este mês` : "Nenhum treino este mês"}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {treinosMes === 0
+                ? online
+                  ? "Bora começar? O treino de hoje está pronto."
+                  : "Sua presença é marcada pelo professor na aula."
+                : treinosMes >= 8
+                  ? "Mês caprichado! 🔥"
+                  : "Continue nesse ritmo! 💪"}
+            </p>
+          </div>
+          <ChevronRight className="size-5 text-muted-foreground" />
+        </Card>
+      </Link>
 
       {/* Evolução */}
       <Link href="/aluno/evolucao">
@@ -395,11 +396,10 @@ function TreinoDeHoje({
                 {divisaoHoje.foco || `Treino ${divisaoHoje.nome}`}
               </p>
               <p className="mt-0.5 text-sm text-white/85">
-                {plural(divisaoHoje.exercicios.length, "exercício", "exercícios")} ·{" "}
-                {concluido ? "feito hoje" : "toque para começar"}
+                {plural(divisaoHoje.exercicios.length, "exercício", "exercícios")}
+                {concluido ? " · feito hoje ✓" : ""}
               </p>
             </div>
-            <ChevronRight className="size-5 shrink-0 text-white/70" />
           </div>
           {divisaoHoje.exercicios.length ? (
             <ul className="relative mt-4 flex flex-wrap gap-1.5">
@@ -418,6 +418,9 @@ function TreinoDeHoje({
               ) : null}
             </ul>
           ) : null}
+          <span className="relative mt-4 flex h-12 items-center justify-center rounded-xl bg-white font-semibold text-primary">
+            {concluido ? "Ver treino de hoje" : "Começar treino"}
+          </span>
         </Link>
       ) : temFicha ? (
         <Link href="/aluno/treino">

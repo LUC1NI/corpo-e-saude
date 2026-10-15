@@ -57,6 +57,33 @@ async function horarioEditavel(horarioId: string) {
   return data ? { supabase, horario: data as { id: string; professor_id: string } } : null;
 }
 
+/**
+ * Aluno e horário precisam ser do mesmo professor (senão o professor não vê
+ * o aluno na turma nem na chamada — RLS por carteira). Aluno ainda sem
+ * professor passa a ser da carteira do professor do horário.
+ */
+async function conferirCarteira(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  alunoIds: string[],
+  professorId: string,
+): Promise<string | null> {
+  if (alunoIds.length === 0) return null;
+  const { data } = await supabase
+    .from("alunos")
+    .select("id, nome, professor_id")
+    .in("id", alunoIds);
+  const alunos = (data ?? []) as { id: string; nome: string; professor_id: string | null }[];
+  const deOutro = alunos.find((a) => a.professor_id && a.professor_id !== professorId);
+  if (deOutro) {
+    return `${deOutro.nome.split(" ")[0]} é da carteira de outro professor. Troque o professor na ficha do aluno antes.`;
+  }
+  const semProfessor = alunos.filter((a) => !a.professor_id).map((a) => a.id);
+  if (semProfessor.length > 0) {
+    await supabase.from("alunos").update({ professor_id: professorId }).in("id", semProfessor);
+  }
+  return null;
+}
+
 function revalidarAgenda() {
   for (const p of ["/admin", "/admin/horarios", "/admin/presenca", "/professor", "/professor/horarios", "/professor/presenca"]) {
     revalidatePath(p);
@@ -101,6 +128,8 @@ export async function definirAlunosDoHorario(
   const inserir = [...desejados].filter((a) => !atuais.has(a));
 
   if (inserir.length > 0) {
+    const problema = await conferirCarteira(supabase, inserir, horario.professor_id);
+    if (problema) return falha(problema);
     const { error } = await supabase
       .from("aluno_horarios")
       .insert(inserir.map((aluno_id) => ({ horario_id: horario.id, aluno_id })));
@@ -158,6 +187,26 @@ export async function definirHorariosDoAluno(
   const remover = [...atuaisIds].filter((h) => !desejados.has(h));
 
   if (inserir.length > 0) {
+    const { data: novosData } = await supabase
+      .from("horarios")
+      .select("id, professor_id, capacidade, hora_inicio, aluno_horarios(count)")
+      .in("id", inserir);
+    const novos = (novosData ?? []) as unknown as {
+      id: string;
+      professor_id: string;
+      capacidade: number | null;
+      hora_inicio: string;
+      aluno_horarios: { count: number }[];
+    }[];
+    if (novos.length !== inserir.length) return falha("Horário não encontrado.");
+    if (profId && novos.some((h) => h.professor_id !== profId)) return falha("Horário de outro professor.");
+    const professores = new Set(novos.map((h) => h.professor_id));
+    if (professores.size > 1) return falha("Escolha horários de um professor só.");
+    const cheio = novos.find((h) => h.capacidade != null && (h.aluno_horarios[0]?.count ?? 0) >= h.capacidade);
+    if (cheio) return falha(`A aula das ${cheio.hora_inicio.slice(0, 5)} já está cheia.`);
+    const problema = await conferirCarteira(supabase, [aluno.data], novos[0]!.professor_id);
+    if (problema) return falha(problema);
+
     const { error: e } = await supabase
       .from("aluno_horarios")
       .insert(inserir.map((horario_id) => ({ aluno_id: aluno.data, horario_id })));
@@ -378,6 +427,43 @@ function revalidarPresenca() {
   for (const p of CAMINHOS_PRESENCA) revalidatePath(p);
 }
 
+const entradaPresenca = z.object({
+  alunoId: z.string().uuid(),
+  data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  hora: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).nullable(),
+  professorId: z.string().uuid().nullable(),
+});
+
+/** Marca todos os alunos da aula de uma vez (ignora quem já está marcado). */
+export async function marcarTodosPresentes(
+  alunoIds: string[],
+  data: string,
+  hora: string | null,
+  professorId: string | null = null,
+): Promise<ResultadoAcao> {
+  const usuario = await assertPapel(["professor", "admin"]);
+  const ids = z.array(z.string().uuid()).min(1).max(50).safeParse(alunoIds);
+  const base = entradaPresenca.safeParse({ alunoId: alunoIds[0], data, hora, professorId });
+  if (!ids.success || !base.success) return falha("Dados inválidos.");
+  const profId = await resolverProfessorPresenca(usuario.papel, professorId);
+  if (!profId) return falha("Professor não encontrado.");
+
+  const supabase = await createClient();
+  let consulta = supabase.from("presencas").select("aluno_id").eq("data", data).in("aluno_id", ids.data);
+  consulta = hora ? consulta.eq("hora", hora) : consulta.is("hora", null);
+  const { data: jaData } = await consulta;
+  const ja = new Set(((jaData ?? []) as { aluno_id: string }[]).map((r) => r.aluno_id));
+  const novos = ids.data.filter((a) => !ja.has(a));
+  if (novos.length > 0) {
+    const { error } = await supabase
+      .from("presencas")
+      .insert(novos.map((aluno_id) => ({ aluno_id, professor_id: profId, data, hora })));
+    if (error) return falha("Não foi possível registrar as presenças.");
+  }
+  revalidarPresenca();
+  return sucesso();
+}
+
 export async function marcarPresenca(
   alunoId: string,
   data: string,
@@ -385,6 +471,7 @@ export async function marcarPresenca(
   professorId: string | null = null,
 ): Promise<ResultadoAcao> {
   const usuario = await assertPapel(["professor", "admin"]);
+  if (!entradaPresenca.safeParse({ alunoId, data, hora, professorId }).success) return falha("Dados inválidos.");
   const profId = await resolverProfessorPresenca(usuario.papel, professorId);
   if (!profId) return falha("Professor não encontrado.");
 
@@ -453,6 +540,7 @@ export async function alternarPresenca(
   professorId: string | null = null,
 ): Promise<ResultadoAcao<{ presente: boolean }>> {
   const usuario = await assertPapel(["professor", "admin"]);
+  if (!entradaPresenca.safeParse({ alunoId, data, hora, professorId }).success) return falha("Dados inválidos.");
   const profId = await resolverProfessorPresenca(usuario.papel, professorId);
   if (!profId) return falha("Professor não encontrado.");
 

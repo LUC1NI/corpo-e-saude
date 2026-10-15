@@ -1,6 +1,8 @@
 import { Search } from "lucide-react";
 
+import { LogoMarca } from "@/components/shell/logo-marca";
 import { MobileSidebar } from "@/components/shell/mobile-sidebar";
+import Link from "@/components/ui-extra/link";
 import {
   NotificacoesButton,
   type AlertaNotificacao,
@@ -24,8 +26,18 @@ export function AppHeader({
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur lg:px-8">
       <MobileSidebar papel={papel} nome={nome} />
+      <div className="lg:hidden">
+        <LogoMarca compacta />
+      </div>
 
       <div className="flex flex-1 items-center justify-end gap-2">
+        <Link
+          href={basePath}
+          aria-label="Buscar aluno"
+          className="inline-flex size-11 items-center justify-center rounded-lg border bg-background text-muted-foreground sm:hidden"
+        >
+          <Search className="size-5" />
+        </Link>
         {/* Form GET: Enter navega para a lista de alunos já filtrada. */}
         <form action={basePath} className="relative hidden sm:block">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />

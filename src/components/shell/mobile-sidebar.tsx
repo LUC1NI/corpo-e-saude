@@ -26,7 +26,7 @@ export function MobileSidebar({
     <Sheet open={aberto} onOpenChange={setAberto}>
       <SheetTrigger
         aria-label="Abrir menu"
-        className="inline-flex size-9 items-center justify-center rounded-lg border bg-background text-foreground hover:bg-muted lg:hidden"
+        className="inline-flex size-11 items-center justify-center rounded-lg border bg-background text-foreground hover:bg-muted lg:hidden"
       >
         <Menu className="size-5" />
       </SheetTrigger>

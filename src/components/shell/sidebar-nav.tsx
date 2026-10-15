@@ -29,8 +29,13 @@ export function SidebarNav({
         const ativo = estaAtivo(pathname, item.href);
         const Icone = item.icone;
         return (
+          <div key={item.href} className="contents">
+          {item.secao ? (
+            <p className="mt-4 px-3 pb-1 text-[11px] font-semibold tracking-wider text-white/50 uppercase">
+              {item.secao}
+            </p>
+          ) : null}
           <Link
-            key={item.href}
             href={item.href}
             onClick={onNavegar}
             aria-current={ativo ? "page" : undefined}
@@ -44,6 +49,7 @@ export function SidebarNav({
             <Icone className="size-[18px] shrink-0" />
             {item.titulo}
           </Link>
+          </div>
         );
       })}
     </nav>

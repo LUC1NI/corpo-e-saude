@@ -114,6 +114,7 @@ export function CadastroRapido({
   const [dias, setDias] = useState<number[]>([]);
   const [hora, setHora] = useState("");
   const [gerarAcesso, setGerarAcesso] = useState(true);
+  const [primeiraPaga, setPrimeiraPaga] = useState<"" | "Pix" | "Dinheiro" | "Cartão">("");
   const [salvando, setSalvando] = useState(false);
   const [erroNome, setErroNome] = useState<string | null>(null);
   const [pronto, setPronto] = useState<null | {
@@ -166,6 +167,7 @@ export function CadastroRapido({
       data_inicio: inicio,
       horario_ids: tipo === "presencial" ? escolhidos.map((h) => h.id) : [],
       gerar_acesso: acessoAgora,
+      primeira_paga: modo === "admin" && planoId && primeiraPaga ? primeiraPaga : undefined,
     });
     setSalvando(false);
     if (!res.ok || !res.dados) {
@@ -173,7 +175,12 @@ export function CadastroRapido({
       return;
     }
     const resumo: string[] = [];
-    if (plano) resumo.push(`${plano.nome} · 1ª mensalidade vence ${inicio.split("-").reverse().join("/")}`);
+    if (plano)
+      resumo.push(
+        primeiraPaga
+          ? `${plano.nome} · 1ª mensalidade paga (${primeiraPaga})`
+          : `${plano.nome} · 1ª mensalidade vence ${inicio.split("-").reverse().join("/")}`,
+      );
     if (escolhidos.length > 0)
       resumo.push(`${escolhidos.map((h) => DIAS[h.dia_semana]).join(", ")} às ${hora}`);
     setPronto({ ...res.dados, resumo });
@@ -213,7 +220,10 @@ export function CadastroRapido({
           </div>
         ) : null}
         <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row">
-          <Link href={`${destinoBase}/${pronto.id}`} className={cn(buttonVariants(), "sm:flex-1")}>
+          <Link
+            href={`${destinoBase}/${pronto.id}`}
+            className={cn(buttonVariants({ variant: pronto.acesso ? "outline" : "default" }), "sm:flex-1")}
+          >
             Abrir ficha do aluno
           </Link>
           <Button
@@ -359,6 +369,24 @@ export function CadastroRapido({
               <p className="text-sm text-muted-foreground">
                 Depois renova sozinho todo {POR_PERIODO[plano.periodicidade] ?? "período"} nesse dia.
               </p>
+              <Label className="pt-2">Já pagou a 1ª?</Label>
+              <div role="radiogroup" aria-label="Já pagou a 1ª mensalidade?" className="flex flex-wrap gap-2">
+                {(["", "Pix", "Dinheiro", "Cartão"] as const).map((f) => (
+                  <button
+                    key={f || "nao"}
+                    type="button"
+                    role="radio"
+                    aria-checked={primeiraPaga === f}
+                    onClick={() => setPrimeiraPaga(f)}
+                    className={cn(
+                      "h-11 rounded-full border px-4 text-sm font-semibold transition-colors sm:h-9",
+                      primeiraPaga === f ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
+                    )}
+                  >
+                    {f === "" ? "Ainda não" : f}
+                  </button>
+                ))}
+              </div>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">Sem plano agora? Dá para matricular depois.</p>
@@ -407,12 +435,13 @@ export function CadastroRapido({
                           key={h}
                           type="button"
                           aria-pressed={hora === h}
+                          disabled={lotados.length > 0}
                           onClick={() => setHora(hora === h ? "" : h)}
                           title={lotados.length ? `Cheio: ${lotados.map((d) => DIAS[d]).join(", ")}` : undefined}
                           className={cn(
                             "h-11 rounded-full border px-4 text-sm font-semibold tabular-nums transition-colors sm:h-9",
                             hora === h ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
-                            lotados.length > 0 && hora !== h && "border-dashed text-muted-foreground",
+                            lotados.length > 0 && "cursor-not-allowed border-dashed text-muted-foreground opacity-60",
                           )}
                         >
                           {h}

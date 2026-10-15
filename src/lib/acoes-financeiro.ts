@@ -90,7 +90,15 @@ export async function criarMatricula(
     .limit(1)
     .maybeSingle();
 
-  if (!existente) {
+  if (existente) {
+    // Troca de plano no mesmo mês: a cobrança ainda em aberto passa a ser
+    // da matrícula nova, com o valor novo (paga fica como está).
+    await supabase
+      .from("pagamentos")
+      .update({ matricula_id: matricula.id, valor: plano.valor })
+      .eq("id", existente.id)
+      .in("status", ["pendente", "vencido"]);
+  } else {
     const { error: errPag } = await supabase.from("pagamentos").insert({
       matricula_id: matricula.id,
       aluno_id: alunoId,
@@ -114,12 +122,24 @@ export async function cancelarMatricula(
   alunoId: string,
 ): Promise<ResultadoAcao> {
   await assertPapel(["admin"]);
+  const ids = z.array(z.string().uuid()).safeParse([matriculaId, alunoId]);
+  if (!ids.success) return falha("Dados inválidos.");
   const supabase = await createClient();
   const { error } = await supabase
     .from("matriculas")
     .update({ status: "cancelada" })
     .eq("id", matriculaId);
   if (error) return falha("Não foi possível cancelar a matrícula.");
+
+  // A renovação gera a cobrança alguns dias antes do vencimento: ao cancelar,
+  // a cobrança ainda não vencida desta matrícula deixa de existir (senão
+  // viraria "atraso" de um mês que o aluno não vai usar).
+  await supabase
+    .from("pagamentos")
+    .delete()
+    .eq("matricula_id", matriculaId)
+    .eq("status", "pendente")
+    .gte("vencimento", hojeISO());
 
   revalidatePath(`/admin/alunos/${alunoId}`);
   revalidatePath("/admin/financeiro");
@@ -211,7 +231,23 @@ export async function desfazerBaixa(pagamentoId: string): Promise<ResultadoAcao>
     return falha("Esta mensalidade já tem nota fiscal enviada. Resolva a nota em Nota fiscal antes de desfazer.");
   }
 
-  // 1º o pagamento (condicionado a ainda estar pago: evita corrida com outra aba).
+  // 1º trava a nota pendente (só se continuar aguardando: se o emissor andou,
+  // não desfaz). Depois reverte o pagamento, condicionado a ainda estar pago.
+  if (nota) {
+    const { data: travada } = await supabase
+      .from("notas_fiscais")
+      .update({
+        status: "cancelada",
+        justificativa_cancelamento: "Baixa desfeita antes da emissão.",
+        cancelada_em: new Date().toISOString(),
+      })
+      .eq("id", nota.id)
+      .eq("status", "aguardando_configuracao")
+      .select("id")
+      .maybeSingle();
+    if (!travada) return falha("A nota fiscal mudou agora há pouco. Confira em Nota fiscal.");
+  }
+
   const { data: revertido, error } = await supabase
     .from("pagamentos")
     .update({
@@ -224,19 +260,6 @@ export async function desfazerBaixa(pagamentoId: string): Promise<ResultadoAcao>
     .select("id")
     .maybeSingle();
   if (error || !revertido) return falha("Não foi possível desfazer.");
-
-  // 2º a nota pendente (só se continuar aguardando — o emissor pode ter andado).
-  if (nota) {
-    await supabase
-      .from("notas_fiscais")
-      .update({
-        status: "cancelada",
-        justificativa_cancelamento: "Baixa desfeita antes da emissão.",
-        cancelada_em: new Date().toISOString(),
-      })
-      .eq("id", nota.id)
-      .eq("status", "aguardando_configuracao");
-  }
 
   revalidarFinanceiro(pagamento.aluno_id as string);
   return sucesso();

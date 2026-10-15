@@ -52,11 +52,14 @@ export default async function AdminHorariosPage({
       .order("hora_inicio"),
     supabase
       .from("alunos")
-      .select("id, nome")
+      .select("id, nome, professor_id")
       .eq("status", "ativo")
+      .eq("tipo", "presencial")
       .order("nome"),
   ]);
-  const alunosAtivos = (alunosData ?? []) as { id: string; nome: string }[];
+  const alunosAtivos = (alunosData ?? []) as { id: string; nome: string; professor_id: string | null }[];
+  const candidatos = (professorId: string) =>
+    alunosAtivos.filter((a) => !a.professor_id || a.professor_id === professorId);
 
   const professores = (profsData ?? []) as { id: string; nome: string }[];
   const horarios = (horsData ?? []) as {
@@ -202,7 +205,7 @@ export default async function AdminHorariosPage({
                         <GerenciarAula
                           horarioId={h.id}
                           rotulo={`${p.nome.split(" ")[0]} · ${DIAS_CURTOS[dia]} ${horaCurta(f.inicio)}`}
-                          alunos={alunosAtivos}
+                          alunos={candidatos(p.id)}
                           atribuidos={(alunosPorHorario.get(h.id) ?? []).map((a) => a.id)}
                           capacidade={h.capacidade}
                           mostrarIniciais

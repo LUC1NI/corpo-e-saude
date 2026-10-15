@@ -81,7 +81,7 @@ export function NotificacoesButton({
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={`Notificações${naoLidas ? ` (${naoLidas} não lidas)` : ""}`}
-        className="relative inline-flex size-9 items-center justify-center rounded-lg border bg-background text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none"
+        className="relative inline-flex size-11 items-center lg:size-9 justify-center rounded-lg border bg-background text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none"
       >
         <Bell className="size-4" />
         {naoLidas > 0 ? (

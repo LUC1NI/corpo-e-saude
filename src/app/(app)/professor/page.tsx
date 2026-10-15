@@ -5,7 +5,6 @@ import {
   ChevronRight,
   ClipboardList,
   Clock,
-  Dumbbell,
   Users,
 } from "lucide-react";
 
@@ -32,13 +31,13 @@ const DIAS_REAVALIAR = 90;
 /** Aluno online "sumido" depois de tantos dias sem treinar. */
 const DIAS_SEM_TREINAR = 7;
 
-function Turma({ alunos, max = 5 }: { alunos: Aluno[]; max?: number }) {
+function Turma({ alunos, max = 3 }: { alunos: Aluno[]; max?: number }) {
   if (alunos.length === 0) return <span className="text-sm opacity-80">Sem alunos agendados</span>;
   return (
     <span className="flex items-center gap-2">
-      <span className="flex -space-x-2">
+      <span className="flex -space-x-1.5">
         {alunos.slice(0, max).map((a) => (
-          <AvatarIniciais key={a.id} nome={a.nome} tamanho="sm" className="ring-2 ring-white" />
+          <AvatarIniciais key={a.id} nome={a.nome} tamanho="sm" className="ring-2 ring-white/80" />
         ))}
       </span>
       <span className="truncate text-sm">
@@ -72,7 +71,7 @@ export default async function ProfessorHoje() {
 
   const supabase = await createClient();
   const limiteAvaliacao = format(subDays(parseISO(hoje), DIAS_REAVALIAR), "yyyy-MM-dd");
-  const limiteTreino = subDays(agora, DIAS_SEM_TREINAR).toISOString();
+  const limiteTreino = subDays(new Date(), DIAS_SEM_TREINAR).toISOString();
 
   const [
     { data: aulasData },
@@ -127,13 +126,13 @@ export default async function ProfessorHoje() {
   const treinaram = new Set(((execData ?? []) as { aluno_id: string }[]).map((r) => r.aluno_id));
   const pendencias: { aluno: Aluno; texto: string; ancora: string }[] = [];
   for (const a of alunos) {
-    if (!comAnamnese.has(a.id)) pendencias.push({ aluno: a, texto: "sem anamnese", ancora: "#anamnese" });
+    if (!comAnamnese.has(a.id)) pendencias.push({ aluno: a, texto: "sem anamnese", ancora: "?aba=saude#anamnese" });
     else if (!avaliadosRecente.has(a.id))
-      pendencias.push({ aluno: a, texto: `avaliação há mais de ${DIAS_REAVALIAR} dias`, ancora: "#avaliacao" });
+      pendencias.push({ aluno: a, texto: `avaliação há mais de ${DIAS_REAVALIAR} dias`, ancora: "?aba=saude#avaliacoes" });
     if (a.tipo === "online" && !comFicha.has(a.id))
-      pendencias.push({ aluno: a, texto: "online sem ficha de treino", ancora: "#treino" });
+      pendencias.push({ aluno: a, texto: "online sem ficha de treino", ancora: "?aba=treino" });
     else if (a.tipo === "online" && !treinaram.has(a.id))
-      pendencias.push({ aluno: a, texto: `não treina há ${DIAS_SEM_TREINAR}+ dias`, ancora: "#treino" });
+      pendencias.push({ aluno: a, texto: `não treina há ${DIAS_SEM_TREINAR}+ dias`, ancora: "?aba=treino" });
   }
 
   const linkChamada = (a: Aula) => `/professor/presenca?data=${hoje}&hora=${a.hora_inicio}`;
@@ -150,7 +149,9 @@ export default async function ProfessorHoje() {
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-bold tracking-wider uppercase opacity-90">Agora</p>
                 <p className="text-sm tabular-nums opacity-90">
-                  {presentes(dia.agora)}/{dia.agora.turma.length} presentes
+                  {presentes(dia.agora) === 0
+                    ? plural(dia.agora.turma.length, "aluno", "alunos")
+                    : `${presentes(dia.agora)} de ${dia.agora.turma.length} vieram`}
                 </p>
               </div>
               <p className="font-heading text-3xl font-bold tabular-nums">
@@ -159,7 +160,7 @@ export default async function ProfessorHoje() {
               <Turma alunos={dia.agora.turma} />
               <Link
                 href={linkChamada(dia.agora)}
-                className={cn(buttonVariants({ size: "lg" }), "bg-white text-primary hover:bg-white/90")}
+                className={cn(buttonVariants({ size: "lg" }), "bg-white text-primary hover:bg-white/90 sm:w-fit sm:px-8")}
               >
                 <CalendarCheck className="size-5" />
                 Fazer chamada
@@ -283,11 +284,7 @@ export default async function ProfessorHoje() {
                       <span className="block truncate text-sm font-medium">{p.aluno.nome}</span>
                       <span className="block text-xs text-muted-foreground">{p.texto}</span>
                     </span>
-                    {p.texto.includes("ficha") || p.texto.includes("treina") ? (
-                      <Dumbbell className="size-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronRight className="size-4 text-muted-foreground" />
-                    )}
+                    <ChevronRight className="size-4 text-muted-foreground" />
                   </Link>
                 </li>
               ))}

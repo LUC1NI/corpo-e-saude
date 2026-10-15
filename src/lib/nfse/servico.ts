@@ -116,7 +116,7 @@ export async function emitirNotaDoPagamento(
     async function gravar(campos: Record<string, unknown>): Promise<ResultadoNota> {
       const status = campos.status as StatusNota;
       const { error } = ativa
-        ? await db.from("notas_fiscais").update(campos).eq("id", ativa.id).neq("status", "cancelada")
+        ? await db.from("notas_fiscais").update(campos).eq("id", ativa.id).neq("status", "cancelada").select("id").single()
         : await db.from("notas_fiscais").insert({
             pagamento_id: pagamentoId,
             aluno_id: pagamento!.aluno_id,

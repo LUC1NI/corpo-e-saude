@@ -11,6 +11,16 @@ const valorBRL = z.preprocess(
     .max(100000, "Valor alto demais. Confira os zeros."),
 );
 
+/** yyyy-MM-dd válida e até 60 dias para trás/frente (evita cobranças retroativas em massa). */
+export const dataInicioSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Informe a data de início.")
+  .refine((d) => {
+    const t = Date.parse(`${d}T12:00:00Z`);
+    if (Number.isNaN(t) || new Date(t).toISOString().slice(0, 10) !== d) return false;
+    return Math.abs(t - Date.now()) <= 60 * 86_400_000;
+  }, "Data de início fora do esperado (até 60 dias antes ou depois de hoje).");
+
 const opcional = (schema: z.ZodString) =>
   z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
@@ -42,9 +52,11 @@ export const cadastroAlunoSchema = alunoSchema
   .pick({ nome: true, telefone: true, email: true, tipo: true, professor_id: true })
   .extend({
     plano_id: opcional(z.string().uuid("Plano inválido.")),
-    data_inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Informe a data de início."),
+    data_inicio: dataInicioSchema,
     horario_ids: z.array(z.string().uuid()).max(14).default([]),
     gerar_acesso: z.boolean().default(false),
+    /** Pagou a 1ª mensalidade no ato do cadastro (já entra com baixa). */
+    primeira_paga: z.enum(["Pix", "Dinheiro", "Cartão", "Transferência"]).optional(),
   })
   .refine((d) => !d.gerar_acesso || !!d.email, {
     message: "Informe o e-mail para criar o acesso ao app.",
@@ -75,7 +87,7 @@ export type PlanoInput = z.infer<typeof planoSchema>;
 // ---------------------------------------------------------------------------
 export const matriculaSchema = z.object({
   plano_id: z.string().uuid("Selecione um plano."),
-  data_inicio: z.string().min(1, "Informe a data de início."),
+  data_inicio: dataInicioSchema,
   renovacao_automatica: z.boolean().default(true),
 });
 

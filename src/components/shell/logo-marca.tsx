@@ -8,16 +8,19 @@ import { cn } from "@/lib/utils";
  */
 export function LogoMarca({
   variante = "claro",
+  compacta = false,
   className,
 }: {
   variante?: "navy" | "claro";
+  /** Só o nome, sem o "Personal Studio" (topo do celular). */
+  compacta?: boolean;
   className?: string;
 }) {
   return (
     <div className={cn("flex items-center gap-3", className)}>
       <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
         <Image
-          src="/icons/icon-192.png"
+          src="/icons/simbolo.png"
           alt="Corpo & Saúde"
           width={32}
           height={32}
@@ -35,6 +38,7 @@ export function LogoMarca({
         <p
           className={cn(
             "text-[10px] font-medium tracking-wider uppercase",
+            compacta && "hidden",
             variante === "navy" ? "text-white/60" : "text-muted-foreground",
           )}
         >

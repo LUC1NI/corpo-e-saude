@@ -209,7 +209,7 @@ export function GerenciarAula({
               className={confirmando ? undefined : "text-muted-foreground"}
             >
               <Trash2 className="size-4" />
-              {confirmando ? "Confirmar: remover horário" : "Remover horário"}
+              {confirmando ? "Sim, remover horário" : "Remover horário"}
             </Button>
           ) : null}
           <div className="flex gap-2">

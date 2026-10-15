@@ -1,7 +1,8 @@
-import { format, subDays } from "date-fns";
+import { format, parseISO, subDays } from "date-fns";
 
 import { AppHeader } from "@/components/shell/app-header";
 import { AppSidebar } from "@/components/shell/app-sidebar";
+import { BottomNav } from "@/components/shell/bottom-nav";
 import type { AlertaNotificacao } from "@/components/shell/notificacoes-button";
 import type { Papel } from "@/lib/auth";
 import { hojeISO } from "@/lib/financeiro";
@@ -51,7 +52,7 @@ async function alertasAdmin(): Promise<AlertaNotificacao[]> {
  */
 async function alertasProfessor(): Promise<AlertaNotificacao[]> {
   const supabase = await createClient();
-  const limite = format(subDays(new Date(), 7), "yyyy-MM-dd");
+  const limite = format(subDays(parseISO(hojeISO()), 7), "yyyy-MM-dd");
 
   const [{ data: execData }, { data: onlineData }, { data: fichasData }] =
     await Promise.all([
@@ -81,7 +82,7 @@ async function alertasProfessor(): Promise<AlertaNotificacao[]> {
       id: `ficha-${a.id}`,
       titulo: a.nome,
       descricao: "Aluno online ainda sem ficha de treino.",
-      href: `/professor/alunos/${a.id}#treino`,
+      href: `/professor/alunos/${a.id}?aba=treino`,
       rotulo: "Sem ficha",
       tom: "alerta" as const,
     }));
@@ -98,7 +99,7 @@ async function alertasProfessor(): Promise<AlertaNotificacao[]> {
     id: e.id,
     titulo: e.alunos?.nome ?? "Aluno",
     descricao: `Concluiu o treino ${e.nome_divisao} · ${formatData(e.finalizado_em.slice(0, 10))}`,
-    href: `/professor/alunos/${e.aluno_id}#execucoes`,
+    href: `/professor/alunos/${e.aluno_id}?aba=treino#execucoes`,
     rotulo: "Treino",
     tom: "sucesso" as const,
   }));
@@ -137,10 +138,11 @@ export async function AppShell({
           alertas={alertas}
           mensagemVazia={mensagemVazia}
         />
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8">
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 pb-24 lg:px-8 lg:pb-6">
           {children}
         </main>
       </div>
+      <BottomNav papel={papel} />
     </div>
   );
 }

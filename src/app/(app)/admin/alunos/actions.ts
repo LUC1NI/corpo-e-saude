@@ -6,7 +6,8 @@ import { mensagemEmailEmUso } from "@/lib/acesso";
 import { assertPapel } from "@/lib/auth";
 import { falha, sucesso, type ResultadoAcao } from "@/lib/acoes";
 import { getProfessorAtual } from "@/lib/professor";
-import { criarMatricula } from "@/lib/acoes-financeiro";
+import { criarMatricula, marcarPagamentoPago } from "@/lib/acoes-financeiro";
+import { hojeISO } from "@/lib/financeiro";
 import { definirHorariosDoAluno } from "@/lib/acoes-presenca";
 import {
   alunoSchema,
@@ -146,6 +147,24 @@ export async function cadastrarAluno(
       renovacao_automatica: true,
     });
     if (!m.ok) avisos.push(`Matrícula: ${m.erro}`);
+    else if (d.primeira_paga) {
+      const { data: primeira } = await (await createClient())
+        .from("pagamentos")
+        .select("id")
+        .eq("aluno_id", id)
+        .neq("status", "pago")
+        .order("vencimento")
+        .limit(1)
+        .maybeSingle();
+      if (primeira) {
+        const b = await marcarPagamentoPago({
+          pagamentoId: primeira.id as string,
+          forma: d.primeira_paga,
+          data: hojeISO(),
+        });
+        if (!b.ok) avisos.push(`Baixa da 1ª mensalidade: ${b.erro}`);
+      }
+    }
   }
 
   if (d.horario_ids.length > 0) {

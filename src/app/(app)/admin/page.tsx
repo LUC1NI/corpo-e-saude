@@ -4,7 +4,7 @@ import { AlertTriangle, ArrowRight, CalendarCheck, CheckCircle2, Clock, Plus, Re
 import { CNPJ } from "@/components/landing/dados";
 import { IconeWhatsApp } from "@/components/landing/icone-whatsapp";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 import Link from "@/components/ui-extra/link";
 import { PageHeader } from "@/components/ui-extra/page-header";
@@ -118,10 +118,13 @@ export default async function AdminInicio() {
     const k = p.data_pagamento.slice(0, 7);
     porMes.set(k, (porMes.get(k) ?? 0) + Number(p.valor));
   }
-  const serie: PontoFaturamento[] = Array.from({ length: 6 }, (_, i) => {
+  const serieCompleta: PontoFaturamento[] = Array.from({ length: 6 }, (_, i) => {
     const d = startOfMonth(subMonths(parseISO(hoje), 5 - i));
     return { mes: mesCurto(d), valor: porMes.get(format(d, "yyyy-MM")) ?? 0 };
   });
+  // Começa no primeiro mês com recebimento (estúdio novo não vê meses vazios).
+  const primeiroComDado = serieCompleta.findIndex((p) => p.valor > 0);
+  const serie = primeiroComDado > 0 ? serieCompleta.slice(primeiroComDado) : serieCompleta;
 
   // Aulas de hoje do studio inteiro, agrupadas por horário.
   type Aula = { id: string; hora_inicio: string; hora_fim: string; professor: string; turma: { id: string; nome: string }[] };
@@ -155,10 +158,15 @@ export default async function AdminInicio() {
           <p className="text-sm font-semibold">{a.professor}</p>
           <p className="truncate text-sm text-muted-foreground">{a.turma.map((t) => t.nome.split(" ")[0]).join(", ")}</p>
         </div>
-        <span className="flex -space-x-2">
-          {a.turma.slice(0, 3).map((t) => (
+        <span className="flex -space-x-1.5">
+          {a.turma.slice(0, 2).map((t) => (
             <AvatarIniciais key={t.id} nome={t.nome} tamanho="sm" className="ring-2 ring-card" />
           ))}
+          {a.turma.length > 2 ? (
+            <span className="inline-flex size-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold ring-2 ring-card">
+              +{a.turma.length - 2}
+            </span>
+          ) : null}
         </span>
       </div>
     );
@@ -219,10 +227,10 @@ export default async function AdminInicio() {
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.5fr_1fr]">
-        {/* Receber */}
-        <Card className="gap-0 p-0">
+        {/* A receber (no celular vem depois das aulas de hoje, que são curtas) */}
+        <Card className="order-2 gap-0 p-0 lg:order-none">
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
-            <CardTitle>Receber</CardTitle>
+            <h2 className="font-heading text-base font-bold">A receber</h2>
             <Link href="/admin/financeiro/em-aberto" className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary sm:min-h-0">
               Ver tudo <ArrowRight className="size-4" />
             </Link>
@@ -231,8 +239,8 @@ export default async function AdminInicio() {
             <p className="px-5 pb-5 text-muted-foreground">Nada para receber nos próximos 7 dias. ✓</p>
           ) : (
             <ul className="divide-y border-t">
-              {[...atrasados, ...vencendo].slice(0, 8).map((g) => (
-                <li key={g.id} className="px-5 py-3">
+              {[...atrasados, ...vencendo].slice(0, 8).map((g, i) => (
+                <li key={g.id} className={cn("px-5 py-3", i >= 4 && "hidden lg:block")}>
                   <div className="flex items-center gap-3">
                     <AvatarIniciais nome={g.nome} tamanho="sm" />
                     <div className="min-w-0 flex-1">
@@ -256,16 +264,18 @@ export default async function AdminInicio() {
                       <IconeWhatsApp className="size-4" />
                       Lembrar
                     </a>
-                    {g.itens.map((p) => (
-                      <BaixaButton
-                        key={p.id}
-                        pagamentoId={p.id}
-                        aluno={g.nome}
-                        competencia={p.competencia}
-                        valor={Number(p.valor)}
-                        rotulo={g.itens.length > 1 ? `Recebi ${formatMesAno(p.competencia)}` : undefined}
-                      />
-                    ))}
+                    {/* Um botão só: o mês mais antigo. O próximo aparece depois da baixa. */}
+                    <BaixaButton
+                      pagamentoId={g.itens[0]!.id}
+                      aluno={g.nome}
+                      competencia={g.itens[0]!.competencia}
+                      valor={Number(g.itens[0]!.valor)}
+                      rotulo={
+                        g.itens.length > 1
+                          ? `Recebi ${formatMesAno(g.itens[0]!.competencia).split("/")[0]!.toLowerCase()}`
+                          : undefined
+                      }
+                    />
                   </div>
                 </li>
               ))}
@@ -273,11 +283,11 @@ export default async function AdminInicio() {
           )}
         </Card>
 
-        <div className="space-y-5">
+        <div className="contents lg:block lg:space-y-5">
           {/* Aulas de hoje */}
-          <Card className="gap-3 p-5">
+          <Card className="order-1 gap-3 p-5 lg:order-none">
             <div className="flex items-center justify-between">
-              <h2 className="font-heading font-bold">Aulas de hoje</h2>
+              <h2 className="font-heading text-base font-bold">Aulas de hoje</h2>
               <Link href="/admin/presenca" className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary sm:min-h-0">
                 <CalendarCheck className="size-4" /> Presença
               </Link>
@@ -303,9 +313,9 @@ export default async function AdminInicio() {
           </Card>
 
           {/* Recebido por mês */}
-          <Card className="gap-0">
+          <Card className="order-3 gap-0 lg:order-none">
             <CardHeader>
-              <CardTitle>Recebido por mês</CardTitle>
+              <h2 className="font-heading text-base font-bold">Recebido por mês</h2>
             </CardHeader>
             <CardContent>
               <FaturamentoChart dados={serie} />

@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 
 import { EditarPresencaButton } from "./editar-presenca-button";
 import { PresencaControls } from "./presenca-controls";
+import { MarcarTodos } from "./marcar-todos";
 import { PresencaToggle } from "./presenca-toggle";
 import { RemoverPresencaButton } from "./remover-presenca-button";
 
@@ -191,6 +192,10 @@ export default async function PresencaPage({
                 ) : null}
               </span>
             </div>
+          ) : null}
+
+          {slotSelecionado && presentes.size < alunos.length ? (
+            <MarcarTodos alunoIds={alunos.map((x) => x.id)} data={data} hora={hora} />
           ) : null}
 
           {alunos.length === 0 ? (

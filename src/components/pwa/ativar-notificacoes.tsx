@@ -48,7 +48,15 @@ function inscricaoParaServidor(sub: PushSubscription) {
  * (nunca automático) e cobre: navegador sem suporte; iPhone fora do modo app
  * (só funciona instalado); permissão negada; e ativado (com desativar).
  */
-export function AtivarNotificacoes() {
+/**
+ * convite  = só aparece quando dá para ativar (Início): uma linha + botão.
+ * completo = mostra todos os estados, com o "como liberar" (Mensalidade).
+ */
+export function AtivarNotificacoes({
+  modo = "completo",
+}: {
+  modo?: "convite" | "completo";
+}) {
   const [estado, setEstado] = useState<Estado>("carregando");
   const [ocupado, setOcupado] = useState(false);
 
@@ -132,6 +140,23 @@ export function AtivarNotificacoes() {
 
   if (!CHAVE_PUBLICA || estado === "carregando") return null;
 
+  if (modo === "convite") {
+    if (estado !== "disponivel") return null;
+    return (
+      <Card className="flex-row items-center gap-3 p-4">
+        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Bell className="size-5" />
+        </span>
+        <p className="min-w-0 flex-1 text-sm font-medium">
+          Receber lembrete da mensalidade
+        </p>
+        <Button onClick={ativar} loading={ocupado} size="sm">
+          Ativar
+        </Button>
+      </Card>
+    );
+  }
+
   const conteudo: Record<
     Exclude<Estado, "carregando">,
     { icone: typeof Bell; tom: string; titulo: string; texto: React.ReactNode }
@@ -192,7 +217,16 @@ export function AtivarNotificacoes() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-semibold">{c.titulo}</p>
-          <p className="text-xs leading-relaxed text-muted-foreground">{c.texto}</p>
+          {estado === "negado" || estado === "ios_fora_do_app" ? (
+            <details className="text-sm text-muted-foreground">
+              <summary className="cursor-pointer py-1 font-medium text-primary">
+                Como liberar
+              </summary>
+              <p className="leading-relaxed">{c.texto}</p>
+            </details>
+          ) : (
+            <p className="text-sm leading-relaxed text-muted-foreground">{c.texto}</p>
+          )}
         </div>
       </div>
       {estado === "disponivel" ? (

@@ -14,6 +14,7 @@ import {
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { aguardandoPrimeiroAcesso } from "@/lib/acesso";
 import { requireUsuario } from "@/lib/auth";
+import { hojeISO } from "@/lib/financeiro";
 import { getFrequenciaDoAluno } from "@/lib/frequencia";
 import { createClient } from "@/lib/supabase/server";
 import { ExecucoesLista } from "@/components/treino/execucoes-lista";
@@ -58,7 +59,7 @@ export default async function ProfessorAlunoDetalhe({
     getExerciciosBiblioteca(),
     getModelosTreino(),
     getExecucoesDoAluno(id),
-    getFrequenciaDoAluno(supabase, id),
+    getFrequenciaDoAluno(supabase, id, hojeISO()),
   ]);
 
   if (!alunoData) notFound();
@@ -73,7 +74,7 @@ export default async function ProfessorAlunoDetalhe({
       <PageHeader
         titulo={aluno.nome}
         subtitulo="Acompanhamento do aluno: anamnese e avaliação física."
-        acoes={<FrequenciaInline pct={frequencia.freq.pct} />}
+        acoes={<FrequenciaInline pct={frequencia.freq.pct} novo={frequencia.freq.novo} />}
       />
 
       <div className="space-y-6">

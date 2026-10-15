@@ -46,11 +46,17 @@ export function FrequenciaBadge({
  * Indicador compacto para ficar na mesma linha do nome (cabeçalho da página):
  * um pontinho colorido no degradê + o percentual e um rótulo curto.
  */
-export function FrequenciaInline({ pct }: { pct: number | null }) {
+export function FrequenciaInline({
+  pct,
+  novo = false,
+}: {
+  pct: number | null;
+  novo?: boolean;
+}) {
   if (pct === null) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-        Sem agenda fixa
+        {rotuloFrequencia(null, novo)}
       </span>
     );
   }
@@ -180,11 +186,13 @@ export function FrequenciaBarra({ pct }: { pct: number }) {
  */
 export function FrequenciaCard({
   pct,
+  novo = false,
   esperado,
   presente,
   ultimaPresenca,
 }: {
   pct: number | null;
+  novo?: boolean;
   esperado: number;
   presente: number;
   ultimaPresenca?: string | null;
@@ -203,12 +211,17 @@ export function FrequenciaCard({
                 : undefined
             }
           >
-            {rotuloFrequencia(pct)}
+            {rotuloFrequencia(pct, novo)}
           </span>
         </div>
         {pct !== null ? <FrequenciaBarra pct={pct} /> : null}
         <p className="text-sm text-muted-foreground">
-          {pct === null ? (
+          {pct === null && novo ? (
+            <>
+              Ainda são poucas aulas para medir a frequência. Em duas semanas
+              ela aparece aqui.
+            </>
+          ) : pct === null ? (
             <>
               Este aluno não tem horários fixos na grade, então a frequência não
               é calculada. As presenças avulsas continuam registradas.
@@ -216,8 +229,8 @@ export function FrequenciaCard({
           ) : (
             <>
               Compareceu a <strong className="text-foreground">{presente}</strong>{" "}
-              de <strong className="text-foreground">{esperado}</strong> aula(s)
-              previstas nas últimas 8 semanas.
+              de <strong className="text-foreground">{esperado}</strong>{" "}
+              {esperado === 1 ? "aula prevista" : "aulas previstas"} nas últimas 8 semanas.
               {ultimaPresenca ? (
                 <>
                   {" "}

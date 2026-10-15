@@ -49,3 +49,17 @@ test("janela de paginação de 28 dias", () => {
     fim: "2026-09-30",
   });
 });
+
+test("aula da vez: em andamento, depois a próxima, senão a última", async () => {
+  const { aulaDaVez } = await import("./historico-aulas.ts");
+  const slots = [
+    { hora_inicio: "06:00:00", hora_fim: "07:00:00" },
+    { hora_inicio: "18:00:00", hora_fim: "19:00:00" },
+  ];
+  assert.equal(aulaDaVez(slots, "18:30")?.hora_inicio, "18:00:00");
+  assert.equal(aulaDaVez(slots, "12:00")?.hora_inicio, "18:00:00");
+  assert.equal(aulaDaVez(slots, "22:00")?.hora_inicio, "18:00:00");
+  assert.equal(aulaDaVez(slots, "05:00")?.hora_inicio, "06:00:00");
+  assert.equal(aulaDaVez(slots, null)?.hora_inicio, "06:00:00");
+  assert.equal(aulaDaVez([], "10:00"), null);
+});

@@ -85,3 +85,22 @@ export function janelaPagina(
   const fim = menosDias(hoje, pagina * dias);
   return { inicio: menosDias(fim, dias - 1), fim };
 }
+
+/**
+ * Aula "da vez" num dia: a que está acontecendo agora; senão a próxima;
+ * senão a última do dia (para lançar a chamada que ficou para trás).
+ * `agora` = "HH:mm" no fuso do estúdio; null = outro dia (pega a primeira).
+ */
+export function aulaDaVez<T extends { hora_inicio: string; hora_fim: string }>(
+  slots: T[],
+  agora: string | null,
+): T | null {
+  if (slots.length === 0) return null;
+  if (agora === null) return slots[0]!;
+  const ordenados = [...slots].sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
+  return (
+    ordenados.find((s) => s.hora_inicio.slice(0, 5) <= agora && agora < s.hora_fim.slice(0, 5)) ??
+    ordenados.find((s) => s.hora_inicio.slice(0, 5) > agora) ??
+    ordenados[ordenados.length - 1]!
+  );
+}

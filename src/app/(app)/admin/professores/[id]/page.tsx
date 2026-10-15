@@ -19,6 +19,7 @@ import { DIAS_SEMANA, horaCurta } from "@/lib/tipos";
 
 import { ProfessorForm } from "../professor-form";
 import { ToggleAtivoProfessor } from "../toggle-ativo";
+import { plural } from "@/lib/formato";
 
 const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0];
 
@@ -147,7 +148,7 @@ export default async function ProfessorDetalhePage({
             <CardHeader className="p-5">
               <CardTitle>Carteira de alunos</CardTitle>
               <CardDescription>
-                {alunos.length} aluno(s) ativo(s) com este professor.
+                {plural(alunos.length, "aluno ativo", "alunos ativos")} com este professor.
               </CardDescription>
             </CardHeader>
             {alunos.length === 0 ? (

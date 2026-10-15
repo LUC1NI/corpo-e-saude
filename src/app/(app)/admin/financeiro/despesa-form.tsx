@@ -37,7 +37,7 @@ export function DespesaForm({
     const res = await criarDespesa({
       descricao,
       categoria_id: categoriaId === SEM_CATEGORIA ? undefined : categoriaId,
-      valor: Number(valor),
+      valor,
       data,
     });
     setSalvando(false);
@@ -88,9 +88,8 @@ export function DespesaForm({
       <CampoForm label="Valor (R$)" htmlFor="val">
         <Input
           id="val"
-          type="number"
-          step="0.01"
-          min="0"
+          type="text"
+          inputMode="decimal"
           value={valor}
           onChange={(e) => setValor(e.target.value)}
           placeholder="0,00"

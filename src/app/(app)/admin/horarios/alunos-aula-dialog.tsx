@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 import { cn } from "@/lib/utils";
+import { plural } from "@/lib/formato";
 
 export function AlunosAulaDialog({
   professorNome,
@@ -49,8 +50,8 @@ export function AlunosAulaDialog({
             {professorNome} · {rotulo}
           </DialogTitle>
           <DialogDescription>
-            {n} aluno(s) agendado(s)
-            {capacidade != null ? ` de ${capacidade} vaga(s)` : ""}.
+            {plural(n, "aluno agendado", "alunos agendados")}
+            {capacidade != null ? ` de ${plural(capacidade, "vaga", "vagas")}` : ""}.
           </DialogDescription>
         </DialogHeader>
 

@@ -40,9 +40,9 @@ export function StatusPagamento({
   status: "pago" | "pendente" | "vencido";
 }) {
   const mapa = {
-    pago: { tom: "sucesso" as const, rotulo: "Em dia" },
-    pendente: { tom: "alerta" as const, rotulo: "Pendente" },
-    vencido: { tom: "perigo" as const, rotulo: "Vencido" },
+    pago: { tom: "sucesso" as const, rotulo: "Pago" },
+    pendente: { tom: "info" as const, rotulo: "A vencer" },
+    vencido: { tom: "perigo" as const, rotulo: "Atrasado" },
   };
   const { tom, rotulo } = mapa[status];
   return <StatusBadge tom={tom}>{rotulo}</StatusBadge>;

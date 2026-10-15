@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatBRL } from "@/lib/formato";
+import { cn } from "@/lib/utils";
 
 const WHATSAPP_COMPROVANTE = `https://wa.me/${WHATSAPP_PRINCIPAL}?text=${encodeURIComponent(
   "Olá, Juliano! Acabei de pagar a mensalidade via PIX e estou enviando o comprovante.",
@@ -27,9 +28,12 @@ const WHATSAPP_COMPROVANTE = `https://wa.me/${WHATSAPP_PRINCIPAL}?text=${encodeU
 export function PagamentoPix({
   valor,
   descricao,
+  variante = "principal",
 }: {
   valor: number;
   descricao: string;
+  /** principal = botão azul · destaque = branco sobre cor · discreto = contorno */
+  variante?: "principal" | "destaque" | "discreto";
 }) {
   async function copiarChave() {
     try {
@@ -44,9 +48,19 @@ export function PagamentoPix({
     <Dialog>
       <DialogTrigger
         render={
-          <Button size="lg" className="w-full sm:w-auto">
+          <Button
+            size="lg"
+            variant={variante === "principal" ? "default" : "outline"}
+            className={cn(
+              "w-full sm:w-auto",
+              variante === "destaque" &&
+                "border-0 bg-white text-foreground hover:bg-white/90",
+              variante === "discreto" &&
+                "border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white",
+            )}
+          >
             <QrCode className="size-4" />
-            Realizar pagamento
+            {variante === "discreto" ? "Pagar adiantado" : "Pagar com Pix"}
           </Button>
         }
       />

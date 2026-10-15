@@ -9,7 +9,7 @@ import { getAlunoAtual } from "@/lib/aluno";
 import { requireUsuario } from "@/lib/auth";
 import { hojeISO } from "@/lib/financeiro";
 import { formatData } from "@/lib/formato";
-import { getFrequenciaDoAluno } from "@/lib/frequencia";
+import { dataNoEstudio, getFrequenciaDoAluno } from "@/lib/frequencia";
 import {
   historicoAulas,
   janelaPagina,
@@ -40,12 +40,6 @@ const SELO: Record<AulaHistorico["status"], { rotulo: string; classe: string }> 
   extra: { rotulo: "Aula extra", classe: "bg-primary/10 text-primary" },
 };
 
-/** Data (yyyy-MM-dd) de um timestamp no fuso do estúdio. */
-function dataNoEstudio(ts: string): string {
-  return new Date(ts).toLocaleDateString("en-CA", {
-    timeZone: "America/Sao_Paulo",
-  });
-}
 
 /**
  * Horários do aluno PRESENCIAL: só os horários fixos dele na semana (não a
@@ -96,7 +90,7 @@ export default async function AlunoHorariosPage({
       .gte("data", inicio)
       .lte("data", fim)
       .order("data", { ascending: false }),
-    getFrequenciaDoAluno(supabase, aluno.id),
+    getFrequenciaDoAluno(supabase, aluno.id, hoje),
   ]);
 
   const vinculos = ((vincData ?? []) as unknown as Vinculo[]).filter(
@@ -164,7 +158,7 @@ export default async function AlunoHorariosPage({
       )}
 
       {/* Frequência (mesmo cartão que o professor vê) */}
-      {frequencia.freq.pct !== null ? (
+      {frequencia.freq.pct !== null || frequencia.freq.novo ? (
         <Card>
           <CardHeader>
             <CardTitle>Sua frequência</CardTitle>
@@ -172,6 +166,7 @@ export default async function AlunoHorariosPage({
           <CardContent>
             <FrequenciaCard
               pct={frequencia.freq.pct}
+              novo={frequencia.freq.novo}
               esperado={frequencia.freq.esperado}
               presente={frequencia.freq.presente}
               ultimaPresenca={

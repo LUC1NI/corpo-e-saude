@@ -68,6 +68,7 @@ import type {
   TreinoDivisao,
   TreinoExercicio,
 } from "@/lib/tipos";
+import { plural } from "@/lib/formato";
 
 // ===========================================================================
 // Dialog: ficha de treino (do aluno) ou treino-modelo (alunoId null)
@@ -871,7 +872,7 @@ function AplicarModeloDialog({
                     <p className="truncate text-sm font-semibold">{m.nome}</p>
                     <p className="text-xs text-muted-foreground">
                       {m.divisoes.length > 0
-                        ? `${m.divisoes.map((d) => d.nome).join(" · ")} · ${nEx} exercício(s)`
+                        ? `${m.divisoes.map((d) => d.nome).join(" · ")} · ${plural(nEx, "exercício", "exercícios")}`
                         : "Sem divisões ainda"}
                     </p>
                   </div>

@@ -27,6 +27,7 @@ import {
 import { CampoForm } from "@/components/ui-extra/campo-form";
 import { criarHorariosAdmin } from "@/lib/acoes-presenca";
 import { cn } from "@/lib/utils";
+import { plural } from "@/lib/formato";
 
 const DIAS_CURTOS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -101,7 +102,7 @@ export function AdicionarHorario({
         toast.info("Esse horário já existia nos dias selecionados.");
       } else {
         toast.success(
-          `${criados} horário(s) criado(s)` +
+          plural(criados, "horário criado", "horários criados") +
             (pulados > 0 ? ` · ${pulados} já existia(m)` : "") +
             ".",
         );

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { Check, Circle } from "lucide-react";
+import { useActionState, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +27,16 @@ export function RedefinirForm({
     RedefinirState,
     FormData
   >(redefinirSenhaAction, {});
+  // Controlados: depois de um erro do servidor o que foi digitado continua lá.
+  const [senha, setSenha] = useState("");
+  const [confirmar, setConfirmar] = useState("");
+  const regras = [
+    { ok: senha.length >= 8, texto: "8 caracteres ou mais" },
+    { ok: /[A-Za-z]/.test(senha), texto: "Uma letra" },
+    { ok: /[0-9]/.test(senha), texto: "Um número" },
+    { ok: senha.length > 0 && senha === confirmar, texto: "As duas senhas iguais" },
+  ];
+  const tudoOk = regras.every((r) => r.ok);
 
   return (
     <Card className="w-full max-w-sm shadow-lg">
@@ -48,10 +59,9 @@ export function RedefinirForm({
               name="senha"
               autoComplete="new-password"
               required
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">
-              Mínimo de 8 caracteres, com letras e números.
-            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmar">Confirmar senha</Label>
@@ -60,8 +70,23 @@ export function RedefinirForm({
               name="confirmar"
               autoComplete="new-password"
               required
+              value={confirmar}
+              onChange={(e) => setConfirmar(e.target.value)}
             />
           </div>
+
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm" aria-live="polite">
+            {regras.map((r) => (
+              <li
+                key={r.texto}
+                className={r.ok ? "flex items-center gap-1.5 text-emerald-700" : "flex items-center gap-1.5 text-muted-foreground"}
+              >
+                {r.ok ? <Check className="size-4" /> : <Circle className="size-4" />}
+                {r.texto}
+                <span className="sr-only">{r.ok ? " (ok)" : " (falta)"}</span>
+              </li>
+            ))}
+          </ul>
 
           {state.erro ? (
             <p
@@ -72,7 +97,7 @@ export function RedefinirForm({
             </p>
           ) : null}
 
-          <Button type="submit" className="w-full" loading={pending}>
+          <Button type="submit" className="w-full" loading={pending} disabled={!tudoOk}>
             {pending ? "Salvando…" : "Salvar senha"}
           </Button>
         </form>

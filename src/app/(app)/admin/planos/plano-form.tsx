@@ -82,9 +82,8 @@ export function PlanoForm({
         >
           <Input
             id="valor"
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputMode="decimal"
             {...register("valor")}
             placeholder="0,00"
           />

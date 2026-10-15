@@ -45,7 +45,7 @@ export function resolverMes(param?: string): PeriodoMes {
     chave: format(base, "yyyy-MM"),
     inicio: format(base, "yyyy-MM-dd"),
     fimExclusivo: format(addMonths(base, 1), "yyyy-MM-dd"),
-    rotulo: fmtMesLongo.format(base),
+    rotulo: ((t) => t.charAt(0).toUpperCase() + t.slice(1))(fmtMesLongo.format(base)),
     anterior: format(addMonths(base, -1), "yyyy-MM"),
     proximo: format(addMonths(base, 1), "yyyy-MM"),
     ehMesAtual: base.getTime() === agora.getTime(),

@@ -18,7 +18,7 @@ import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { requireUsuario } from "@/lib/auth";
 import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
-import { formatBRL, formatData } from "@/lib/formato";
+import { formatBRL, formatData, plural } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
 
 import { NavFinanceiro } from "../nav-financeiro";
@@ -161,8 +161,8 @@ export default async function InadimplentesPage() {
                           <ArrowUpRight className="ml-1 inline size-3.5 text-muted-foreground/50" />
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {d.mensalidades.length} mensalidade(s) vencida(s) ·
-                          há {d.diasAtraso} dia(s)
+                          {plural(d.mensalidades.length, "mensalidade vencida", "mensalidades vencidas")} ·
+                          há {plural(d.diasAtraso, "dia", "dias")}
                         </p>
                       </div>
                     </Link>

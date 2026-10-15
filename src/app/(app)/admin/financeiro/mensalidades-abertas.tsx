@@ -121,7 +121,7 @@ export function MensalidadesAbertas({
                 semRotuloMobile: true,
                 celula: (p) => (
                   <div className="flex items-center justify-end gap-1">
-                    <BaixaButton pagamentoId={p.id} />
+                    <BaixaButton pagamentoId={p.id} aluno={p.alunos?.nome ?? "aluno"} competencia={p.competencia} valor={Number(p.valor)} />
                     <ExcluirPagamentoButton pagamentoId={p.id} />
                   </div>
                 ),

@@ -87,7 +87,7 @@ export function AvaliacaoForm({
           <Input id="data" type="date" {...register("data")} />
         </CampoForm>
         <CampoForm label="Peso (kg)" htmlFor="peso">
-          <Input id="peso" type="number" step="0.1" {...register("peso")} />
+          <Input id="peso" type="text" inputMode="decimal" placeholder="Ex.: 72,5" {...register("peso")} />
         </CampoForm>
         <CampoForm
           label="Altura"
@@ -96,17 +96,17 @@ export function AvaliacaoForm({
         >
           <Input
             id="altura"
-            type="number"
-            step="0.01"
-            placeholder="1.70"
+            type="text"
+            inputMode="decimal"
+            placeholder="Ex.: 1,70"
             {...register("altura")}
           />
         </CampoForm>
         <CampoForm label="% Gordura" htmlFor="pg">
           <Input
             id="pg"
-            type="number"
-            step="0.1"
+            type="text"
+            inputMode="decimal"
             {...register("percentual_gordura")}
           />
         </CampoForm>
@@ -137,8 +137,8 @@ export function AvaliacaoForm({
             <CampoForm key={m.chave} label={m.rotulo} htmlFor={m.chave}>
               <Input
                 id={m.chave}
-                type="number"
-                step="0.1"
+                type="text"
+                inputMode="decimal"
                 {...register(m.chave)}
               />
             </CampoForm>

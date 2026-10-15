@@ -31,6 +31,7 @@ import {
   type DivisaoComExercicios,
   type TreinoComTudo,
 } from "@/lib/tipos";
+import { plural } from "@/lib/formato";
 
 interface ProximoTreino {
   /** "Hoje, Segunda" / "Amanhã, Terça" / "Quarta". */
@@ -206,7 +207,7 @@ export default async function AlunoHome() {
 
       <SituacaoMensalidadeCard situacao={situacao} />
 
-      <AtivarNotificacoes />
+      <AtivarNotificacoes modo="convite" />
 
       {/* Frequência do mês */}
       <Card className="flex-row items-center gap-3 p-5">
@@ -342,7 +343,7 @@ function TreinoDeHoje({
                 {divisaoHoje.foco || `Treino ${divisaoHoje.nome}`}
               </p>
               <p className="mt-0.5 text-sm text-white/85">
-                {divisaoHoje.exercicios.length} exercício(s) ·{" "}
+                {plural(divisaoHoje.exercicios.length, "exercício", "exercícios")} ·{" "}
                 {concluido ? "feito hoje" : "toque para começar"}
               </p>
             </div>

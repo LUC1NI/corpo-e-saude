@@ -61,7 +61,7 @@ export function PresencaControls({
         label="Aula / horário"
         dica={
           slots.length
-            ? "A 1ª aula do dia já vem selecionada. Use “sem horário” só para avulso/online."
+            ? "Já abre na aula de agora. “Sem horário” é para avulso/online."
             : "Sem aulas neste dia: a presença fica como avulsa."
         }
       >

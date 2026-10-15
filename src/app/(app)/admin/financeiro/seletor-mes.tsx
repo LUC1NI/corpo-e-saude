@@ -27,7 +27,7 @@ export function SeletorMes({
         <ChevronLeft className="size-4" />
       </Link>
       <div className="min-w-0 text-center sm:min-w-40">
-        <p className="truncate text-sm font-semibold capitalize">
+        <p className="truncate text-sm font-semibold">
           {periodo.rotulo}
           {periodo.ehMesAtual ? (
             <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-primary uppercase">

@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { CampoForm } from "@/components/ui-extra/campo-form";
 import { criarHorariosProfessor } from "@/lib/acoes-presenca";
 import { cn } from "@/lib/utils";
+import { plural } from "@/lib/formato";
 
 const DIAS_CURTOS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -80,7 +81,7 @@ export function AdicionarHorarioProf({ diaInicial }: { diaInicial: number }) {
         toast.info("Esse horário já existia nos dias selecionados.");
       } else {
         toast.success(
-          `${criados} horário(s) criado(s)` +
+          plural(criados, "horário criado", "horários criados") +
             (pulados > 0 ? ` · ${pulados} já existia(m)` : "") +
             ".",
         );

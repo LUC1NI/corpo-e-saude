@@ -9,9 +9,13 @@ import {
   hojeISO,
   proximaCobranca,
 } from "@/lib/financeiro";
+import { z } from "zod";
+
 import {
+  baixaSchema,
   despesaSchema,
   matriculaSchema,
+  type BaixaInput,
   type DespesaInput,
   type MatriculaInput,
 } from "@/lib/schemas";
@@ -125,20 +129,26 @@ export async function cancelarMatricula(
 // Baixa de pagamento (recebimento)
 // ---------------------------------------------------------------------------
 export async function marcarPagamentoPago(
-  pagamentoId: string,
-  formaPagamento?: string,
+  input: BaixaInput,
 ): Promise<ResultadoAcao<{ avisoNota?: string }>> {
   await assertPapel(["admin"]);
+  const parsed = baixaSchema.safeParse(input);
+  if (!parsed.success) {
+    return falha(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+  }
+  const { pagamentoId, forma, data } = parsed.data;
+  if (data > hojeISO()) return falha("A data do pagamento não pode ser no futuro.");
+
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: atualizado, error } = await supabase
     .from("pagamentos")
-    .update({
-      status: "pago",
-      data_pagamento: hojeISO(),
-      forma_pagamento: formaPagamento ?? null,
-    })
-    .eq("id", pagamentoId);
+    .update({ status: "pago", data_pagamento: data, forma_pagamento: forma ?? null })
+    .eq("id", pagamentoId)
+    .neq("status", "pago")
+    .select("aluno_id")
+    .maybeSingle();
   if (error) return falha("Não foi possível dar baixa no pagamento.");
+  if (!atualizado) return falha("Esta mensalidade já estava paga.");
 
   // Nota fiscal depois da baixa. A baixa NUNCA falha por causa da nota:
   // qualquer problema vira status/mensagem na própria nota.
@@ -146,15 +156,67 @@ export async function marcarPagamentoPago(
   try {
     const config = await carregarConfigFiscal(supabase);
     if (config?.emitir_automaticamente_na_baixa) {
-      avisoNota = (await emitirNotaDoPagamento(supabase, pagamentoId)).mensagem;
+      const r = await emitirNotaDoPagamento(supabase, pagamentoId);
+      // "Aguardando configuração" é o estado normal sem token: não incomoda o dono.
+      if (r.status === "erro") avisoNota = r.mensagem;
     }
   } catch {
     avisoNota = "Pagamento confirmado, mas a nota não foi gerada. Emita em Recebimentos.";
   }
 
-  revalidatePath("/admin/financeiro");
-  revalidatePath("/admin/financeiro/recebimentos");
+  revalidarFinanceiro(atualizado.aluno_id as string);
   return sucesso({ avisoNota });
+}
+
+/**
+ * Desfaz uma baixa feita por engano: a mensalidade volta a ficar em aberto.
+ * Recusa se a nota fiscal já foi autorizada/está em processamento (nesse caso
+ * é preciso cancelar a nota primeiro). Nota ainda não emitida é cancelada.
+ */
+export async function desfazerBaixa(pagamentoId: string): Promise<ResultadoAcao> {
+  await assertPapel(["admin"]);
+  const id = z.string().uuid().safeParse(pagamentoId);
+  if (!id.success) return falha("Pagamento inválido.");
+  const supabase = await createClient();
+
+  const [{ data: pagamento }, { data: notas }] = await Promise.all([
+    supabase.from("pagamentos").select("aluno_id, vencimento, status").eq("id", id.data).maybeSingle(),
+    supabase
+      .from("notas_fiscais")
+      .select("id, status")
+      .eq("pagamento_id", id.data)
+      .neq("status", "cancelada"),
+  ]);
+  if (!pagamento || pagamento.status !== "pago") return falha("Nada para desfazer.");
+  const nota = (notas ?? [])[0] as { id: string; status: string } | undefined;
+  if (nota && (nota.status === "autorizada" || nota.status === "processando")) {
+    return falha("A nota fiscal já foi emitida. Cancele a nota em Nota fiscal antes de desfazer.");
+  }
+  if (nota) {
+    await supabase
+      .from("notas_fiscais")
+      .update({ status: "cancelada", justificativa_cancelamento: "Baixa desfeita antes da emissão.", cancelada_em: new Date().toISOString() })
+      .eq("id", nota.id);
+  }
+
+  const { error } = await supabase
+    .from("pagamentos")
+    .update({
+      status: (pagamento.vencimento as string) < hojeISO() ? "vencido" : "pendente",
+      data_pagamento: null,
+      forma_pagamento: null,
+    })
+    .eq("id", id.data);
+  if (error) return falha("Não foi possível desfazer.");
+
+  revalidarFinanceiro(pagamento.aluno_id as string);
+  return sucesso();
+}
+
+function revalidarFinanceiro(alunoId: string) {
+  revalidatePath("/admin");
+  revalidatePath("/admin/financeiro", "layout");
+  revalidatePath(`/admin/alunos/${alunoId}`);
 }
 
 /**

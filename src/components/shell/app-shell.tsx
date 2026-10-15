@@ -38,7 +38,7 @@ async function alertasAdmin(): Promise<AlertaNotificacao[]> {
       titulo: p.alunos?.nome ?? "Aluno",
       descricao: `${formatBRL(Number(p.valor))} · vence ${formatData(p.vencimento)}`,
       href: `/admin/alunos/${p.aluno_id}`,
-      rotulo: vencido ? "Vencido" : "Pendente",
+      rotulo: vencido ? "Atrasado" : "A vencer",
       tom: vencido ? ("perigo" as const) : ("alerta" as const),
     };
   });

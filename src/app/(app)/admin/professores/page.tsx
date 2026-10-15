@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { AdicionarProfessor } from "./adicionar-professor";
 import { ToggleAtivoProfessor } from "./toggle-ativo";
+import { plural } from "@/lib/formato";
 
 interface ProfessorLista {
   id: string;
@@ -78,7 +79,7 @@ export default async function ProfessoresPage() {
                       </p>
                     </div>
                     <StatusBadge tom="info">
-                      {contagem.get(p.id) ?? 0} aluno(s)
+                      {plural(contagem.get(p.id) ?? 0, "aluno", "alunos")}
                     </StatusBadge>
                     <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground/40" />
                   </div>

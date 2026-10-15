@@ -20,6 +20,7 @@ import {
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 import { definirAlunosDoHorario, excluirHorario } from "@/lib/acoes-presenca";
 import { cn } from "@/lib/utils";
+import { plural } from "@/lib/formato";
 
 export function GerenciarAula({
   horarioId,
@@ -146,7 +147,7 @@ export function GerenciarAula({
         )}
 
         <p className="text-xs text-muted-foreground">
-          {selecionados.size} selecionado(s)
+          {plural(selecionados.size, "selecionado", "selecionados")}
           {capacidade != null ? ` · capacidade ${capacidade}` : ""}
           {acimaCap ? " (acima da capacidade)" : ""}
         </p>

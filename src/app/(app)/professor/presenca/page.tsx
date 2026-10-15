@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import { CalendarCheck, Users } from "lucide-react";
 import Link from "@/components/ui-extra/link";
 
@@ -14,8 +15,9 @@ import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { requireUsuario } from "@/lib/auth";
-import { hojeISO } from "@/lib/financeiro";
-import { formatData } from "@/lib/formato";
+import { agoraNoEstudio, hojeISO } from "@/lib/financeiro";
+import { aulaDaVez } from "@/lib/historico-aulas";
+import { formatData, plural } from "@/lib/formato";
 import { getProfessorAtual } from "@/lib/professor";
 import { createClient } from "@/lib/supabase/server";
 import { DIAS_SEMANA, horaCurta } from "@/lib/tipos";
@@ -74,13 +76,14 @@ export default async function PresencaPage({
     capacidade: number | null;
   }[];
 
-  // Sem parâmetro na URL: já vem com a 1ª aula do dia selecionada (poupa
-  // trabalho). "__none__" = o professor escolheu explicitamente "sem horário"
+  // Sem parâmetro na URL: hoje vem a aula em andamento (ou a próxima); em
+  // outro dia, a primeira (poupa trabalho). "__none__" = o professor escolheu explicitamente "sem horário"
   // (avulso/online). Caso contrário, usa o horário pedido.
   const SEM_HORARIO = "__none__";
   const hora =
     sp.hora === undefined
-      ? (slots[0]?.hora_inicio ?? null)
+      ? (aulaDaVez(slots, data === hojeISO() ? format(agoraNoEstudio(), "HH:mm") : null)
+          ?.hora_inicio ?? null)
       : sp.hora === SEM_HORARIO
         ? null
         : sp.hora;
@@ -153,7 +156,7 @@ export default async function PresencaPage({
     <>
       <PageHeader
         titulo="Presença"
-        subtitulo={`${DIAS_SEMANA[diaSemana]}, ${formatData(data)} · ${presentes.size} presente(s)`}
+        subtitulo={`${DIAS_SEMANA[diaSemana]}, ${formatData(data)} · ${plural(presentes.size, "presente", "presentes")}`}
       />
 
       <Card className="mb-6">
@@ -247,7 +250,7 @@ export default async function PresencaPage({
           <CardAction>
             <span className="text-sm text-muted-foreground">
               {historico.length}
-              {historico.length === 200 ? "+" : ""} registro(s)
+              {historico.length === 200 ? "+" : ""} {historico.length === 1 ? "registro" : "registros"}
             </span>
           </CardAction>
         </CardHeader>

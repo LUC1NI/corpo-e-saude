@@ -14,54 +14,109 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { marcarPagamentoPago } from "@/lib/acoes-financeiro";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { desfazerBaixa, marcarPagamentoPago } from "@/lib/acoes-financeiro";
+import { formatBRL, formatMesAno } from "@/lib/formato";
+import { FORMAS_PAGAMENTO } from "@/lib/schemas";
 import { cn } from "@/lib/utils";
 
-const FORMAS = ["Pix", "Dinheiro", "Cartão", "Transferência"];
+/** Data de hoje (yyyy-MM-dd) no fuso do estúdio, no navegador. */
+function hojeNoEstudio(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+}
 
-export function BaixaButton({ pagamentoId }: { pagamentoId: string }) {
+/**
+ * Botão "Recebi" da mensalidade: escolhe a forma (1 toque) e confirma.
+ * Mostra de quem, qual mês e quanto — e oferece Desfazer no aviso.
+ */
+export function BaixaButton({
+  pagamentoId,
+  aluno,
+  competencia,
+  valor,
+  className,
+}: {
+  pagamentoId: string;
+  aluno: string;
+  competencia: string;
+  valor: number;
+  className?: string;
+}) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
-  const [carregando, setCarregando] = useState(false);
+  const [data, setData] = useState(hojeNoEstudio);
   // Qual botão disparou a baixa (para o spinner aparecer só nele).
   const [formaEmCurso, setFormaEmCurso] = useState<string | null>(null);
+  const primeiroNome = aluno.split(" ")[0];
 
-  async function baixar(forma?: string) {
-    setCarregando(true);
-    setFormaEmCurso(forma ?? "__sem__");
-    const res = await marcarPagamentoPago(pagamentoId, forma);
-    setCarregando(false);
-    setFormaEmCurso(null);
+  async function desfazer() {
+    const res = await desfazerBaixa(pagamentoId);
     if (res.ok) {
-      setAberto(false);
-      toast.success("Pagamento confirmado.");
-      if (res.dados?.avisoNota) toast.info(res.dados.avisoNota);
+      toast.success("Baixa desfeita.");
       router.refresh();
     } else {
       toast.error(res.erro);
     }
   }
 
+  async function baixar(forma?: (typeof FORMAS_PAGAMENTO)[number]) {
+    setFormaEmCurso(forma ?? "__sem__");
+    const res = await marcarPagamentoPago({ pagamentoId, forma, data });
+    setFormaEmCurso(null);
+    if (!res.ok) {
+      toast.error(res.erro);
+      return;
+    }
+    setAberto(false);
+    toast.success(`Pagamento de ${primeiroNome} confirmado`, {
+      description: res.dados?.avisoNota,
+      action: { label: "Desfazer", onClick: desfazer },
+      duration: 8000,
+    });
+    router.refresh();
+  }
+
+  const ocupado = formaEmCurso !== null;
+
   return (
-    <Dialog open={aberto} onOpenChange={setAberto}>
-      <DialogTrigger className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
+    <Dialog
+      open={aberto}
+      onOpenChange={(v) => {
+        setAberto(v);
+        if (v) setData(hojeNoEstudio());
+      }}
+    >
+      <DialogTrigger className={cn(buttonVariants({ size: "sm" }), "gap-1.5", className)}>
         <Check className="size-4" />
-        Confirmar
+        Recebi
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Confirmar pagamento</DialogTitle>
+          <DialogTitle>Receber de {aluno}</DialogTitle>
           <DialogDescription>
-            Registra o recebimento da mensalidade. Escolha a forma de pagamento.
+            {formatMesAno(competencia)} ·{" "}
+            <strong className="text-foreground">{formatBRL(valor)}</strong>
           </DialogDescription>
         </DialogHeader>
+        <div className="space-y-1.5">
+          <Label htmlFor={`data-${pagamentoId}`}>Pago em</Label>
+          <Input
+            id={`data-${pagamentoId}`}
+            type="date"
+            value={data}
+            max={hojeNoEstudio()}
+            onChange={(e) => setData(e.target.value)}
+          />
+        </div>
+        <p className="text-sm font-medium">Como pagou?</p>
         <div className="grid grid-cols-2 gap-2">
-          {FORMAS.map((forma) => (
+          {FORMAS_PAGAMENTO.map((forma) => (
             <Button
               key={forma}
               type="button"
               variant="outline"
-              disabled={carregando}
+              disabled={ocupado || !data}
               loading={formaEmCurso === forma}
               onClick={() => baixar(forma)}
             >
@@ -72,7 +127,7 @@ export function BaixaButton({ pagamentoId }: { pagamentoId: string }) {
         <Button
           type="button"
           variant="ghost"
-          disabled={carregando}
+          disabled={ocupado || !data}
           loading={formaEmCurso === "__sem__"}
           onClick={() => baixar()}
           className="w-full"

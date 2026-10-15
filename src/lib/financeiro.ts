@@ -37,6 +37,20 @@ export type SituacaoMensalidade =
       qtd: number;
     };
 
+/**
+ * Até quantos dias antes do vencimento o aluno vê o aviso "vence em N dias"
+ * (e o botão de pagar em destaque). Antes disso ele está simplesmente em dia.
+ */
+export const DIAS_AVISO_VENCIMENTO = 5;
+
+/** O aluno precisa agir agora? (atrasada ou vencendo nos próximos dias) */
+export function precisaPagar(s: SituacaoMensalidade): boolean {
+  return (
+    s.tipo === "atrasada" ||
+    (s.tipo === "a_vencer" && s.dias <= DIAS_AVISO_VENCIMENTO)
+  );
+}
+
 /** Situação da mensalidade a partir das cobranças em aberto (não pagas). */
 export function situacaoMensalidade(
   abertos: { vencimento: string; valor: number }[],

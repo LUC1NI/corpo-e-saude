@@ -1,26 +1,29 @@
-import { AlertCircle, CheckCircle2, FileDown, Wallet } from "lucide-react";
+import { AlertCircle, CalendarClock, CheckCircle2, FileDown, Wallet } from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { StatusPagamento } from "@/components/ui-extra/status-badge";
-import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
+import { textosMensalidade } from "@/components/aluno/situacao-mensalidade";
+import { AtivarNotificacoes } from "@/components/pwa/ativar-notificacoes";
 import { requireUsuario } from "@/lib/auth";
 import { getAlunoAtual } from "@/lib/aluno";
-import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
-import { formatBRL, formatData } from "@/lib/formato";
+import { hojeISO, precisaPagar, situacaoMensalidade } from "@/lib/financeiro";
+import { formatBRL, formatDiaMes, formatMesAno } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
 import {
-  ROTULO_PERIODICIDADE,
   type Periodicidade,
   type StatusPagamento as TStatusPagamento,
 } from "@/lib/tipos";
+import { cn } from "@/lib/utils";
 
 import { PagamentoPix } from "./pagamento-pix";
+
+const POR_PERIODO: Record<Periodicidade, string> = {
+  mensal: "mês",
+  trimestral: "trimestre",
+  semestral: "semestre",
+  anual: "ano",
+};
 
 interface PagamentoAluno {
   id: string;
@@ -97,146 +100,103 @@ export default async function AlunoMensalidadePage() {
     p.status === "pendente" && p.vencimento < hoje ? "vencido" : p.status;
 
   const emAberto = pagamentos.filter((p) => efetivo(p) !== "pago");
-  const totalAberto = emAberto.reduce((s, p) => s + p.valor, 0);
-  const emDia = emAberto.length === 0;
+  const situacao = situacaoMensalidade(emAberto, hoje);
+  const { tom, titulo, detalhe } = textosMensalidade(situacao);
+  const agir = precisaPagar(situacao);
+  const HeroIcone = tom === "ok" ? CheckCircle2 : tom === "aviso" ? CalendarClock : AlertCircle;
 
-  // O que o aluno paga agora: as pendências (se houver) ou a mensalidade do
-  // plano ativo (quando está em dia e quer se adiantar).
-  const valorPagar = !emDia ? totalAberto : (matricula?.valor ?? 0);
-  const descricaoPagar = !emDia
-    ? `${emAberto.length} mensalidade(s) em aberto · ${formatBRL(totalAberto)}`
-    : matricula
-      ? `Mensalidade do plano ${matricula.plano_nome}`
-      : "";
+  // Em dia: permite se adiantar pagando a mensalidade do plano.
+  const valorPagar = agir && situacao.tipo !== "em_dia" ? situacao.total : (matricula?.valor ?? 0);
 
   return (
     <div className="space-y-5">
-      <h1 className="font-heading text-xl font-bold">Sua mensalidade</h1>
+      <h1 className="font-heading text-xl font-bold">Mensalidade</h1>
 
       {/* Situação atual */}
       <section
-        className={
-          emDia
-            ? "rounded-2xl bg-emerald-600 p-5 text-white shadow-sm"
-            : "rounded-2xl bg-amber-500 p-5 text-white shadow-sm"
-        }
+        className={cn(
+          "rounded-2xl p-5 text-white shadow-sm",
+          tom === "ok" && "bg-emerald-600",
+          tom === "aviso" && "bg-amber-600",
+          tom === "atraso" && "bg-red-600",
+        )}
       >
         <div className="flex items-center gap-3">
-          <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
-            {emDia ? (
-              <CheckCircle2 className="size-5" />
-            ) : (
-              <AlertCircle className="size-5" />
-            )}
+          <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
+            <HeroIcone className="size-6" />
           </span>
           <div>
-            <p className="text-lg font-bold">
-              {emDia ? "Tudo em dia" : "Você tem pendências"}
-            </p>
-            <p className="text-sm text-white/80">
-              {emDia
-                ? "Nenhuma mensalidade em aberto. Obrigado!"
-                : `${emAberto.length} mensalidade(s) em aberto · ${formatBRL(totalAberto)}`}
-            </p>
+            <p className="text-lg font-bold">{titulo}</p>
+            <p className="text-white/90">{detalhe}</p>
           </div>
         </div>
+        {valorPagar > 0 ? (
+          <div className="mt-4">
+            <PagamentoPix
+              valor={valorPagar}
+              descricao={agir ? detalhe : `Mensalidade do plano ${matricula?.plano_nome ?? ""}`}
+              variante={agir ? "destaque" : "discreto"}
+            />
+          </div>
+        ) : null}
       </section>
 
-      {/* Como pagar (PIX) */}
-      {valorPagar > 0 ? (
-        <PagamentoPix valor={valorPagar} descricao={descricaoPagar} />
-      ) : null}
-
-      {/* Plano e próxima cobrança */}
+      {/* Plano */}
       {matricula ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Seu plano</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid gap-4 text-sm sm:grid-cols-3">
-              <div>
-                <dt className="text-muted-foreground">Plano</dt>
-                <dd className="font-medium">{matricula.plano_nome}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Valor</dt>
-                <dd className="font-medium">
-                  {formatBRL(matricula.valor)}
-                  <span className="text-muted-foreground">
-                    {" "}
-                    · {ROTULO_PERIODICIDADE[matricula.periodicidade]}
-                  </span>
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Próxima cobrança</dt>
-                <dd className="font-medium">
-                  {formatData(matricula.data_proxima_cobranca)}
-                </dd>
-              </div>
-            </dl>
-          </CardContent>
-        </Card>
+        <p className="rounded-xl border bg-card px-4 py-3 text-sm">
+          <span className="font-semibold">{matricula.plano_nome}</span>
+          <span className="text-muted-foreground">
+            {" "}· {formatBRL(matricula.valor)}/{POR_PERIODO[matricula.periodicidade]} · renova sozinho
+          </span>
+        </p>
       ) : null}
 
       {/* Histórico */}
-      <Card className="overflow-hidden p-0">
-        <CardHeader className="p-5">
-          <CardTitle>Histórico de mensalidades</CardTitle>
+      <Card className="gap-0 p-0">
+        <CardHeader className="p-5 pb-2">
+          <CardTitle>Histórico</CardTitle>
         </CardHeader>
         {pagamentos.length === 0 ? (
           <PageEmpty
             icone={Wallet}
-            titulo="Nenhuma cobrança"
+            titulo="Nenhuma cobrança ainda"
             descricao="Suas mensalidades aparecem aqui assim que forem geradas."
           />
         ) : (
-          <div className="p-3 sm:p-0">
-            <TabelaResponsiva
-              dados={pagamentos}
-              getKey={(p) => p.id}
-              colunas={[
-                {
-                  cabecalho: "Competência",
-                  principal: true,
-                  celula: (p) => rotuloCompetencia(p.competencia),
-                },
-                {
-                  cabecalho: "Vencimento",
-                  celula: (p) => formatData(p.vencimento),
-                },
-                { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
-                {
-                  cabecalho: "Situação",
-                  alinhar: "right",
-                  celula: (p) => <StatusPagamento status={efetivo(p)} />,
-                },
-                {
-                  cabecalho: "Nota fiscal",
-                  alinhar: "right",
-                  celula: (p) => {
-                    const pdf = pdfPorPagamento.get(p.id);
-                    return pdf ? (
-                      <a
-                        href={pdf}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                      >
-                        <FileDown className="size-4" />
-                        Baixar nota fiscal
-                      </a>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">-</span>
-                    );
-                  },
-                },
-              ]}
-            />
-          </div>
+          <ul className="divide-y px-5 pb-2">
+            {pagamentos.map((p) => {
+              const pdf = pdfPorPagamento.get(p.id);
+              return (
+                <li key={p.id} className="flex min-h-14 items-center gap-3 py-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">{formatMesAno(p.competencia)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {p.data_pagamento
+                        ? `Pago em ${formatDiaMes(p.data_pagamento)}`
+                        : `Vence ${formatDiaMes(p.vencimento)}`}
+                    </p>
+                  </div>
+                  <span className="font-medium tabular-nums">{formatBRL(p.valor)}</span>
+                  <StatusPagamento status={efetivo(p)} />
+                  {pdf ? (
+                    <a
+                      href={pdf}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Baixar nota fiscal de ${formatMesAno(p.competencia)}`}
+                      className="inline-flex size-11 items-center justify-center rounded-lg text-primary hover:bg-secondary"
+                    >
+                      <FileDown className="size-5" />
+                    </a>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
         )}
       </Card>
+
+      <AtivarNotificacoes />
     </div>
   );
 }

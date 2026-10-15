@@ -24,7 +24,7 @@ import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { requireUsuario } from "@/lib/auth";
 import { hojeISO } from "@/lib/financeiro";
-import { formatDataExtenso } from "@/lib/formato";
+import { formatDataExtenso, plural } from "@/lib/formato";
 import { getProfessorAtual } from "@/lib/professor";
 import { createClient } from "@/lib/supabase/server";
 import { DIAS_SEMANA, horaCurta } from "@/lib/tipos";
@@ -254,7 +254,7 @@ export default async function ProfessorDashboard() {
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
             <div className="min-w-0 text-sm">
               <p className="font-medium text-amber-900">
-                {alunosSemFicha.length} aluno(s) online sem ficha de treino
+                {plural(alunosSemFicha.length, "aluno online", "alunos online")} sem ficha de treino
               </p>
               <p className="text-amber-800/80">
                 O aluno online treina pela ficha do app. Toque no aluno para

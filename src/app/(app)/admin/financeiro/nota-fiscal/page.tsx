@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { requireUsuario } from "@/lib/auth";
-import { formatBRL } from "@/lib/formato";
+import { formatBRL, plural } from "@/lib/formato";
 import { situacaoEmissao } from "@/lib/nfse/provedor";
 import { carregarConfigFiscal } from "@/lib/nfse/servico";
 import { createClient } from "@/lib/supabase/server";
@@ -99,7 +99,7 @@ export default async function NotaFiscalPage({
           <CardHeader>
             <CardTitle>Relatório para o contador</CardTitle>
             <CardDescription>
-              {notas.length} nota(s) em {periodo.rotulo} ·{" "}
+              {plural(notas.length, "nota", "notas")} em {periodo.rotulo} ·{" "}
               {formatBRL(totalAutorizado)} autorizados
             </CardDescription>
           </CardHeader>

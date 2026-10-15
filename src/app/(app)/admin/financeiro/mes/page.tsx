@@ -20,7 +20,8 @@ import { StatCard } from "@/components/ui-extra/stat-card";
 import { StatusPagamento } from "@/components/ui-extra/status-badge";
 import { requireUsuario } from "@/lib/auth";
 import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
-import { formatBRL, formatData } from "@/lib/formato";
+import { formatBRL, formatData, plural } from "@/lib/formato";
+import { exigir } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import type { StatusPagamento as TStatusPagamento } from "@/lib/tipos";
 
@@ -46,8 +47,7 @@ export default async function RelatorioMesPage({
   const mesesJanela = mesesAte(periodo, MESES_GRAFICO);
   const inicioJanela = mesesJanela[0]!;
 
-  const [{ data: mesData }, { data: pagosData }, { data: despesasData }] =
-    await Promise.all([
+  const [mesRes, pagosRes, despesasRes] = await Promise.all([
       supabase
         .from("pagamentos")
         .select("valor, status, vencimento, aluno_id, alunos(nome)")
@@ -65,20 +65,20 @@ export default async function RelatorioMesPage({
         .order("data_pagamento", { ascending: false }),
       supabase
         .from("despesas")
-        .select("descricao, valor, data, categorias(nome)")
+        .select("descricao, valor, data, categorias:categorias_despesa(nome)")
         .gte("data", inicioJanela)
         .lt("data", periodo.fimExclusivo)
         .order("data", { ascending: false }),
     ]);
 
-  const mes = (mesData ?? []) as unknown as {
+  const mes = exigir(mesRes, "cobranças do mês") as unknown as {
     valor: number;
     status: TStatusPagamento;
     vencimento: string;
     aluno_id: string;
     alunos: { nome: string } | null;
   }[];
-  const pagosJanela = (pagosData ?? []) as unknown as {
+  const pagosJanela = exigir(pagosRes, "recebimentos") as unknown as {
     valor: number;
     competencia: string;
     data_pagamento: string | null;
@@ -86,7 +86,7 @@ export default async function RelatorioMesPage({
     aluno_id: string;
     alunos: { nome: string } | null;
   }[];
-  const despesasJanela = (despesasData ?? []) as unknown as {
+  const despesasJanela = exigir(despesasRes, "despesas") as unknown as {
     descricao: string;
     valor: number;
     data: string;
@@ -158,7 +158,7 @@ export default async function RelatorioMesPage({
           valor={formatBRL(totalDespesas)}
           icone={Receipt}
           tomIcone="alerta"
-          rodape={`${despesasMes.length} lançamento(s)`}
+          rodape={plural(despesasMes.length, "lançamento", "lançamentos")}
         />
         <StatCard
           titulo="Resultado (caixa)"

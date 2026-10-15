@@ -110,7 +110,7 @@ export default async function AlunoDetalhePage({
     getExerciciosBiblioteca(),
     getModelosTreino(),
     getExecucoesDoAluno(id),
-    getFrequenciaDoAluno(supabase, id),
+    getFrequenciaDoAluno(supabase, id, hojeISO()),
     supabase.from("alunos_dados_fiscais").select("*").eq("aluno_id", id).maybeSingle(),
   ]);
 
@@ -151,7 +151,7 @@ export default async function AlunoDetalhePage({
       <PageHeader
         titulo={aluno.nome}
         subtitulo="Cadastro, matrícula e acesso."
-        acoes={<FrequenciaInline pct={frequencia.freq.pct} />}
+        acoes={<FrequenciaInline pct={frequencia.freq.pct} novo={frequencia.freq.novo} />}
       />
 
       <div className="space-y-6">
@@ -214,7 +214,7 @@ export default async function AlunoDetalhePage({
                         </span>
                       ) : (
                         <div className="flex items-center justify-end gap-1">
-                          <BaixaButton pagamentoId={p.id} />
+                          <BaixaButton pagamentoId={p.id} aluno={aluno.nome} competencia={p.competencia} valor={Number(p.valor)} />
                           <ExcluirPagamentoButton pagamentoId={p.id} />
                         </div>
                       ),

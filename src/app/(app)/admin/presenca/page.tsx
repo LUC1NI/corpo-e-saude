@@ -85,6 +85,7 @@ export default async function AdminPresencaPage({
   const freqMap = await getFrequenciaAlunos(
     supabase,
     alunosAtivos.map((a) => a.id),
+    hoje,
   );
   const frequencias = alunosAtivos
     .map((a) => ({ ...a, freq: freqMap.get(a.id) }))

@@ -14,7 +14,7 @@ import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { requireUsuario } from "@/lib/auth";
 import { rotuloCompetencia } from "@/lib/financeiro";
-import { formatBRL, formatData } from "@/lib/formato";
+import { formatBRL, formatData, plural } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
 
 import { NavFinanceiro } from "../nav-financeiro";
@@ -115,7 +115,7 @@ export default async function RecebimentosPage({
           valor={formatBRL(total)}
           icone={CheckCircle2}
           tomIcone="sucesso"
-          rodape={`${recebidos.length} pagamento(s)`}
+          rodape={plural(recebidos.length, "pagamento", "pagamentos")}
           className="col-span-2 xl:col-span-1"
         />
         {formas.slice(0, 3).map(([forma, f]) => (
@@ -125,7 +125,7 @@ export default async function RecebimentosPage({
             valor={formatBRL(f.total)}
             icone={ICONE_FORMA[forma] ?? Wallet}
             tomIcone="primary"
-            rodape={`${f.qtd} pagamento(s)`}
+            rodape={plural(f.qtd, "pagamento", "pagamentos")}
           />
         ))}
       </div>

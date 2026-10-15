@@ -3,6 +3,7 @@ import { ChevronRight, Dumbbell, Sparkles } from "lucide-react";
 import Link from "@/components/ui-extra/link";
 import { Card } from "@/components/ui/card";
 import type { TreinoComTudo } from "@/lib/tipos";
+import { plural } from "@/lib/formato";
 
 /**
  * Grade de treinos-modelo (reutilizáveis). Cada card abre a página do
@@ -48,7 +49,7 @@ export function ListaModelos({
                 <p className="truncate font-semibold">{m.nome}</p>
                 <p className="text-xs text-muted-foreground">
                   {m.divisoes.length > 0
-                    ? `${m.divisoes.map((d) => d.nome).join(" · ")} · ${nEx} exercício(s)`
+                    ? `${m.divisoes.map((d) => d.nome).join(" · ")} · ${plural(nEx, "exercício", "exercícios")}`
                     : "Sem dias de treino ainda"}
                 </p>
               </div>

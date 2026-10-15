@@ -1,4 +1,3 @@
-import { format, startOfMonth } from "date-fns";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -17,10 +16,11 @@ import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { requireUsuario } from "@/lib/auth";
-import { formatBRL, formatData } from "@/lib/formato";
+import { formatBRL, formatData, plural } from "@/lib/formato";
 import { hojeISO } from "@/lib/financeiro";
 import { executarRenovacao } from "@/lib/renovacao";
 import { createClient } from "@/lib/supabase/server";
+import { exigir } from "@/lib/utils";
 import type { StatusPagamento as TStatusPagamento } from "@/lib/tipos";
 
 import { DespesaForm } from "./despesa-form";
@@ -43,7 +43,7 @@ export default async function FinanceiroPage() {
   await requireUsuario(["admin"]);
   const supabase = await createClient();
   const hoje = hojeISO();
-  const inicioMes = format(startOfMonth(new Date()), "yyyy-MM-dd");
+  const inicioMes = `${hoje.slice(0, 7)}-01`; // fuso do estúdio, não do servidor
 
   // Renovação automática oportunista: sempre que o financeiro é aberto,
   // gera as cobranças que venceram e marca atrasos (idempotente). Em
@@ -54,13 +54,8 @@ export default async function FinanceiroPage() {
     // Sem renovação agora — a tela segue com os dados existentes.
   }
 
-  const [
-    { data: abertosData },
-    { data: mesData },
-    { data: recebidoMesData },
-    { data: despesasData },
-    { data: categoriasData },
-  ] = await Promise.all([
+  const [abertosRes, mesRes, recebidoMesRes, despesasRes, categoriasRes] =
+    await Promise.all([
     supabase
       .from("pagamentos")
       .select("id, aluno_id, competencia, vencimento, valor, status, alunos(nome)")
@@ -79,18 +74,24 @@ export default async function FinanceiroPage() {
       .gte("data_pagamento", inicioMes),
     supabase
       .from("despesas")
-      .select("id, descricao, valor, data, categorias(nome)")
+      .select("id, descricao, valor, data, categorias:categorias_despesa(nome)")
       .gte("data", inicioMes)
       .order("data", { ascending: false })
       .limit(20),
     supabase.from("categorias_despesa").select("id, nome").order("nome"),
   ]);
 
-  const abertos = (abertosData ?? []) as unknown as PagamentoAberto[];
-  const mes = (mesData ?? []) as { valor: number; status: TStatusPagamento }[];
-  const recebidoLista = (recebidoMesData ?? []) as { valor: number }[];
-  const despesas = (despesasData ?? []) as unknown as DespesaItem[];
-  const categorias = (categoriasData ?? []) as { id: string; nome: string }[];
+  const abertos = exigir(abertosRes, "cobranças") as unknown as PagamentoAberto[];
+  const mes = exigir(mesRes, "cobranças do mês") as {
+    valor: number;
+    status: TStatusPagamento;
+  }[];
+  const recebidoLista = exigir(recebidoMesRes, "recebimentos") as { valor: number }[];
+  const despesas = exigir(despesasRes, "despesas") as unknown as DespesaItem[];
+  const categorias = exigir(categoriasRes, "categorias") as {
+    id: string;
+    nome: string;
+  }[];
 
   // "Previsto" = competência do mês (pago + em aberto). Mostramos a quebra no
   // rodapé para nunca passar a impressão de que previsto é dinheiro em caixa.
@@ -140,7 +141,7 @@ export default async function FinanceiroPage() {
           valor={formatBRL(totalAberto)}
           icone={Wallet}
           tomIcone="alerta"
-          rodape={`${abertos.length} cobrança(s) pendente(s)`}
+          rodape={plural(abertos.length, "cobrança em aberto", "cobranças em aberto")}
           href="/admin/financeiro/em-aberto"
         />
         <StatCard
@@ -165,7 +166,7 @@ export default async function FinanceiroPage() {
           <CardTitle>Despesas do mês</CardTitle>
           <CardDescription>
             {despesas.length > 0
-              ? `${formatBRL(totalDespesasMes)} em ${despesas.length} lançamento(s). Lance rápido abaixo.`
+              ? `${formatBRL(totalDespesasMes)} em ${plural(despesas.length, "lançamento", "lançamentos")}.`
               : "Lance as despesas do studio para acompanhar o resultado do mês."}
           </CardDescription>
         </CardHeader>

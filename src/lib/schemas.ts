@@ -1,7 +1,15 @@
 import { z } from "zod";
 import { cpfValido } from "@/lib/cpf";
+import { lerDecimalBR } from "@/lib/formato";
 
 /** Transforma string vazia em undefined (campos opcionais de formulário). */
+const valorBRL = z.preprocess(
+  lerDecimalBR,
+  z.coerce
+    .number({ message: "Informe um valor." })
+    .positive("O valor deve ser maior que zero."),
+);
+
 const opcional = (schema: z.ZodString) =>
   z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
@@ -34,9 +42,7 @@ export type AlunoInput = z.infer<typeof alunoSchema>;
 export const planoSchema = z.object({
   nome: z.string().trim().min(2, "Informe o nome do plano."),
   descricao: opcional(z.string()),
-  valor: z.coerce
-    .number({ message: "Informe um valor." })
-    .positive("O valor deve ser maior que zero."),
+  valor: valorBRL,
   periodicidade: z.enum(["mensal", "trimestral", "semestral", "anual"]),
   duracao_meses: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? undefined : v),
@@ -64,13 +70,24 @@ export type MatriculaInput = z.infer<typeof matriculaSchema>;
 export const despesaSchema = z.object({
   descricao: z.string().trim().min(2, "Informe a descrição."),
   categoria_id: opcional(z.string().uuid()),
-  valor: z.coerce
-    .number({ message: "Informe um valor." })
-    .positive("O valor deve ser maior que zero."),
+  valor: valorBRL,
   data: z.string().min(1, "Informe a data."),
 });
 
-export type DespesaInput = z.infer<typeof despesaSchema>;
+export type DespesaInput = z.input<typeof despesaSchema>;
+
+// ---------------------------------------------------------------------------
+// Baixa de mensalidade
+// ---------------------------------------------------------------------------
+export const FORMAS_PAGAMENTO = ["Pix", "Dinheiro", "Cartão", "Transferência"] as const;
+
+export const baixaSchema = z.object({
+  pagamentoId: z.string().uuid(),
+  forma: z.enum(FORMAS_PAGAMENTO).optional(),
+  data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida."),
+});
+
+export type BaixaInput = z.infer<typeof baixaSchema>;
 
 // ---------------------------------------------------------------------------
 // Horário (grade do professor)
@@ -113,8 +130,7 @@ const numeroOpcional = z.preprocess(
   (v) => {
     if (v === "" || v === null || v === undefined) return undefined;
     // Aceita vírgula como separador decimal (padrão brasileiro): "73,5" → 73.5.
-    if (typeof v === "string") return v.trim().replace(",", ".");
-    return v;
+    return lerDecimalBR(v);
   },
   z.coerce.number().positive().optional(),
 );

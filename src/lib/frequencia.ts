@@ -1,4 +1,4 @@
-import { format, subDays } from "date-fns";
+import { addDays, format, getDay, parseISO, subDays } from "date-fns";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -21,19 +21,10 @@ export interface FrequenciaAluno {
   aluno_id: string;
   esperado: number;
   presente: number;
-  /** 0–100, ou null quando o aluno não tem horário recorrente. */
+  /** 0–100, ou null quando o aluno não tem horário recorrente ou é novo. */
   pct: number | null;
-}
-
-/** Quantas vezes cada dia da semana (0=dom … 6=sáb) cai na janela recente. */
-export function contarDiasSemanaJanela(hoje: Date, dias = JANELA_DIAS): number[] {
-  const cont = [0, 0, 0, 0, 0, 0, 0];
-  for (let i = 0; i < dias; i++) {
-    const d = new Date(hoje);
-    d.setDate(hoje.getDate() - i);
-    cont[d.getDay()]! += 1;
-  }
-  return cont;
+  /** Tem horário fixo, mas ainda há poucas aulas para medir ("Começando"). */
+  novo: boolean;
 }
 
 /**
@@ -57,9 +48,12 @@ export function corFrequencia(pct: number): {
   };
 }
 
+/** Abaixo disto (aulas esperadas) ainda é cedo para julgar a frequência. */
+export const MIN_AULAS_PARA_FREQUENCIA = 4;
+
 /** Rótulo curto conforme a faixa de frequência. */
-export function rotuloFrequencia(pct: number | null): string {
-  if (pct === null) return "Sem agenda fixa";
+export function rotuloFrequencia(pct: number | null, novo = false): string {
+  if (pct === null) return novo ? "Começando" : "Sem agenda fixa";
   if (pct >= 90) return "Excelente";
   if (pct >= 75) return "Boa";
   if (pct >= 50) return "Regular";
@@ -67,29 +61,69 @@ export function rotuloFrequencia(pct: number | null): string {
   return "Crítica";
 }
 
+export interface VinculoFrequencia {
+  dia_semana: number;
+  /** yyyy-MM-dd: desde quando o aluno está neste horário. */
+  desde: string;
+}
+
 /**
- * Calcula a frequência a partir dos dias da semana agendados e da contagem de
- * presenças na janela. Função pura — fácil de testar e reutilizar.
+ * Frequência = presenças ÷ aulas esperadas, na janela das últimas 8 semanas.
+ * Uma aula só é "esperada" a partir do dia em que o aluno entrou no horário
+ * (mesma regra do histórico de faltas) e só em dias já passados — hoje ainda
+ * pode acontecer. Com poucas aulas esperadas, devolve pct = null e novo = true.
+ * Função pura (datas yyyy-MM-dd no fuso do estúdio).
  */
 export function calcularFrequencia(
-  diasSemanaAgendados: number[],
-  presencasNaJanela: number,
-  contagemDias: number[],
-): FrequenciaAluno & { aluno_id: string } {
-  const esperado = diasSemanaAgendados.reduce(
-    (soma, dow) => soma + (contagemDias[dow] ?? 0),
-    0,
-  );
-  if (esperado === 0) {
-    return { aluno_id: "", esperado: 0, presente: presencasNaJanela, pct: null };
+  vinculos: VinculoFrequencia[],
+  datasPresenca: string[],
+  hoje: string,
+): Omit<FrequenciaAluno, "aluno_id"> {
+  if (vinculos.length === 0) {
+    return { esperado: 0, presente: datasPresenca.length, pct: null, novo: false };
   }
-  const efetivas = Math.min(presencasNaJanela, esperado);
-  const pct = Math.round((efetivas / esperado) * 100);
-  return { aluno_id: "", esperado, presente: presencasNaJanela, pct };
+  const inicioJanela = format(subDays(parseISO(hoje), JANELA_DIAS - 1), "yyyy-MM-dd");
+  let esperado = 0;
+  for (const v of vinculos) {
+    const ini = v.desde > inicioJanela ? v.desde : inicioJanela;
+    for (let d = parseISO(ini); format(d, "yyyy-MM-dd") < hoje; d = addDays(d, 1)) {
+      if (getDay(d) === v.dia_semana) esperado++;
+    }
+  }
+  const primeiro = vinculos.map((v) => v.desde).sort()[0]!;
+  const corte = primeiro > inicioJanela ? primeiro : inicioJanela;
+  const presente = datasPresenca.filter((d) => d >= corte && d < hoje).length;
+  if (esperado < MIN_AULAS_PARA_FREQUENCIA) {
+    return { esperado, presente, pct: null, novo: true };
+  }
+  const pct = Math.round((Math.min(presente, esperado) / esperado) * 100);
+  return { esperado, presente, pct, novo: false };
+}
+
+/** Data (yyyy-MM-dd) de um timestamp no fuso do estúdio. */
+export function dataNoEstudio(ts: string): string {
+  return new Date(ts).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type DB = SupabaseClient<any, any, any>;
+
+type VinculoRow = {
+  aluno_id: string;
+  criado_em: string;
+  horarios: { dia_semana: number } | null;
+};
+
+function paraVinculos(rows: VinculoRow[]): Map<string, VinculoFrequencia[]> {
+  const mapa = new Map<string, VinculoFrequencia[]>();
+  for (const v of rows) {
+    if (!v.horarios) continue;
+    const lista = mapa.get(v.aluno_id) ?? [];
+    lista.push({ dia_semana: v.horarios.dia_semana, desde: dataNoEstudio(v.criado_em) });
+    mapa.set(v.aluno_id, lista);
+  }
+  return mapa;
+}
 
 /**
  * Frequência de vários alunos de uma vez (2 consultas, sem N+1).
@@ -98,18 +132,16 @@ type DB = SupabaseClient<any, any, any>;
 export async function getFrequenciaAlunos(
   supabase: DB,
   alunoIds: string[],
-  hoje: Date = new Date(),
+  hoje: string,
 ): Promise<Map<string, FrequenciaAluno>> {
   const mapa = new Map<string, FrequenciaAluno>();
   if (alunoIds.length === 0) return mapa;
 
-  const limite = format(subDays(hoje, JANELA_DIAS - 1), "yyyy-MM-dd");
-  const contagem = contarDiasSemanaJanela(hoje);
-
+  const limite = format(subDays(parseISO(hoje), JANELA_DIAS - 1), "yyyy-MM-dd");
   const [{ data: vincData }, { data: presData }] = await Promise.all([
     supabase
       .from("aluno_horarios")
-      .select("aluno_id, horarios(dia_semana)")
+      .select("aluno_id, criado_em, horarios(dia_semana)")
       .in("aluno_id", alunoIds),
     supabase
       .from("presencas")
@@ -118,28 +150,14 @@ export async function getFrequenciaAlunos(
       .gte("data", limite),
   ]);
 
-  const diasPorAluno = new Map<string, number[]>();
-  for (const v of (vincData ?? []) as unknown as {
-    aluno_id: string;
-    horarios: { dia_semana: number } | null;
-  }[]) {
-    if (!v.horarios) continue;
-    const lista = diasPorAluno.get(v.aluno_id) ?? [];
-    lista.push(v.horarios.dia_semana);
-    diasPorAluno.set(v.aluno_id, lista);
-  }
-
-  const presPorAluno = new Map<string, number>();
-  for (const p of (presData ?? []) as { aluno_id: string }[]) {
-    presPorAluno.set(p.aluno_id, (presPorAluno.get(p.aluno_id) ?? 0) + 1);
+  const vinculos = paraVinculos((vincData ?? []) as unknown as VinculoRow[]);
+  const presPorAluno = new Map<string, string[]>();
+  for (const p of (presData ?? []) as { aluno_id: string; data: string }[]) {
+    presPorAluno.set(p.aluno_id, [...(presPorAluno.get(p.aluno_id) ?? []), p.data]);
   }
 
   for (const id of alunoIds) {
-    const freq = calcularFrequencia(
-      diasPorAluno.get(id) ?? [],
-      presPorAluno.get(id) ?? 0,
-      contagem,
-    );
+    const freq = calcularFrequencia(vinculos.get(id) ?? [], presPorAluno.get(id) ?? [], hoje);
     mapa.set(id, { ...freq, aluno_id: id });
   }
   return mapa;
@@ -156,15 +174,13 @@ export interface PresencaRecenteAluno {
 export async function getFrequenciaDoAluno(
   supabase: DB,
   alunoId: string,
-  hoje: Date = new Date(),
+  hoje: string,
 ): Promise<{ freq: FrequenciaAluno; recentes: PresencaRecenteAluno[] }> {
-  const limite = format(subDays(hoje, JANELA_DIAS - 1), "yyyy-MM-dd");
-  const contagem = contarDiasSemanaJanela(hoje);
-
-  const [{ data: vincData }, { data: presData }] = await Promise.all([
+  const limite = format(subDays(parseISO(hoje), JANELA_DIAS - 1), "yyyy-MM-dd");
+  const [{ data: vincData }, { data: presData }, { data: janelaData }] = await Promise.all([
     supabase
       .from("aluno_horarios")
-      .select("horarios(dia_semana)")
+      .select("aluno_id, criado_em, horarios(dia_semana)")
       .eq("aluno_id", alunoId),
     supabase
       .from("presencas")
@@ -173,17 +189,14 @@ export async function getFrequenciaDoAluno(
       .order("data", { ascending: false })
       .order("criado_em", { ascending: false })
       .limit(60),
+    supabase.from("presencas").select("data").eq("aluno_id", alunoId).gte("data", limite),
   ]);
 
-  const dias = ((vincData ?? []) as unknown as {
-    horarios: { dia_semana: number } | null;
-  }[])
-    .map((v) => v.horarios?.dia_semana)
-    .filter((d): d is number => typeof d === "number");
-
-  const presencas = (presData ?? []) as PresencaRecenteAluno[];
-  const naJanela = presencas.filter((p) => p.data >= limite).length;
-
-  const freq = calcularFrequencia(dias, naJanela, contagem);
-  return { freq: { ...freq, aluno_id: alunoId }, recentes: presencas };
+  const vinculos = paraVinculos((vincData ?? []) as unknown as VinculoRow[]).get(alunoId) ?? [];
+  const datas = ((janelaData ?? []) as { data: string }[]).map((p) => p.data);
+  const freq = calcularFrequencia(vinculos, datas, hoje);
+  return {
+    freq: { ...freq, aluno_id: alunoId },
+    recentes: (presData ?? []) as PresencaRecenteAluno[],
+  };
 }

@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cancelarNota, emitirNota, emitirNotasPendentes } from "@/lib/acoes-nfse";
 import type { StatusNota } from "@/lib/nfse/regras";
 import { cn } from "@/lib/utils";
+import { plural } from "@/lib/formato";
 
 export interface NotaResumo {
   id: string;
@@ -80,7 +81,7 @@ export function NotaAcoes({
     <div className="flex flex-wrap items-center justify-end gap-1.5">
       <SeloNota nota={nota} />
       {podeEmitir ? (
-        <Button size="sm" variant="outline" onClick={emitir} loading={ocupado} className="h-7 px-2 text-xs">
+        <Button size="sm" variant="outline" onClick={emitir} loading={ocupado} className="sm:h-7 sm:px-2 sm:text-xs">
           <RefreshCw className="size-3.5" />
           {status === "erro" ? "Reemitir" : "Emitir"}
         </Button>
@@ -130,7 +131,7 @@ function CancelarNotaDialog({ notaId }: { notaId: string }) {
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger
         render={
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive hover:text-destructive">
+          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive sm:h-7 sm:px-2 sm:text-xs">
             <XCircle className="size-3.5" />
             Cancelar
           </Button>
@@ -180,7 +181,7 @@ export function EmitirPendentesButton({ quantidade }: { quantidade: number }) {
     if (res.ok && res.dados) {
       const { autorizadas, processando, pendentes } = res.dados;
       toast.success(
-        `${autorizadas} autorizada(s), ${processando} em processamento, ${pendentes} ainda pendente(s).`,
+        `${plural(autorizadas, "autorizada", "autorizadas")}, ${processando} em processamento, ${plural(pendentes, "ainda pendente", "ainda pendentes")}.`,
       );
     } else if (!res.ok) {
       toast.error(res.erro);

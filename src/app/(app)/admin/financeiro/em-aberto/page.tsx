@@ -13,7 +13,7 @@ import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { requireUsuario } from "@/lib/auth";
 import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
-import { formatBRL, formatData } from "@/lib/formato";
+import { formatBRL, formatData, plural } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
 import type { StatusPagamento as TStatusPagamento } from "@/lib/tipos";
 
@@ -59,7 +59,7 @@ function ListaCobrancas({ itens }: { itens: Aberto[] }) {
             </span>
           </div>
           <div className="mt-2 flex items-center justify-end gap-1.5 sm:mt-0 sm:shrink-0">
-            <BaixaButton pagamentoId={p.id} />
+            <BaixaButton pagamentoId={p.id} aluno={p.alunos?.nome ?? "aluno"} competencia={p.competencia} valor={Number(p.valor)} />
             <ExcluirPagamentoButton pagamentoId={p.id} />
           </div>
         </li>
@@ -106,7 +106,7 @@ export default async function EmAbertoPage() {
           valor={formatBRL(totalAberto)}
           icone={Wallet}
           tomIcone="alerta"
-          rodape={`${abertos.length} cobrança(s)`}
+          rodape={plural(abertos.length, "cobrança", "cobranças")}
           className="col-span-2 sm:col-span-1"
         />
         <StatCard
@@ -114,7 +114,7 @@ export default async function EmAbertoPage() {
           valor={formatBRL(totalVencido)}
           icone={AlertTriangle}
           tomIcone="perigo"
-          rodape={`${vencidas.length} cobrança(s) atrasada(s)`}
+          rodape={plural(vencidas.length, "cobrança atrasada", "cobranças atrasadas")}
           tomRodape={vencidas.length > 0 ? "perigo" : "neutro"}
         />
         <StatCard
@@ -122,7 +122,7 @@ export default async function EmAbertoPage() {
           valor={formatBRL(totalAVencer)}
           icone={CalendarClock}
           tomIcone="primary"
-          rodape={`${aVencer.length} cobrança(s) dentro do prazo`}
+          rodape={`${plural(aVencer.length, "cobrança", "cobranças")} dentro do prazo`}
         />
       </div>
 

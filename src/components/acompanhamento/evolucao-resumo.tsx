@@ -31,7 +31,13 @@ function Delta({ valor, unidade }: { valor: number | null; unidade: string }) {
     <span
       className={cn(
         "inline-flex items-center gap-1 text-xs font-medium",
-        desceu ? "text-emerald-600" : "text-amber-600",
+        // Só % de gordura tem "lado bom" universal. Peso/IMC dependem do
+        // objetivo (emagrecer × ganhar massa): cor neutra para não julgar.
+        unidade === "%"
+          ? desceu
+            ? "text-emerald-700"
+            : "text-amber-700"
+          : "text-slate-600",
       )}
     >
       <Icone className="size-3" />
@@ -55,9 +61,9 @@ function StatCard({
   deltaUnidade: string;
 }) {
   return (
-    <Card className="gap-2 p-4">
+    <Card className="gap-1 p-3 sm:gap-2 sm:p-4">
       <p className="text-xs font-medium text-muted-foreground">{titulo}</p>
-      <p className="font-heading text-2xl font-bold">
+      <p className="font-heading text-xl font-bold tabular-nums sm:text-2xl">
         {valor != null ? fmt.format(valor) : "-"}
         {valor != null ? (
           <span className="ml-1 text-sm font-medium text-muted-foreground">
@@ -111,7 +117,7 @@ export function EvolucaoResumo({
           : null}
       </p>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <StatCard
           titulo="Peso"
           valor={atual.peso}

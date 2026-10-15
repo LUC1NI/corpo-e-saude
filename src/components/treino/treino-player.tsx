@@ -329,6 +329,8 @@ export function TreinoPlayer({
   // -------------------------------------------------------------- treinando
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      {/* Modo treino ocupa a tela toda: some o menu inferior do app. */}
+      <style>{"[data-bottom-nav]{display:none}"}</style>
       {/* Cabeçalho fixo: divisão + cronômetro + sair */}
       <header className="flex items-center gap-3 border-b bg-brand-navy p-4 text-white">
         <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-sm font-bold">
@@ -463,10 +465,14 @@ export function TreinoPlayer({
                   ) : (
                     <Button
                       size="sm"
+                      variant={ehDaVez ? "default" : "outline"}
                       onClick={() =>
                         marcarSerie(ex.id, previstas, ex.descanso)
                       }
-                      className="h-10 bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-4 font-semibold"
+                      className={cn(
+                        "px-4 font-semibold",
+                        ehDaVez && "bg-gradient-to-r from-[#0090D8] to-[#00A8E4]",
+                      )}
                     >
                       <Check className="size-4" strokeWidth={3} />
                       Série feita ({feitasEx + 1}/{previstas})

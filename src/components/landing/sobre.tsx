@@ -37,7 +37,7 @@ export function Sobre() {
           </div>
 
           {/* Selo flutuante com o slogan */}
-          <div className="animar-flutuar absolute -bottom-5 right-6 rounded-2xl bg-[#033373] px-5 py-3 shadow-xl [animation:flutuar_7s_ease-in-out_infinite]">
+          <div className="animar-flutuar absolute -bottom-5 right-6 rounded-2xl bg-brand-navy px-5 py-3 shadow-xl [animation:flutuar_7s_ease-in-out_infinite]">
             <p className="text-sm font-bold text-white italic">
               “Treinar é viver.”
             </p>

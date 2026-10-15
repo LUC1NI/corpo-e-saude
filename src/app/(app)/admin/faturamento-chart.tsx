@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, Cell, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, Cell, LabelList, Tooltip, XAxis, YAxis } from "recharts";
 
 import { ChartBox } from "@/components/ui-extra/chart-box";
 import { formatBRL } from "@/lib/formato";
@@ -20,7 +20,7 @@ export function FaturamentoChart({ dados }: { dados: PontoFaturamento[] }) {
           width={width}
           height={height}
           data={dados}
-          margin={{ top: 16, right: 8, left: 8, bottom: 0 }}
+          margin={{ top: 24, right: 8, left: 8, bottom: 0 }}
         >
           <XAxis
             dataKey="mes"
@@ -40,6 +40,12 @@ export function FaturamentoChart({ dados }: { dados: PontoFaturamento[] }) {
             }}
           />
           <Bar dataKey="valor" radius={[6, 6, 0, 0]} maxBarSize={48}>
+            <LabelList
+              dataKey="valor"
+              position="top"
+              formatter={(v) => (Number(v) > 0 ? `${(Number(v) / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}k` : "")}
+              style={{ fontSize: 12, fill: "#5a6b80", fontWeight: 600 }}
+            />
             {dados.map((_, i) => (
               <Cell key={i} fill={i === ultimo ? "#0090D8" : "#cfe8f7"} />
             ))}

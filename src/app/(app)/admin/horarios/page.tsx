@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { GerenciarAula } from "@/components/horarios/gerenciar-aula";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { requireUsuario } from "@/lib/auth";
@@ -19,8 +20,6 @@ import { DIAS_SEMANA, horaCurta } from "@/lib/tipos";
 import { cn } from "@/lib/utils";
 
 import { AdicionarHorario } from "./adicionar-horario";
-import { AlunosAulaDialog } from "./alunos-aula-dialog";
-import { ExcluirHorarioAdmin } from "./excluir-horario-admin";
 
 const DIAS_CURTOS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -40,7 +39,7 @@ export default async function AdminHorariosPage({
       ? diaParam
       : hojeDia;
 
-  const [{ data: profsData }, { data: horsData }] = await Promise.all([
+  const [{ data: profsData }, { data: horsData }, { data: alunosData }] = await Promise.all([
     supabase
       .from("professores")
       .select("id, nome")
@@ -51,7 +50,13 @@ export default async function AdminHorariosPage({
       .select("id, hora_inicio, hora_fim, capacidade, professor_id")
       .eq("dia_semana", dia)
       .order("hora_inicio"),
+    supabase
+      .from("alunos")
+      .select("id, nome")
+      .eq("status", "ativo")
+      .order("nome"),
   ]);
+  const alunosAtivos = (alunosData ?? []) as { id: string; nome: string }[];
 
   const professores = (profsData ?? []) as { id: string; nome: string }[];
   const horarios = (horsData ?? []) as {
@@ -104,7 +109,7 @@ export default async function AdminHorariosPage({
     <>
       <PageHeader
         titulo="Grade de horários"
-        subtitulo="Ocupação por professor e horário: veja a disponibilidade num relance."
+        subtitulo="Quantos alunos em cada aula, por professor."
         acoes={
           professores.length > 0 ? (
             <AdicionarHorario
@@ -192,18 +197,16 @@ export default async function AdminHorariosPage({
                         </TableCell>
                       );
                     }
-                    const rotulo = `${horaCurta(f.inicio)}–${horaCurta(f.fim)}`;
                     return (
                       <TableCell key={p.id} className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <AlunosAulaDialog
-                            professorNome={p.nome}
-                            rotulo={rotulo}
-                            capacidade={h.capacidade}
-                            alunos={alunosPorHorario.get(h.id) ?? []}
-                          />
-                          <ExcluirHorarioAdmin id={h.id} rotulo={rotulo} />
-                        </div>
+                        <GerenciarAula
+                          horarioId={h.id}
+                          rotulo={`${p.nome.split(" ")[0]} · ${DIAS_CURTOS[dia]} ${horaCurta(f.inicio)}`}
+                          alunos={alunosAtivos}
+                          atribuidos={(alunosPorHorario.get(h.id) ?? []).map((a) => a.id)}
+                          capacidade={h.capacidade}
+                          mostrarIniciais
+                        />
                       </TableCell>
                     );
                   })}
@@ -214,13 +217,8 @@ export default async function AdminHorariosPage({
         </Card>
       )}
 
-      <p className="mt-3 text-xs text-muted-foreground">
-        <span className="font-medium text-emerald-700">Livre</span> = horário
-        aberto sem alunos ·{" "}
-        <span className="font-medium text-sky-700">N/cap</span> = ocupação
-        atual · <span className="font-medium text-amber-700">cheio</span> ao
-        atingir a capacidade · <span className="text-muted-foreground/60">-</span>{" "}
-        = sem aula nesse horário.
+      <p className="mt-3 text-sm text-muted-foreground">
+        Toque numa aula para incluir ou tirar alunos.
       </p>
     </>
   );

@@ -1,6 +1,7 @@
 import { format, startOfMonth } from "date-fns";
 import {
   CalendarCheck,
+  AlertCircle,
   CheckCircle2,
   ChevronRight,
   Clock,
@@ -11,15 +12,16 @@ import {
 } from "lucide-react";
 import Link from "@/components/ui-extra/link";
 
-import { SituacaoMensalidadeCard } from "@/components/aluno/situacao-mensalidade";
+import { PagamentoPix } from "@/app/(app)/aluno/mensalidade/pagamento-pix";
+import { textosMensalidade } from "@/components/aluno/situacao-mensalidade";
 import { AtivarNotificacoes } from "@/components/pwa/ativar-notificacoes";
 import { Card } from "@/components/ui/card";
-import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 import { requireUsuario } from "@/lib/auth";
 import { getAlunoAtual } from "@/lib/aluno";
 import {
   agoraNoEstudio,
   hojeISO,
+  precisaPagar,
   situacaoMensalidade,
 } from "@/lib/financeiro";
 import { createClient } from "@/lib/supabase/server";
@@ -31,11 +33,14 @@ import {
   type DivisaoComExercicios,
   type TreinoComTudo,
 } from "@/lib/tipos";
-import { plural } from "@/lib/formato";
+import { formatMesAno, plural } from "@/lib/formato";
+import { cn } from "@/lib/utils";
 
 interface ProximoTreino {
   /** "Hoje, Segunda" / "Amanhã, Terça" / "Quarta". */
   quando: string;
+  /** A aula está acontecendo agora. */
+  agora: boolean;
   hora_inicio: string;
   hora_fim: string;
   professorNome: string;
@@ -49,13 +54,18 @@ function proximaOcorrencia(
   agora: Date,
   diaSemana: number,
   horaInicio: string,
+  horaFim: string,
 ): Date {
   const [h, m] = horaInicio.split(":").map(Number);
+  const [hf, mf] = horaFim.split(":").map(Number);
   const cand = new Date(agora);
   const dias = (diaSemana - agora.getDay() + 7) % 7;
   cand.setDate(agora.getDate() + dias);
   cand.setHours(h ?? 0, m ?? 0, 0, 0);
-  if (cand.getTime() < agora.getTime()) cand.setDate(cand.getDate() + 7);
+  const fim = new Date(cand);
+  fim.setHours(hf ?? 0, mf ?? 0, 0, 0);
+  // Só pula para a semana seguinte depois que a aula TERMINOU (em andamento conta).
+  if (fim.getTime() <= agora.getTime()) cand.setDate(cand.getDate() + 7);
   return cand;
 }
 
@@ -78,6 +88,7 @@ export default async function AlunoHome() {
   let treinosMes = 0;
   let proximo: ProximoTreino | null = null;
   let treinoConcluidoHoje = false;
+  let peso: { atual: number; variacao: number | null; desde: string } | null = null;
 
   if (aluno) {
     const supabase = await createClient();
@@ -86,7 +97,7 @@ export default async function AlunoHome() {
     const [
       treinosData,
       { data: abertosData },
-      { count: avals },
+      { count: avals, data: pesosData },
       { count: pres },
       { count: execs },
       { count: execHoje },
@@ -101,8 +112,10 @@ export default async function AlunoHome() {
         .neq("status", "pago"),
       supabase
         .from("avaliacoes_fisicas")
-        .select("id", { count: "exact", head: true })
-        .eq("aluno_id", aluno.id),
+        .select("data, peso", { count: "exact" })
+        .eq("aluno_id", aluno.id)
+        .not("peso", "is", null)
+        .order("data", { ascending: true }),
       supabase
         .from("presencas")
         .select("id", { count: "exact", head: true })
@@ -135,6 +148,15 @@ export default async function AlunoHome() {
     treinos = treinosData;
     abertos = (abertosData ?? []) as typeof abertos;
     temAvaliacoes = (avals ?? 0) > 0;
+    const pesos = (pesosData ?? []) as { data: string; peso: number }[];
+    if (pesos.length > 0) {
+      const ult = pesos[pesos.length - 1]!;
+      peso = {
+        atual: Number(ult.peso),
+        variacao: pesos.length > 1 ? Number(ult.peso) - Number(pesos[0]!.peso) : null,
+        desde: pesos[0]!.data,
+      };
+    }
     // Presenças marcadas pelo professor + treinos concluídos no app.
     treinosMes = (pres ?? 0) + (execs ?? 0);
     treinoConcluidoHoje = (execHoje ?? 0) > 0;
@@ -156,7 +178,7 @@ export default async function AlunoHome() {
       .filter((h): h is NonNullable<typeof h> => !!h)
       .map((h) => ({
         h,
-        data: proximaOcorrencia(agora, h.dia_semana, h.hora_inicio),
+        data: proximaOcorrencia(agora, h.dia_semana, h.hora_inicio, h.hora_fim),
       }))
       .sort((a, b) => a.data.getTime() - b.data.getTime());
     if (primeiroEvento) {
@@ -166,6 +188,7 @@ export default async function AlunoHome() {
       );
       const dia = DIAS_SEMANA[data.getDay()]!;
       proximo = {
+        agora: data.getTime() <= agora.getTime(),
         quando:
           difDias === 0 ? `Hoje, ${dia}` : difDias === 1 ? `Amanhã, ${dia}` : dia,
         hora_inicio: h.hora_inicio,
@@ -179,19 +202,40 @@ export default async function AlunoHome() {
   const divisaoHoje =
     principal?.divisoes.find((d) => d.dias_semana.includes(diaHoje)) ?? null;
   const situacao = situacaoMensalidade(abertos, hoje);
+  const situacaoTextos = textosMensalidade(situacao);
+  const situacaoTom = situacaoTextos.tom;
 
   return (
     <div className="space-y-5">
-      <section className="flex items-center justify-between rounded-2xl bg-[#033373] p-5 text-white shadow-sm lg:p-7">
-        <div>
-          <p className="text-sm text-white/70">Olá,</p>
-          <p className="text-xl font-bold lg:text-2xl">{primeiro} 👋</p>
-        </div>
-        <AvatarIniciais
-          nome={usuario.nome}
-          tamanho="lg"
-          className="ring-2 ring-white/20"
-        />
+      <section className="rounded-2xl bg-brand-navy p-5 text-white shadow-sm lg:p-7">
+        <p className="text-sm text-white/75">Olá,</p>
+        <p className="text-2xl font-bold lg:text-3xl">{primeiro} 👋</p>
+        <Link
+          href="/aluno/mensalidade"
+          className={cn(
+            "mt-4 flex min-h-12 items-center gap-3 rounded-xl px-3 py-2 transition-colors",
+            situacaoTom === "ok" ? "bg-white/10 hover:bg-white/15" : situacaoTom === "aviso" ? "bg-amber-500 text-amber-950" : "bg-red-600",
+          )}
+        >
+          <span
+            className={cn(
+              "inline-flex size-9 shrink-0 items-center justify-center rounded-lg",
+              situacaoTom === "ok" ? "bg-emerald-500" : "bg-white/20",
+            )}
+          >
+            {situacaoTom === "ok" ? <CheckCircle2 className="size-5" /> : <AlertCircle className="size-5" />}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{situacaoTom === "ok" ? "Mensalidade em dia" : situacaoTextos.titulo}</span>
+            <span className="block truncate text-sm opacity-85">{situacaoTextos.detalhe}</span>
+          </span>
+          <ChevronRight className="size-5 shrink-0 opacity-70" />
+        </Link>
+        {situacao.tipo !== "em_dia" && precisaPagar(situacao) ? (
+          <div className="mt-3">
+            <PagamentoPix valor={situacao.total} descricao={situacaoTextos.detalhe} variante="destaque" />
+          </div>
+        ) : null}
       </section>
 
       {online ? (
@@ -205,7 +249,6 @@ export default async function AlunoHome() {
         <ProximoTreinoCard proximo={proximo} />
       )}
 
-      <SituacaoMensalidadeCard situacao={situacao} />
 
       <AtivarNotificacoes modo="convite" />
 
@@ -244,9 +287,18 @@ export default async function AlunoHome() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="font-semibold">Sua evolução</p>
-            <p className="text-xs text-muted-foreground">
-              {temAvaliacoes
-                ? "Acompanhe peso, % de gordura e medidas."
+            <p className="text-sm text-muted-foreground">
+              {peso ? (
+                <>
+                  <span className="font-semibold text-foreground">
+                    {peso.atual.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg
+                  </span>
+                  {peso.variacao !== null && Math.abs(peso.variacao) >= 0.1
+                    ? ` · ${peso.variacao > 0 ? "+" : "−"}${Math.abs(peso.variacao).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg desde ${formatMesAno(peso.desde).split("/")[0]}`
+                    : ""}
+                </>
+              ) : temAvaliacoes
+                ? "Peso, % de gordura e medidas."
                 : "Seus gráficos chegam com a avaliação física."}
             </p>
           </div>
@@ -287,8 +339,8 @@ function ProximoTreinoCard({ proximo }: { proximo: ProximoTreino | null }) {
           <Clock className="size-7" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold tracking-wide text-white/75 uppercase">
-            Próximo treino · {proximo.quando}
+          <p className="text-xs font-semibold tracking-wide text-white/80 uppercase">
+            {proximo.agora ? "Agora · aula em andamento" : `Próxima aula · ${proximo.quando}`}
           </p>
           <p className="text-2xl leading-tight font-extrabold tabular-nums">
             {horaCurta(proximo.hora_inicio)} às {horaCurta(proximo.hora_fim)}

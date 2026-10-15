@@ -29,11 +29,13 @@ export function PagamentoPix({
   valor,
   descricao,
   variante = "principal",
+  tamanho = "lg",
 }: {
   valor: number;
   descricao: string;
   /** principal = botão azul · destaque = branco sobre cor · discreto = contorno */
   variante?: "principal" | "destaque" | "discreto";
+  tamanho?: "lg" | "default";
 }) {
   async function copiarChave() {
     try {
@@ -49,7 +51,7 @@ export function PagamentoPix({
       <DialogTrigger
         render={
           <Button
-            size="lg"
+            size={tamanho}
             variant={variante === "principal" ? "default" : "outline"}
             className={cn(
               "w-full sm:w-auto",

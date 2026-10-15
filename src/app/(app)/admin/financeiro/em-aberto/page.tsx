@@ -12,14 +12,15 @@ import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { requireUsuario } from "@/lib/auth";
-import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
-import { formatBRL, formatData, plural } from "@/lib/formato";
+import { hojeISO } from "@/lib/financeiro";
+import { formatBRL, formatData, formatMesAno, plural } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
 import type { StatusPagamento as TStatusPagamento } from "@/lib/tipos";
 
 import { BaixaButton } from "../baixa-button";
 import { ExcluirPagamentoButton } from "../excluir-pagamento-button";
 import { NavFinanceiro } from "../nav-financeiro";
+import { exigir } from "@/lib/utils";
 
 interface Aberto {
   id: string;
@@ -50,7 +51,7 @@ function ListaCobrancas({ itens }: { itens: Aberto[] }) {
                 {p.alunos?.nome ?? "Aluno"}
               </p>
               <p className="text-xs text-muted-foreground">
-                {rotuloCompetencia(p.competencia)} · vence{" "}
+                {formatMesAno(p.competencia)} · vence{" "}
                 {formatData(p.vencimento)}
               </p>
             </Link>
@@ -73,14 +74,14 @@ export default async function EmAbertoPage() {
   const supabase = await createClient();
   const hoje = hojeISO();
 
-  const { data } = await supabase
+  const res = await supabase
     .from("pagamentos")
     .select("id, aluno_id, competencia, vencimento, valor, status, alunos(nome)")
     .in("status", ["pendente", "vencido"])
     .order("vencimento")
     .limit(300);
 
-  const abertos = (data ?? []) as unknown as Aberto[];
+  const abertos = exigir(res, "lista") as unknown as Aberto[];
   const vencidas = abertos.filter(
     (p) => p.status === "vencido" || p.vencimento < hoje,
   );

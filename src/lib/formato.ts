@@ -82,6 +82,11 @@ export function lerDecimalBR(v: unknown): unknown {
   if (typeof v !== "string") return v;
   const t = v.replace(/[R$\s]/g, "");
   if (t === "") return undefined;
-  if (t.includes(",")) return t.replace(/\./g, "").replace(",", ".");
-  return /^\d{1,3}(\.\d{3})+$/.test(t) ? t.replace(/\./g, "") : t;
+  // Formatos aceitos: 1234 · 1234,5 · 1.234,56 · 1234.5 · 1.234 (milhar).
+  // Qualquer outra coisa (1,234.56 · 1,5,3 · 1e5) volta crua e o Zod recusa.
+  if (/^\d{1,3}(\.\d{3})*(,\d+)?$/.test(t) || /^\d+,\d+$/.test(t)) {
+    return t.replace(/\./g, "").replace(",", ".");
+  }
+  if (/^\d+(\.\d+)?$/.test(t)) return t;
+  return "invalido";
 }

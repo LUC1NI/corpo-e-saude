@@ -7,7 +7,8 @@ const valorBRL = z.preprocess(
   lerDecimalBR,
   z.coerce
     .number({ message: "Informe um valor." })
-    .positive("O valor deve ser maior que zero."),
+    .positive("O valor deve ser maior que zero.")
+    .max(100000, "Valor alto demais. Confira os zeros."),
 );
 
 const opcional = (schema: z.ZodString) =>
@@ -35,6 +36,22 @@ export const alunoSchema = z.object({
 });
 
 export type AlunoInput = z.infer<typeof alunoSchema>;
+
+/** Cadastro rápido: aluno + matrícula + horários fixos + acesso, numa tela. */
+export const cadastroAlunoSchema = alunoSchema
+  .pick({ nome: true, telefone: true, email: true, tipo: true, professor_id: true })
+  .extend({
+    plano_id: opcional(z.string().uuid("Plano inválido.")),
+    data_inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Informe a data de início."),
+    horario_ids: z.array(z.string().uuid()).max(14).default([]),
+    gerar_acesso: z.boolean().default(false),
+  })
+  .refine((d) => !d.gerar_acesso || !!d.email, {
+    message: "Informe o e-mail para criar o acesso ao app.",
+    path: ["email"],
+  });
+
+export type CadastroAlunoInput = z.input<typeof cadastroAlunoSchema>;
 
 // ---------------------------------------------------------------------------
 // Plano
@@ -126,14 +143,16 @@ export type AnamneseInput = z.infer<typeof anamneseSchema>;
 // ---------------------------------------------------------------------------
 // Avaliação física (histórico)
 // ---------------------------------------------------------------------------
-const numeroOpcional = z.preprocess(
-  (v) => {
-    if (v === "" || v === null || v === undefined) return undefined;
-    // Aceita vírgula como separador decimal (padrão brasileiro): "73,5" → 73.5.
-    return lerDecimalBR(v);
-  },
-  z.coerce.number().positive().optional(),
-);
+/** Número opcional no padrão brasileiro ("73,5"), com teto contra erro de digitação. */
+const numeroOpcional = (max: number, oque: string) =>
+  z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : lerDecimalBR(v)),
+    z.coerce
+      .number({ message: `${oque}: número inválido.` })
+      .positive(`${oque} deve ser maior que zero.`)
+      .max(max, `${oque} parece errado. Confira o valor.`)
+      .optional(),
+  );
 
 /**
  * Normaliza a altura para METROS, tolerando o jeito que as pessoas digitam:
@@ -150,21 +169,21 @@ export function normalizarAltura(v: unknown): number | undefined {
 
 const alturaOpcional = z.preprocess(
   normalizarAltura,
-  z.coerce.number().positive().optional(),
+  z.coerce.number().positive().max(2.5, "Altura parece errada. Confira.").optional(),
 );
 
 export const avaliacaoSchema = z.object({
   data: z.string().min(1, "Informe a data."),
-  peso: numeroOpcional, // kg
+  peso: numeroOpcional(400, "Peso"), // kg
   altura: alturaOpcional, // metros (aceita vírgula e centímetros)
-  percentual_gordura: numeroOpcional,
+  percentual_gordura: numeroOpcional(80, "% de gordura"),
   observacoes: opcional(z.string()),
   // Medidas (cm) — viram um JSON em `medidas`.
-  cintura: numeroOpcional,
-  quadril: numeroOpcional,
-  braco: numeroOpcional,
-  coxa: numeroOpcional,
-  peitoral: numeroOpcional,
+  cintura: numeroOpcional(300, "Cintura"),
+  quadril: numeroOpcional(300, "Quadril"),
+  braco: numeroOpcional(300, "Braço"),
+  coxa: numeroOpcional(300, "Coxa"),
+  peitoral: numeroOpcional(300, "Peitoral"),
 });
 
 export type AvaliacaoInput = z.infer<typeof avaliacaoSchema>;

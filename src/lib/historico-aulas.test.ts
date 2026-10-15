@@ -63,3 +63,19 @@ test("aula da vez: em andamento, depois a próxima, senão a última", async () 
   assert.equal(aulaDaVez(slots, null)?.hora_inicio, "06:00:00");
   assert.equal(aulaDaVez([], "10:00"), null);
 });
+
+test("dividirAulasDoDia separa agora, a seguir, mais tarde e passadas", async () => {
+  const { dividirAulasDoDia } = await import("./historico-aulas.ts");
+  const s = (i: string, f: string) => ({ hora_inicio: `${i}:00`, hora_fim: `${f}:00` });
+  const r = dividirAulasDoDia([s("19:00", "20:00"), s("06:00", "07:00"), s("18:00", "19:00"), s("20:00", "21:00")], "18:30");
+  assert.equal(r.agora?.hora_inicio, "18:00:00");
+  assert.equal(r.aSeguir?.hora_inicio, "19:00:00");
+  assert.deepEqual(r.maisTarde.map((x) => x.hora_inicio), ["20:00:00"]);
+  assert.deepEqual(r.passadas.map((x) => x.hora_inicio), ["06:00:00"]);
+  const fimDia = dividirAulasDoDia([s("06:00", "07:00")], "23:00");
+  assert.equal(fimDia.agora, null);
+  assert.equal(fimDia.aSeguir, null);
+  assert.equal(fimDia.passadas.length, 1);
+  // exatamente no fim de uma aula: ela já passou
+  assert.equal(dividirAulasDoDia([s("18:00", "19:00")], "19:00").agora, null);
+});

@@ -114,7 +114,7 @@ export function GuiaInstalacao({ nome }: { nome: string }) {
 
   return (
     <div className="mx-auto max-w-md space-y-5">
-      <section className="rounded-2xl bg-[#033373] p-6 text-white shadow-sm">
+      <section className="rounded-2xl bg-brand-navy p-6 text-white shadow-sm">
         <p className="text-sm text-white/70">Senha criada com sucesso.</p>
         <h1 className="mt-1 text-2xl font-extrabold">
           Bem-vindo(a), {nome.split(" ")[0]}! 🎉

@@ -20,7 +20,7 @@ import { DIAS_SEMANA, horaCurta } from "@/lib/tipos";
 import { cn } from "@/lib/utils";
 
 import { AdicionarHorarioProf } from "./adicionar-horario-prof";
-import { GerenciarAula } from "./gerenciar-aula";
+import { GerenciarAula } from "@/components/horarios/gerenciar-aula";
 
 const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0];
 const DIAS_CURTOS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];

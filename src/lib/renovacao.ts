@@ -1,7 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { addDays, format, parseISO } from "date-fns";
 
 import {
   competenciaDe,
+  DIAS_AVISO_VENCIMENTO,
   hojeISO,
   proximaCobranca,
 } from "@/lib/financeiro";
@@ -19,13 +21,17 @@ export async function executarRenovacao(
   supabase: SupabaseClient,
 ): Promise<{ geradas: number }> {
   const hoje = hojeISO();
+  // A cobrança nasce alguns dias ANTES do vencimento: o aluno vê "vence em
+  // N dias", o lembrete push "antes" encontra o pagamento e o dono já vê a
+  // mensalidade em aberto. O status "vencido" continua só após o vencimento.
+  const limite = format(addDays(parseISO(hoje), DIAS_AVISO_VENCIMENTO), "yyyy-MM-dd");
 
   const { data: matriculas, error } = await supabase
     .from("matriculas")
     .select("id, aluno_id, data_proxima_cobranca, planos(valor, periodicidade)")
     .eq("status", "ativa")
     .eq("renovacao_automatica", true)
-    .lte("data_proxima_cobranca", hoje);
+    .lte("data_proxima_cobranca", limite);
   if (error) throw new Error("Não foi possível consultar as matrículas.");
 
   let geradas = 0;
@@ -41,7 +47,7 @@ export async function executarRenovacao(
     let proxima = m.data_proxima_cobranca as string;
     const periodos: { competencia: string; vencimento: string }[] = [];
 
-    while (proxima <= hoje) {
+    while (proxima <= limite) {
       periodos.push({ competencia: competenciaDe(proxima), vencimento: proxima });
       proxima = proximaCobranca(proxima, plano.periodicidade);
     }

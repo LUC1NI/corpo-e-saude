@@ -35,12 +35,15 @@ export function BaixaButton({
   aluno,
   competencia,
   valor,
+  rotulo,
   className,
 }: {
   pagamentoId: string;
   aluno: string;
   competencia: string;
   valor: number;
+  /** Texto do botão (padrão "Recebi"). */
+  rotulo?: string;
   className?: string;
 }) {
   const router = useRouter();
@@ -69,8 +72,10 @@ export function BaixaButton({
       return;
     }
     setAberto(false);
-    toast.success(`Pagamento de ${primeiroNome} confirmado`, {
-      description: res.dados?.avisoNota,
+    toast.success(`Recebido ${formatBRL(valor)} de ${primeiroNome}`, {
+      description: [`${formatMesAno(competencia)}${forma ? ` · ${forma}` : ""}`, res.dados?.avisoNota]
+        .filter(Boolean)
+        .join(" — "),
       action: { label: "Desfazer", onClick: desfazer },
       duration: 8000,
     });
@@ -89,7 +94,7 @@ export function BaixaButton({
     >
       <DialogTrigger className={cn(buttonVariants({ size: "sm" }), "gap-1.5", className)}>
         <Check className="size-4" />
-        Recebi
+        {rotulo ?? "Recebi"}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
@@ -99,16 +104,6 @@ export function BaixaButton({
             <strong className="text-foreground">{formatBRL(valor)}</strong>
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-1.5">
-          <Label htmlFor={`data-${pagamentoId}`}>Pago em</Label>
-          <Input
-            id={`data-${pagamentoId}`}
-            type="date"
-            value={data}
-            max={hojeNoEstudio()}
-            onChange={(e) => setData(e.target.value)}
-          />
-        </div>
         <p className="text-sm font-medium">Como pagou?</p>
         <div className="grid grid-cols-2 gap-2">
           {FORMAS_PAGAMENTO.map((forma) => (
@@ -124,6 +119,16 @@ export function BaixaButton({
             </Button>
           ))}
         </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`data-${pagamentoId}`}>Pago em</Label>
+          <Input
+            id={`data-${pagamentoId}`}
+            type="date"
+            value={data}
+            max={hojeNoEstudio()}
+            onChange={(e) => setData(e.target.value)}
+          />
+        </div>
         <Button
           type="button"
           variant="ghost"
@@ -132,7 +137,7 @@ export function BaixaButton({
           onClick={() => baixar()}
           className="w-full"
         >
-          Confirmar sem informar a forma
+          Registrar sem forma
         </Button>
       </DialogContent>
     </Dialog>

@@ -330,7 +330,7 @@ export function TreinoPlayer({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
       {/* Cabeçalho fixo: divisão + cronômetro + sair */}
-      <header className="flex items-center gap-3 border-b bg-[#033373] p-4 text-white">
+      <header className="flex items-center gap-3 border-b bg-brand-navy p-4 text-white">
         <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-sm font-bold">
           {divisao.nome}
         </span>
@@ -483,7 +483,7 @@ export function TreinoPlayer({
       <footer className="border-t bg-background/95 p-4 backdrop-blur-sm">
         <div className="mx-auto w-full max-w-md">
           {descansoAte ? (
-            <div className="rounded-2xl bg-[#033373] p-4 text-white shadow-xl">
+            <div className="rounded-2xl bg-brand-navy p-4 text-white shadow-xl">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <Timer className="size-6 text-[#7dd3fc]" />

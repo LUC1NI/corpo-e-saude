@@ -148,7 +148,7 @@ export function AtivarNotificacoes({
           <Bell className="size-5" />
         </span>
         <p className="min-w-0 flex-1 text-sm font-medium">
-          Receber lembrete da mensalidade
+          Avisar antes de vencer?
         </p>
         <Button onClick={ativar} loading={ocupado} size="sm">
           Ativar
@@ -175,7 +175,7 @@ export function AtivarNotificacoes({
     },
     negado: {
       icone: BellOff,
-      tom: "bg-amber-50 text-amber-600",
+      tom: "bg-secondary text-muted-foreground",
       titulo: "Notificações bloqueadas",
       texto: (
         <>
@@ -188,7 +188,7 @@ export function AtivarNotificacoes({
     },
     ios_fora_do_app: {
       icone: Smartphone,
-      tom: "bg-amber-50 text-amber-600",
+      tom: "bg-secondary text-muted-foreground",
       titulo: "Instale o app para receber avisos",
       texto: (
         <>
@@ -208,7 +208,7 @@ export function AtivarNotificacoes({
   const c = conteudo[estado];
 
   return (
-    <Card className="gap-3 p-5">
+    <Card id="notificacoes" className="scroll-mt-20 gap-3 p-5">
       <div className="flex items-start gap-3">
         <span
           className={`inline-flex size-10 shrink-0 items-center justify-center rounded-xl ${c.tom}`}

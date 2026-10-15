@@ -1,7 +1,7 @@
 import { AppSidebar } from "@/components/shell/app-sidebar";
 import { BottomNav } from "@/components/shell/bottom-nav";
 import { LogoMarca } from "@/components/shell/logo-marca";
-import { LogoutButton } from "@/components/logout-button";
+import { MenuAluno } from "@/components/shell/menu-aluno";
 import { PwaInstallReminder } from "@/components/pwa/install-reminder";
 import type { TipoAluno } from "@/lib/navegacao";
 
@@ -30,7 +30,7 @@ export function AlunoShell({
         {/* Header só no mobile/tablet (no desktop a marca/sair vivem na sidebar). */}
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b bg-background/90 px-4 py-3 backdrop-blur lg:hidden">
           <LogoMarca />
-          <LogoutButton />
+          <MenuAluno nome={nome} />
         </header>
 
         <main className="mx-auto w-full max-w-2xl px-4 py-5 pb-24 lg:max-w-5xl lg:px-8 lg:py-8 lg:pb-10">

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { assertPapel } from "@/lib/auth";
 import { falha, sucesso, type ResultadoAcao } from "@/lib/acoes";
+import { format, isValid, parseISO, subDays } from "date-fns";
 import {
   competenciaDe,
   hojeISO,
@@ -137,9 +138,23 @@ export async function marcarPagamentoPago(
     return falha(parsed.error.issues[0]?.message ?? "Dados inválidos.");
   }
   const { pagamentoId, forma, data } = parsed.data;
-  if (data > hojeISO()) return falha("A data do pagamento não pode ser no futuro.");
+  const hoje = hojeISO();
+  if (!isValid(parseISO(data))) return falha("Data do pagamento inválida.");
+  if (data > hoje) return falha("A data do pagamento não pode ser no futuro.");
+  // Erro de digitação (ex.: ano errado) jogaria o recebimento num mês fechado.
+  if (data < format(subDays(parseISO(hoje), 90), "yyyy-MM-dd")) {
+    return falha("Data muito antiga. Confira o dia do pagamento.");
+  }
 
   const supabase = await createClient();
+  const { data: existe } = await supabase
+    .from("pagamentos")
+    .select("status")
+    .eq("id", pagamentoId)
+    .maybeSingle();
+  if (!existe) return falha("Mensalidade não encontrada.");
+  if (existe.status === "pago") return falha("Esta mensalidade já estava paga.");
+
   const { data: atualizado, error } = await supabase
     .from("pagamentos")
     .update({ status: "pago", data_pagamento: data, forma_pagamento: forma ?? null })
@@ -157,8 +172,9 @@ export async function marcarPagamentoPago(
     const config = await carregarConfigFiscal(supabase);
     if (config?.emitir_automaticamente_na_baixa) {
       const r = await emitirNotaDoPagamento(supabase, pagamentoId);
-      // "Aguardando configuração" é o estado normal sem token: não incomoda o dono.
-      if (r.status === "erro") avisoNota = r.mensagem;
+      // "Aguardando configuração" é o estado normal sem token: não incomoda o
+      // dono. Erro (ou nota nem registrada) precisa aparecer.
+      if (r.status === null || r.status === "erro") avisoNota = r.mensagem;
     }
   } catch {
     avisoNota = "Pagamento confirmado, mas a nota não foi gerada. Emita em Recebimentos.";
@@ -189,25 +205,38 @@ export async function desfazerBaixa(pagamentoId: string): Promise<ResultadoAcao>
   ]);
   if (!pagamento || pagamento.status !== "pago") return falha("Nada para desfazer.");
   const nota = (notas ?? [])[0] as { id: string; status: string } | undefined;
-  if (nota && (nota.status === "autorizada" || nota.status === "processando")) {
-    return falha("A nota fiscal já foi emitida. Cancele a nota em Nota fiscal antes de desfazer.");
-  }
-  if (nota) {
-    await supabase
-      .from("notas_fiscais")
-      .update({ status: "cancelada", justificativa_cancelamento: "Baixa desfeita antes da emissão.", cancelada_em: new Date().toISOString() })
-      .eq("id", nota.id);
+  // Só desfaz se a nota ainda NÃO foi enviada à prefeitura. "erro" pode ser
+  // timeout com nota autorizada do outro lado: exige conferir em Nota fiscal.
+  if (nota && nota.status !== "aguardando_configuracao") {
+    return falha("Esta mensalidade já tem nota fiscal enviada. Resolva a nota em Nota fiscal antes de desfazer.");
   }
 
-  const { error } = await supabase
+  // 1º o pagamento (condicionado a ainda estar pago: evita corrida com outra aba).
+  const { data: revertido, error } = await supabase
     .from("pagamentos")
     .update({
       status: (pagamento.vencimento as string) < hojeISO() ? "vencido" : "pendente",
       data_pagamento: null,
       forma_pagamento: null,
     })
-    .eq("id", id.data);
-  if (error) return falha("Não foi possível desfazer.");
+    .eq("id", id.data)
+    .eq("status", "pago")
+    .select("id")
+    .maybeSingle();
+  if (error || !revertido) return falha("Não foi possível desfazer.");
+
+  // 2º a nota pendente (só se continuar aguardando — o emissor pode ter andado).
+  if (nota) {
+    await supabase
+      .from("notas_fiscais")
+      .update({
+        status: "cancelada",
+        justificativa_cancelamento: "Baixa desfeita antes da emissão.",
+        cancelada_em: new Date().toISOString(),
+      })
+      .eq("id", nota.id)
+      .eq("status", "aguardando_configuracao");
+  }
 
   revalidarFinanceiro(pagamento.aluno_id as string);
   return sucesso();

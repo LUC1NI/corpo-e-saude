@@ -105,8 +105,8 @@ export default async function AlunoMensalidadePage() {
   const agir = precisaPagar(situacao);
   const HeroIcone = tom === "ok" ? CheckCircle2 : tom === "aviso" ? CalendarClock : AlertCircle;
 
-  // Em dia: permite se adiantar pagando a mensalidade do plano.
-  const valorPagar = agir && situacao.tipo !== "em_dia" ? situacao.total : (matricula?.valor ?? 0);
+  // Há cobrança em aberto: paga ela (mesmo adiantado). Sem nenhuma: o plano.
+  const valorPagar = situacao.tipo !== "em_dia" ? situacao.total : (matricula?.valor ?? 0);
 
   return (
     <div className="space-y-5">
@@ -116,18 +116,23 @@ export default async function AlunoMensalidadePage() {
       <section
         className={cn(
           "rounded-2xl p-5 text-white shadow-sm",
-          tom === "ok" && "bg-emerald-600",
-          tom === "aviso" && "bg-amber-600",
-          tom === "atraso" && "bg-red-600",
+          tom === "ok" && "bg-brand-navy",
+          tom === "aviso" && "bg-amber-700",
+          tom === "atraso" && "bg-red-700",
         )}
       >
         <div className="flex items-center gap-3">
-          <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
+          <span
+            className={cn(
+              "inline-flex size-11 shrink-0 items-center justify-center rounded-xl",
+              tom === "ok" ? "bg-emerald-500" : "bg-white/15",
+            )}
+          >
             <HeroIcone className="size-6" />
           </span>
           <div>
             <p className="text-lg font-bold">{titulo}</p>
-            <p className="text-white/90">{detalhe}</p>
+            <p className="text-white">{detalhe}</p>
           </div>
         </div>
         {valorPagar > 0 ? (
@@ -136,6 +141,7 @@ export default async function AlunoMensalidadePage() {
               valor={valorPagar}
               descricao={agir ? detalhe : `Mensalidade do plano ${matricula?.plano_nome ?? ""}`}
               variante={agir ? "destaque" : "discreto"}
+              tamanho={agir ? "lg" : "default"}
             />
           </div>
         ) : null}
@@ -143,12 +149,12 @@ export default async function AlunoMensalidadePage() {
 
       {/* Plano */}
       {matricula ? (
-        <p className="rounded-xl border bg-card px-4 py-3 text-sm">
-          <span className="font-semibold">{matricula.plano_nome}</span>
-          <span className="text-muted-foreground">
-            {" "}· {formatBRL(matricula.valor)}/{POR_PERIODO[matricula.periodicidade]} · renova sozinho
-          </span>
-        </p>
+        <div className="rounded-xl border bg-card px-4 py-3">
+          <p className="font-semibold">{matricula.plano_nome}</p>
+          <p className="text-sm text-muted-foreground">
+            {formatBRL(matricula.valor)} por {POR_PERIODO[matricula.periodicidade]} · renova automaticamente
+          </p>
+        </div>
       ) : null}
 
       {/* Histórico */}
@@ -177,7 +183,9 @@ export default async function AlunoMensalidadePage() {
                     </p>
                   </div>
                   <span className="font-medium tabular-nums">{formatBRL(p.valor)}</span>
-                  <StatusPagamento status={efetivo(p)} />
+                  <span className="flex w-20 justify-end">
+                    <StatusPagamento status={efetivo(p)} />
+                  </span>
                   {pdf ? (
                     <a
                       href={pdf}

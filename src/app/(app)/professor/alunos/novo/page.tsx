@@ -1,28 +1,27 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { CadastroRapido } from "@/components/alunos/cadastro-rapido";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { requireUsuario } from "@/lib/auth";
-
-import { AlunoForm } from "../../../admin/alunos/aluno-form";
+import { horariosComOcupacao } from "@/lib/horarios";
+import { getProfessorAtual } from "@/lib/professor";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function NovoAlunoProfessorPage() {
   await requireUsuario(["professor"]);
+  const professor = await getProfessorAtual();
+  const supabase = await createClient();
+  const horarios = professor ? await horariosComOcupacao(supabase, professor.id) : [];
 
   return (
     <>
-      <PageHeader
-        titulo="Novo aluno"
-        subtitulo="O aluno entra direto na sua carteira. Depois de salvar, você já cai na anamnese."
+      <PageHeader titulo="Novo aluno" subtitulo="Entra direto na sua carteira." />
+      <CadastroRapido
+        modo="professor"
+        professores={[]}
+        planos={[]}
+        horarios={horarios}
+        professorFixoId={professor?.id}
+        destinoBase="/professor/alunos"
       />
-      <Card>
-        <CardContent>
-          <AlunoForm
-            professores={[]}
-            mostrarProfessor={false}
-            destinoBase="/professor/alunos"
-            hashAposCriar="#anamnese"
-          />
-        </CardContent>
-      </Card>
     </>
   );
 }

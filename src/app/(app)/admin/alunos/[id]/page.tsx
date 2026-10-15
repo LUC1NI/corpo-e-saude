@@ -16,8 +16,8 @@ import { StatusPagamento } from "@/components/ui-extra/status-badge";
 import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { aguardandoPrimeiroAcesso } from "@/lib/acesso";
 import { requireUsuario } from "@/lib/auth";
-import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
-import { formatBRL, formatData } from "@/lib/formato";
+import { hojeISO } from "@/lib/financeiro";
+import { formatBRL, formatData, formatMesAno } from "@/lib/formato";
 import { getFrequenciaDoAluno } from "@/lib/frequencia";
 import { createClient } from "@/lib/supabase/server";
 import { ExecucoesLista } from "@/components/treino/execucoes-lista";
@@ -182,7 +182,7 @@ export default async function AlunoDetalhePage({
                   {
                     cabecalho: "Competência",
                     principal: true,
-                    celula: (p) => rotuloCompetencia(p.competencia),
+                    celula: (p) => formatMesAno(p.competencia),
                   },
                   {
                     cabecalho: "Vencimento",

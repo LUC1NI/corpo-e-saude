@@ -13,14 +13,15 @@ import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { requireUsuario } from "@/lib/auth";
-import { rotuloCompetencia } from "@/lib/financeiro";
-import { formatBRL, formatData, plural } from "@/lib/formato";
+
+import { formatBRL, formatData, formatMesAno, plural } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
 
 import { NavFinanceiro } from "../nav-financeiro";
 import { EmitirPendentesButton, NotaAcoes, type NotaResumo } from "../nota-acoes";
 import { resolverMes } from "../periodo";
 import { SeletorMes } from "../seletor-mes";
+import { exigir } from "@/lib/utils";
 
 interface Recebido {
   id: string;
@@ -49,7 +50,7 @@ export default async function RecebimentosPage({
   const sp = await searchParams;
   const periodo = resolverMes(sp.mes);
 
-  const { data } = await supabase
+  const res = await supabase
     .from("pagamentos")
     .select(
       "id, aluno_id, competencia, valor, data_pagamento, forma_pagamento, alunos(nome)",
@@ -60,7 +61,7 @@ export default async function RecebimentosPage({
     .order("data_pagamento", { ascending: false })
     .limit(300);
 
-  const recebidos = (data ?? []) as unknown as Recebido[];
+  const recebidos = exigir(res, "lista") as unknown as Recebido[];
 
   // Notas dos pagamentos listados (1 consulta) + total pendente para o lote.
   const ids = recebidos.map((p) => p.id);
@@ -163,7 +164,7 @@ export default async function RecebimentosPage({
                       {p.alunos?.nome ?? "Aluno"}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
-                      Competência {rotuloCompetencia(p.competencia)}
+                      Competência {formatMesAno(p.competencia)}
                       {p.data_pagamento
                         ? ` · pago ${formatData(p.data_pagamento)}`
                         : ""}

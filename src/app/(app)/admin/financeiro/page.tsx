@@ -161,7 +161,7 @@ export default async function FinanceiroPage() {
 
       <MensalidadesAbertas abertos={abertos} hoje={hoje} />
 
-      <Card className="mt-6">
+      <Card id="despesa" className="mt-6 scroll-mt-20">
         <CardHeader>
           <CardTitle>Despesas do mês</CardTitle>
           <CardDescription>

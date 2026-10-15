@@ -19,8 +19,8 @@ import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { StatusPagamento } from "@/components/ui-extra/status-badge";
 import { requireUsuario } from "@/lib/auth";
-import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
-import { formatBRL, formatData, plural } from "@/lib/formato";
+import { hojeISO } from "@/lib/financeiro";
+import { formatBRL, formatData, formatMesAno, plural } from "@/lib/formato";
 import { exigir } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import type { StatusPagamento as TStatusPagamento } from "@/lib/tipos";
@@ -189,7 +189,7 @@ export default async function RelatorioMesPage({
           <CardHeader>
             <CardTitle>Composição do previsto</CardTitle>
             <CardDescription>
-              Quanto das mensalidades de {rotuloCompetencia(periodo.inicio)} já
+              Quanto das mensalidades de {formatMesAno(periodo.inicio)} já
               virou caixa.
             </CardDescription>
           </CardHeader>
@@ -252,7 +252,7 @@ export default async function RelatorioMesPage({
         <Card>
           <CardHeader>
             <CardTitle>
-              Mensalidades de {rotuloCompetencia(periodo.inicio)}
+              Mensalidades de {formatMesAno(periodo.inicio)}
             </CardTitle>
             <CardDescription>
               Todas as cobranças com competência neste mês.
@@ -306,7 +306,7 @@ export default async function RelatorioMesPage({
               Despesas do mês
             </CardTitle>
             <CardDescription>
-              Lançamentos de {rotuloCompetencia(periodo.inicio)}.
+              Lançamentos de {formatMesAno(periodo.inicio)}.
             </CardDescription>
           </CardHeader>
           <CardContent>

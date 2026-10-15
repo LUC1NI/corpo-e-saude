@@ -10,7 +10,7 @@ const DEPOIMENTOS = [
     nome: "Mariana Oliveira",
     detalhe: "Aluna há 4 meses",
     iniciais: "MO",
-    tom: "bg-[#033373]",
+    tom: "bg-brand-navy",
   },
   {
     texto:

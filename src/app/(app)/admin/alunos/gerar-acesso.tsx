@@ -158,7 +158,7 @@ function telefoneWhatsApp(telefone: string | null): string | null {
   return digitos.startsWith("55") && digitos.length > 11 ? digitos : `55${digitos}`;
 }
 
-function CredencialBox({
+export function CredencialBox({
   email,
   senha,
   nome,
@@ -195,34 +195,23 @@ function CredencialBox({
           <strong className="font-mono">{senha}</strong>
         </p>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <a
           href={linkWhatsApp}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 sm:h-10"
         >
           <IconeWhatsApp className="size-4" />
-          Abrir no WhatsApp
+          Enviar no WhatsApp
         </a>
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          onClick={() => copiar(mensagem, "Mensagem copiada. Cole no WhatsApp.")}
+          onClick={() => copiar(mensagem, "Mensagem copiada. Cole onde quiser.")}
         >
           <Copy className="size-4" />
-          Copiar mensagem para WhatsApp
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() =>
-            copiar(`E-mail: ${email}\nSenha provisória: ${senha}`, "Copiado.")
-          }
-        >
-          Copiar só os dados
+          Copiar mensagem
         </Button>
       </div>
       {!fone ? (

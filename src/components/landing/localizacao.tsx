@@ -42,7 +42,7 @@ export function Localizacao() {
           <Revelar delay={0.12} className="lg:col-span-2">
             <div className="flex h-full flex-col gap-4">
               <div className="rounded-3xl bg-[#F4F7FB] p-7 ring-1 ring-black/5">
-                <span className="flex size-11 items-center justify-center rounded-xl bg-[#033373] text-white shadow-md">
+                <span className="flex size-11 items-center justify-center rounded-xl bg-brand-navy text-white shadow-md">
                   <MapPin className="size-5" />
                 </span>
                 <h3 className="mt-4 text-base font-bold text-[#18181A]">
@@ -65,7 +65,7 @@ export function Localizacao() {
               </div>
 
               <div className="rounded-3xl bg-[#F4F7FB] p-7 ring-1 ring-black/5">
-                <span className="flex size-11 items-center justify-center rounded-xl bg-[#033373] text-white shadow-md">
+                <span className="flex size-11 items-center justify-center rounded-xl bg-brand-navy text-white shadow-md">
                   <Clock className="size-5" />
                 </span>
                 <h3 className="mt-4 text-base font-bold text-[#18181A]">

@@ -96,11 +96,29 @@ export function aulaDaVez<T extends { hora_inicio: string; hora_fim: string }>(
   agora: string | null,
 ): T | null {
   if (slots.length === 0) return null;
-  if (agora === null) return slots[0]!;
   const ordenados = [...slots].sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
+  if (agora === null) return ordenados[0]!;
   return (
     ordenados.find((s) => s.hora_inicio.slice(0, 5) <= agora && agora < s.hora_fim.slice(0, 5)) ??
     ordenados.find((s) => s.hora_inicio.slice(0, 5) > agora) ??
     ordenados[ordenados.length - 1]!
   );
+}
+
+/** Divide as aulas de hoje pelo relógio do estúdio ("HH:mm"). */
+export function dividirAulasDoDia<T extends { hora_inicio: string; hora_fim: string }>(
+  slots: T[],
+  agora: string,
+): { agora: T | null; aSeguir: T | null; maisTarde: T[]; passadas: T[] } {
+  const ord = [...slots].sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
+  const ini = (s: T) => s.hora_inicio.slice(0, 5);
+  const fim = (s: T) => s.hora_fim.slice(0, 5);
+  const emAndamento = ord.find((s) => ini(s) <= agora && agora < fim(s)) ?? null;
+  const futuras = ord.filter((s) => ini(s) > agora);
+  return {
+    agora: emAndamento,
+    aSeguir: futuras[0] ?? null,
+    maisTarde: futuras.slice(1),
+    passadas: ord.filter((s) => fim(s) <= agora),
+  };
 }

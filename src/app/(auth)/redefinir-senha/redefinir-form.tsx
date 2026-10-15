@@ -31,10 +31,10 @@ export function RedefinirForm({
   const [senha, setSenha] = useState("");
   const [confirmar, setConfirmar] = useState("");
   const regras = [
-    { ok: senha.length >= 8, texto: "8 caracteres ou mais" },
+    { ok: senha.length >= 8, texto: "Mínimo 8 caracteres" },
     { ok: /[A-Za-z]/.test(senha), texto: "Uma letra" },
     { ok: /[0-9]/.test(senha), texto: "Um número" },
-    { ok: senha.length > 0 && senha === confirmar, texto: "As duas senhas iguais" },
+    { ok: senha.length > 0 && senha === confirmar, texto: "Senhas iguais" },
   ];
   const tudoOk = regras.every((r) => r.ok);
 
@@ -75,7 +75,7 @@ export function RedefinirForm({
             />
           </div>
 
-          <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm" aria-live="polite">
+          <ul id="regras-senha" className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm" aria-live="polite">
             {regras.map((r) => (
               <li
                 key={r.texto}
@@ -97,7 +97,13 @@ export function RedefinirForm({
             </p>
           ) : null}
 
-          <Button type="submit" className="w-full" loading={pending} disabled={!tudoOk}>
+          <Button
+            type="submit"
+            className="w-full"
+            loading={pending}
+            disabled={!tudoOk}
+            aria-describedby="regras-senha"
+          >
             {pending ? "Salvando…" : "Salvar senha"}
           </Button>
         </form>

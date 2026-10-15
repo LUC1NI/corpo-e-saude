@@ -5,6 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Marca (use estes, nunca o hex solto): */
+  --color-brand-navy: #033373;
+  --color-brand-cyan: #0090D8;
+  --color-brand-cyan-claro: #00A8E4;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);

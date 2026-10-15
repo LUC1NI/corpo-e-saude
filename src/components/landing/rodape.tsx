@@ -16,7 +16,7 @@ import Link from "@/components/ui-extra/link";
 /** Faixa de CTA final + contato + rodapé navy. */
 export function Rodape() {
   return (
-    <footer className="bg-[#033373] text-white">
+    <footer className="bg-brand-navy text-white">
       <div className="mx-auto w-full max-w-6xl px-4 pt-16 pb-10 lg:px-8 lg:pt-20">
         {/* CTA final */}
         <Revelar>

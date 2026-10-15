@@ -22,7 +22,7 @@ export function AvatarIniciais({
 }) {
   const cores = [
     "bg-[#0090D8]",
-    "bg-[#033373]",
+    "bg-brand-navy",
     "bg-[#00A8E4]",
     "bg-[#0a3f86]",
   ];

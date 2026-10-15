@@ -6,10 +6,14 @@ import { mensagemEmailEmUso } from "@/lib/acesso";
 import { assertPapel } from "@/lib/auth";
 import { falha, sucesso, type ResultadoAcao } from "@/lib/acoes";
 import { getProfessorAtual } from "@/lib/professor";
+import { criarMatricula } from "@/lib/acoes-financeiro";
+import { definirHorariosDoAluno } from "@/lib/acoes-presenca";
 import {
   alunoSchema,
+  cadastroAlunoSchema,
   dadosFiscaisSchema,
   type AlunoInput,
+  type CadastroAlunoInput,
   type DadosFiscaisInput,
 } from "@/lib/schemas";
 import { gerarSenhaProvisoria } from "@/lib/senha";
@@ -102,6 +106,62 @@ export async function criarAluno(
 
   revalidarListas();
   return sucesso({ id: data.id as string });
+}
+
+/**
+ * Cadastro completo numa ação só: aluno → matrícula (se houver plano) →
+ * horários fixos → acesso ao app. O aluno é criado primeiro; se uma etapa
+ * seguinte falhar, ele continua salvo e o motivo volta em `avisos`, para o
+ * dono completar na ficha. Professor: carteira própria, sem plano (financeiro
+ * é só do admin).
+ */
+export async function cadastrarAluno(
+  input: CadastroAlunoInput,
+): Promise<
+  ResultadoAcao<{ id: string; acesso?: { email: string; senha: string }; avisos: string[] }>
+> {
+  const usuario = await assertPapel(["admin", "professor"]);
+  const parsed = cadastroAlunoSchema.safeParse(input);
+  if (!parsed.success) {
+    return falha(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+  }
+  const d = parsed.data;
+
+  const criado = await criarAluno({
+    nome: d.nome,
+    telefone: d.telefone,
+    email: d.email,
+    tipo: d.tipo,
+    professor_id: d.professor_id,
+    status: "ativo",
+  });
+  if (!criado.ok || !criado.dados) return criado.ok ? falha("Não foi possível cadastrar o aluno.") : criado;
+  const id = criado.dados.id;
+  const avisos: string[] = [];
+
+  if (d.plano_id && usuario.papel === "admin") {
+    const m = await criarMatricula(id, {
+      plano_id: d.plano_id,
+      data_inicio: d.data_inicio,
+      renovacao_automatica: true,
+    });
+    if (!m.ok) avisos.push(`Matrícula: ${m.erro}`);
+  }
+
+  if (d.horario_ids.length > 0) {
+    const h = await definirHorariosDoAluno(id, d.horario_ids);
+    if (!h.ok) avisos.push(`Horários: ${h.erro}`);
+  }
+
+  let acesso: { email: string; senha: string } | undefined;
+  if (d.gerar_acesso) {
+    const a = await gerarAcessoAluno(id);
+    if (a.ok && a.dados) acesso = a.dados;
+    else if (!a.ok) avisos.push(`Acesso: ${a.erro}`);
+  }
+
+  revalidarListas(id);
+  return sucesso({ id, acesso, avisos });
 }
 
 export async function atualizarAluno(

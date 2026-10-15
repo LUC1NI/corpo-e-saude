@@ -30,7 +30,7 @@ export function MobileSidebar({
       >
         <Menu className="size-5" />
       </SheetTrigger>
-      <SheetContent side="left" className="w-72 border-0 bg-[#033373] p-0">
+      <SheetContent side="left" className="w-72 border-0 bg-brand-navy p-0">
         <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
         <SidebarInner
           papel={papel}

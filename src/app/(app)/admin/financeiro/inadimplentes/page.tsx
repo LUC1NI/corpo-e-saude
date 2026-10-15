@@ -17,11 +17,12 @@ import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { requireUsuario } from "@/lib/auth";
-import { hojeISO, rotuloCompetencia } from "@/lib/financeiro";
-import { formatBRL, formatData, plural } from "@/lib/formato";
+import { hojeISO } from "@/lib/financeiro";
+import { formatBRL, formatData, formatMesAno, plural } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
 
 import { NavFinanceiro } from "../nav-financeiro";
+import { exigir } from "@/lib/utils";
 
 interface Vencido {
   aluno_id: string;
@@ -60,7 +61,7 @@ export default async function InadimplentesPage() {
   const supabase = await createClient();
   const hoje = hojeISO();
 
-  const { data } = await supabase
+  const res = await supabase
     .from("pagamentos")
     .select("aluno_id, competencia, vencimento, valor, alunos(nome, telefone)")
     .in("status", ["pendente", "vencido"])
@@ -68,7 +69,7 @@ export default async function InadimplentesPage() {
     .order("vencimento")
     .limit(300);
 
-  const vencidos = (data ?? []) as unknown as Vencido[];
+  const vencidos = exigir(res, "lista") as unknown as Vencido[];
 
   // Agrupa por aluno com total, parcelas e atraso da mais antiga.
   const porAluno = new Map<string, Devedor>();
@@ -183,7 +184,7 @@ export default async function InadimplentesPage() {
                         className="flex items-center justify-between px-3 py-2 text-sm"
                       >
                         <span className="text-muted-foreground">
-                          {rotuloCompetencia(m.competencia)} · venceu{" "}
+                          {formatMesAno(m.competencia)} · venceu{" "}
                           {formatData(m.vencimento)}
                         </span>
                         <span className="font-medium tabular-nums">

@@ -218,8 +218,8 @@ export function FrequenciaCard({
         <p className="text-sm text-muted-foreground">
           {pct === null && novo ? (
             <>
-              Ainda são poucas aulas para medir a frequência. Em duas semanas
-              ela aparece aqui.
+              Ainda são poucas aulas para medir. A frequência aparece depois
+              das primeiras 4 aulas.
             </>
           ) : pct === null ? (
             <>

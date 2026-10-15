@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { StatusPagamento } from "@/components/ui-extra/status-badge";
 import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
-import { rotuloCompetencia } from "@/lib/financeiro";
-import { formatBRL, formatData } from "@/lib/formato";
+
+import { formatBRL, formatData, formatMesAno } from "@/lib/formato";
 import type { StatusPagamento as TStatusPagamento } from "@/lib/tipos";
 
 import { BaixaButton } from "./baixa-button";
@@ -89,7 +89,7 @@ export function MensalidadesAbertas({
               },
               {
                 cabecalho: "Competência",
-                celula: (p) => rotuloCompetencia(p.competencia),
+                celula: (p) => formatMesAno(p.competencia),
               },
               {
                 cabecalho: "Vencimento",

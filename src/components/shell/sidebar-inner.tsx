@@ -27,7 +27,7 @@ export function SidebarInner({
   const itens = navPorPapel(papel, tipoAluno);
 
   return (
-    <div className="flex h-full flex-col gap-6 bg-[#033373] p-4">
+    <div className="flex h-full flex-col gap-6 bg-brand-navy p-4">
       <div className="px-2 pt-2">
         <LogoMarca variante="navy" />
       </div>

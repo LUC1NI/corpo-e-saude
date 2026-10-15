@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 import { assertPapel, type Papel } from "@/lib/auth";
 import { falha, sucesso, type ResultadoAcao } from "@/lib/acoes";
@@ -37,61 +38,144 @@ export async function criarHorario(
   return sucesso();
 }
 
-export async function excluirHorario(id: string): Promise<ResultadoAcao> {
-  await assertPapel(["professor"]);
+/**
+ * Confere quem pode mexer num horário: admin (qualquer um) ou o professor
+ * dono dele. Devolve o horário ou null.
+ */
+async function horarioEditavel(horarioId: string) {
+  const usuario = await assertPapel(["admin", "professor"]);
+  const id = z.string().uuid().safeParse(horarioId);
+  if (!id.success) return null;
   const supabase = await createClient();
-  const { error } = await supabase.from("horarios").delete().eq("id", id);
-  if (error) return falha("Não foi possível excluir o horário.");
+  let q = supabase.from("horarios").select("id, professor_id").eq("id", id.data);
+  if (usuario.papel === "professor") {
+    const professor = await getProfessorAtual();
+    if (!professor) return null;
+    q = q.eq("professor_id", professor.id);
+  }
+  const { data } = await q.maybeSingle();
+  return data ? { supabase, horario: data as { id: string; professor_id: string } } : null;
+}
 
-  revalidatePath("/professor/horarios");
+function revalidarAgenda() {
+  for (const p of ["/admin", "/admin/horarios", "/admin/presenca", "/professor", "/professor/horarios", "/professor/presenca"]) {
+    revalidatePath(p);
+  }
+}
+
+/** Exclui um horário da grade (admin ou o professor dono). */
+export async function excluirHorario(id: string): Promise<ResultadoAcao> {
+  const ctx = await horarioEditavel(id);
+  if (!ctx) return falha("Horário não encontrado.");
+  const { error } = await ctx.supabase.from("horarios").delete().eq("id", ctx.horario.id);
+  if (error) return falha("Não foi possível excluir o horário.");
+  revalidarAgenda();
   return sucesso();
 }
 
 /**
- * Define quais alunos estão agendados em um horário (substitui o conjunto
- * atual). O RLS garante que só o professor dono do horário e dos alunos
- * consegue gravar. Base para a presença mostrar só os alunos da aula.
+ * Define quais alunos estão agendados em um horário (admin ou professor dono).
+ * Atualiza só a diferença (remove os desmarcados, insere os novos), então uma
+ * falha no meio nunca deixa a turma vazia. O RLS ainda garante que o
+ * professor só vincula alunos da própria carteira.
  */
 export async function definirAlunosDoHorario(
   horarioId: string,
   alunoIds: string[],
 ): Promise<ResultadoAcao> {
-  await assertPapel(["professor"]);
-  const professor = await getProfessorAtual();
-  if (!professor) return falha("Professor não encontrado.");
+  const ids = z.array(z.string().uuid()).max(200).safeParse(alunoIds);
+  if (!ids.success) return falha("Lista de alunos inválida.");
+  const ctx = await horarioEditavel(horarioId);
+  if (!ctx) return falha("Horário não encontrado.");
+  const { supabase, horario } = ctx;
 
-  const supabase = await createClient();
-
-  // Confere que o horário é do professor (RLS já cobre, mas evita lixo).
-  const { data: horario } = await supabase
-    .from("horarios")
-    .select("id")
-    .eq("id", horarioId)
-    .eq("professor_id", professor.id)
-    .maybeSingle();
-  if (!horario) return falha("Horário não encontrado.");
-
-  // Substitui o conjunto: limpa os atuais e insere os selecionados.
-  const { error: errDel } = await supabase
+  const { data: atuaisData, error: errSel } = await supabase
     .from("aluno_horarios")
-    .delete()
-    .eq("horario_id", horarioId);
-  if (errDel) return falha("Não foi possível atualizar os alunos da aula.");
+    .select("aluno_id")
+    .eq("horario_id", horario.id);
+  if (errSel) return falha("Não foi possível atualizar os alunos da aula.");
+  const atuais = new Set((atuaisData ?? []).map((r) => r.aluno_id as string));
+  const desejados = new Set(ids.data);
 
-  const unicos = [...new Set(alunoIds)];
-  if (unicos.length > 0) {
-    const linhas = unicos.map((alunoId) => ({
-      horario_id: horarioId,
-      aluno_id: alunoId,
-    }));
-    const { error: errIns } = await supabase
+  const remover = [...atuais].filter((a) => !desejados.has(a));
+  const inserir = [...desejados].filter((a) => !atuais.has(a));
+
+  if (inserir.length > 0) {
+    const { error } = await supabase
       .from("aluno_horarios")
-      .insert(linhas);
-    if (errIns) return falha("Não foi possível atribuir os alunos.");
+      .insert(inserir.map((aluno_id) => ({ horario_id: horario.id, aluno_id })));
+    if (error) return falha("Não foi possível incluir os alunos (confira se são da carteira do professor).");
+  }
+  if (remover.length > 0) {
+    const { error } = await supabase
+      .from("aluno_horarios")
+      .delete()
+      .eq("horario_id", horario.id)
+      .in("aluno_id", remover);
+    if (error) return falha("Não foi possível retirar os alunos da aula.");
   }
 
-  revalidatePath("/professor/horarios");
-  revalidatePath("/professor/presenca");
+  revalidarAgenda();
+  revalidatePath("/aluno", "layout");
+  return sucesso();
+}
+
+/**
+ * Define os horários fixos de UM aluno (admin, ou professor nos próprios
+ * horários com aluno da própria carteira — o RLS garante). Atualiza só a
+ * diferença. Professor só mexe nos vínculos com horários dele.
+ */
+export async function definirHorariosDoAluno(
+  alunoId: string,
+  horarioIds: string[],
+): Promise<ResultadoAcao> {
+  const usuario = await assertPapel(["admin", "professor"]);
+  const aluno = z.string().uuid().safeParse(alunoId);
+  const ids = z.array(z.string().uuid()).max(14).safeParse(horarioIds);
+  if (!aluno.success || !ids.success) return falha("Dados inválidos.");
+  const supabase = await createClient();
+
+  let profId: string | null = null;
+  if (usuario.papel === "professor") {
+    const professor = await getProfessorAtual();
+    if (!professor) return falha("Professor não encontrado.");
+    profId = professor.id;
+  }
+
+  const { data: atuaisData, error } = await supabase
+    .from("aluno_horarios")
+    .select("horario_id, horarios(professor_id)")
+    .eq("aluno_id", aluno.data);
+  if (error) return falha("Não foi possível ler os horários do aluno.");
+  const atuais = ((atuaisData ?? []) as unknown as {
+    horario_id: string;
+    horarios: { professor_id: string } | null;
+  }[]).filter((r) => profId === null || r.horarios?.professor_id === profId);
+  const atuaisIds = new Set(atuais.map((r) => r.horario_id));
+  const desejados = new Set(ids.data);
+
+  const inserir = [...desejados].filter((h) => !atuaisIds.has(h));
+  const remover = [...atuaisIds].filter((h) => !desejados.has(h));
+
+  if (inserir.length > 0) {
+    const { error: e } = await supabase
+      .from("aluno_horarios")
+      .insert(inserir.map((horario_id) => ({ aluno_id: aluno.data, horario_id })));
+    if (e) return falha("Não foi possível incluir o aluno nos horários.");
+  }
+  if (remover.length > 0) {
+    const { error: e } = await supabase
+      .from("aluno_horarios")
+      .delete()
+      .eq("aluno_id", aluno.data)
+      .in("horario_id", remover);
+    if (e) return falha("Não foi possível tirar o aluno dos horários.");
+  }
+
+  revalidarAgenda();
+  revalidatePath(`/admin/alunos/${aluno.data}`);
+  revalidatePath(`/professor/alunos/${aluno.data}`);
+  revalidatePath("/aluno", "layout");
   return sucesso();
 }
 
@@ -255,16 +339,6 @@ export async function criarHorariosAdmin(
 
   revalidatePath("/admin/horarios");
   return sucesso({ criados: aCriar.length, pulados: jaTem.size });
-}
-
-export async function excluirHorarioAdmin(id: string): Promise<ResultadoAcao> {
-  await assertPapel(["admin"]);
-  const supabase = await createClient();
-  const { error } = await supabase.from("horarios").delete().eq("id", id);
-  if (error) return falha("Não foi possível excluir o horário.");
-
-  revalidatePath("/admin/horarios");
-  return sucesso();
 }
 
 // ---------------------------------------------------------------------------

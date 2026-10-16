@@ -9,6 +9,9 @@
   --color-brand-navy: #033373;
   --color-brand-cyan: #0090D8;
   --color-brand-cyan-claro: #00A8E4;
+  /* Botões/CTAs com texto branco: tons do ciano com contraste AA (≥4,5:1). */
+  --color-cta-de: #0069A3;
+  --color-cta-ate: #007CBD;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -62,7 +65,9 @@
   --card-foreground: #18181a;
   --popover: #ffffff;
   --popover-foreground: #18181a;
-  --primary: #0090d8;
+  /* Primário com texto branco: ciano escurecido p/ contraste AA (4,9:1).
+     O ciano da marca (#0090D8) segue em ícones, destaques e gráficos. */
+  --primary: #0077b6;
   --primary-foreground: #ffffff;
   --secondary: #eef3f9;
   --secondary-foreground: #033373;

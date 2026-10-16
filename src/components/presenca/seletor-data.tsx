@@ -24,8 +24,9 @@ export function SeletorData({ data, basePath, extra = "" }: { data: string; base
   }, [pending]);
 
   return (
-    <CampoForm label="Dia">
+    <CampoForm label="Dia" htmlFor="dia-presenca">
       <Input
+        id="dia-presenca"
         type="date"
         value={data}
         onChange={(e) => {

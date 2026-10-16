@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { BarraProgressoNavegacao } from "@/components/ui-extra/progresso-navegacao";
+import { AvisoRede } from "@/components/aviso-rede";
 import { Toaster } from "@/components/ui/sonner";
 import { SITE_URL } from "@/lib/site";
 
@@ -45,7 +46,6 @@ export const viewport: Viewport = {
   themeColor: "#033373",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
 };
 
@@ -63,6 +63,7 @@ export default function RootLayout({
         <BarraProgressoNavegacao />
         {children}
         <Toaster richColors position="top-right" />
+        <AvisoRede />
       </body>
     </html>
   );

@@ -34,15 +34,7 @@ export function LoginForm({ mensagemInicial }: { mensagemInicial?: string }) {
             />
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="senha">Senha</Label>
-              <Link
-                href="/recuperar-senha"
-                className="text-xs text-primary hover:underline"
-              >
-                Esqueci minha senha
-              </Link>
-            </div>
+            <Label htmlFor="senha">Senha</Label>
             <InputSenha
               id="senha"
               name="senha"
@@ -63,6 +55,12 @@ export function LoginForm({ mensagemInicial }: { mensagemInicial?: string }) {
           <Button type="submit" className="w-full" loading={pending}>
             {pending ? "Entrando…" : "Entrar"}
           </Button>
+          {/* Depois do Entrar: na ordem do Tab, e-mail → senha → entrar. */}
+          <p className="text-center">
+            <Link href="/recuperar-senha" className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline">
+              Esqueci minha senha
+            </Link>
+          </p>
         </form>
       </CardContent>
     </Card>

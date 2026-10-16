@@ -85,7 +85,7 @@ export function Modalidades() {
                         aria-hidden
                         className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-[#0090D8]/30 blur-3xl"
                       />
-                      <span className="absolute top-5 right-5 rounded-full bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-3 py-1 text-[10px] font-bold tracking-widest text-white uppercase shadow-lg">
+                      <span className="absolute top-5 right-5 rounded-full bg-gradient-to-r from-cta-de to-cta-ate px-3 py-1 text-[10px] font-bold tracking-widest text-white uppercase shadow-lg">
                         Mais procurado
                       </span>
                     </>
@@ -164,8 +164,8 @@ export function Modalidades() {
                     rel="noopener noreferrer"
                     className={
                       escuro
-                        ? "relative mt-8 inline-flex h-11 items-center justify-center gap-2.5 self-start rounded-xl bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-5 text-sm font-semibold text-white shadow-[0_6px_20px_rgba(0,168,228,0.5)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,168,228,0.6)] active:translate-y-0"
-                        : "mt-8 inline-flex h-11 items-center justify-center gap-2.5 self-start rounded-xl bg-[#0090D8] px-5 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(0,144,216,0.35)] transition-all hover:-translate-y-0.5 hover:bg-[#00A8E4] active:translate-y-0"
+                        ? "relative mt-8 inline-flex h-11 items-center justify-center gap-2.5 self-start rounded-xl bg-gradient-to-r from-cta-de to-cta-ate px-5 text-sm font-semibold text-white shadow-[0_6px_20px_rgba(0,168,228,0.5)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,168,228,0.6)] active:translate-y-0"
+                        : "mt-8 inline-flex h-11 items-center justify-center gap-2.5 self-start rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(0,144,216,0.35)] transition-all hover:-translate-y-0.5 hover:bg-[#00A8E4] active:translate-y-0"
                     }
                   >
                     <IconeWhatsApp className="size-4" />

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { comRede } from "@/lib/acoes";
 import { marcarTodosPresentes } from "@/lib/acoes-presenca";
 
 /** "Todos presentes": marca a turma inteira; depois é só desmarcar quem faltou. */
@@ -31,7 +32,7 @@ export function MarcarTodos({
       loading={ocupado}
       onClick={async () => {
         setOcupado(true);
-        const res = await marcarTodosPresentes(alunoIds, data, hora, professorId);
+        const res = await comRede(marcarTodosPresentes(alunoIds, data, hora, professorId));
         setOcupado(false);
         if (!res.ok) {
           toast.error(res.erro);

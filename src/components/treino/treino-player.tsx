@@ -2,7 +2,7 @@
 
 import { Check, ChevronLeft, SkipForward, Timer, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { MidiaThumb } from "@/components/treino/midia-thumb";
@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { registrarExecucao } from "@/lib/acoes-execucao";
 import { SENSACOES, type DivisaoComExercicios } from "@/lib/tipos";
+import { apagarRascunho, lerRascunho, salvarRascunho } from "@/lib/treino-rascunho";
+import { comRede } from "@/lib/acoes";
 import { cn } from "@/lib/utils";
 
 /**
@@ -72,11 +74,13 @@ export function TreinoPlayer({
   aoFechar: () => void;
 }) {
   const router = useRouter();
+  // Retoma o rascunho desta divisão (voltar/recarregar não perde o treino).
+  const [rascunho] = useState(() => lerRascunho(divisao.id));
   // Timestamp fixado na montagem (estado para poder ser lido no render).
-  const [iniciadoEm] = useState(() => Date.now());
+  const [iniciadoEm] = useState(() => rascunho?.iniciadoEm ?? Date.now());
 
   const [fase, setFase] = useState<"treinando" | "resumo">("treinando");
-  const [feitas, setFeitas] = useState<Record<string, number>>({});
+  const [feitas, setFeitas] = useState<Record<string, number>>(rascunho?.feitas ?? {});
   const [descansoAte, setDescansoAte] = useState<number | null>(null);
   const [descansoTotal, setDescansoTotal] = useState(60);
   const [agora, setAgora] = useState(() => Date.now());
@@ -86,8 +90,37 @@ export function TreinoPlayer({
   >();
   const [observacao, setObservacao] = useState("");
   // Carga que o aluno realmente usou, por exercício (opcional) — vai para o professor.
-  const [cargasUsadas, setCargasUsadas] = useState<Record<string, string>>({});
+  const [cargasUsadas, setCargasUsadas] = useState<Record<string, string>>(rascunho?.cargasUsadas ?? {});
   const [enviando, setEnviando] = useState(false);
+  const [confirmarSaida, setConfirmarSaida] = useState(false);
+  const saindo = useRef(false);
+
+  // Guarda o progresso a cada série/carga anotada.
+  useEffect(() => {
+    // Sem nenhuma série marcada não há o que guardar.
+    if (Object.keys(feitas).length === 0) return;
+    salvarRascunho({ divisaoId: divisao.id, iniciadoEm, feitas, cargasUsadas });
+  }, [divisao.id, iniciadoEm, feitas, cargasUsadas]);
+
+  // Voltar do Android/navegador pede confirmação em vez de sair do treino.
+  useEffect(() => {
+    history.pushState({ modoTreino: true }, "");
+    const aoVoltar = () => {
+      if (saindo.current) return;
+      history.pushState({ modoTreino: true }, "");
+      setFase("treinando");
+      setConfirmarSaida(true);
+    };
+    window.addEventListener("popstate", aoVoltar);
+    return () => window.removeEventListener("popstate", aoVoltar);
+  }, []);
+
+  function sair(descartar: boolean) {
+    if (descartar) apagarRascunho();
+    saindo.current = true;
+    history.back(); // tira a entrada extra do histórico
+    aoFechar();
+  }
 
   // Relógio único: cronômetro total + contagem do descanso (por timestamp,
   // para não atrasar quando a aba perde o foco). O fim do descanso é
@@ -194,7 +227,7 @@ export function TreinoPlayer({
 
   async function enviar() {
     setEnviando(true);
-    const res = await registrarExecucao({
+    const res = await comRede(registrarExecucao({
       divisao_id: divisao.id,
       nome_divisao: divisao.nome,
       foco_divisao: divisao.foco ?? undefined,
@@ -209,12 +242,12 @@ export function TreinoPlayer({
       })),
       sensacao,
       observacao: observacao.trim() || undefined,
-    });
+    }));
     setEnviando(false);
 
     if (res.ok) {
       toast.success("Treino registrado! Seu professor recebe o retorno.");
-      aoFechar();
+      sair(true);
       router.refresh();
     } else {
       toast.error(res.erro);
@@ -308,6 +341,7 @@ export function TreinoPlayer({
                 </span>
               </p>
               <Textarea
+                aria-label="Recado para o professor (opcional)"
                 value={observacao}
                 onChange={(e) => setObservacao(e.target.value)}
                 placeholder="Ex.: aumentei a carga no leg press para 80 kg."
@@ -318,7 +352,7 @@ export function TreinoPlayer({
               <Button
                 onClick={enviar}
                 loading={enviando}
-                className="mt-6 h-12 w-full bg-gradient-to-r from-[#0090D8] to-[#00A8E4] text-sm font-semibold shadow-[0_8px_24px_rgba(0,144,216,0.4)]"
+                className="mt-6 h-12 w-full bg-gradient-to-r from-cta-de to-cta-ate text-sm font-semibold shadow-[0_8px_24px_rgba(0,144,216,0.4)]"
               >
                 {enviando ? "Enviando…" : "Enviar para o professor"}
               </Button>
@@ -331,7 +365,7 @@ export function TreinoPlayer({
 
   // -------------------------------------------------------------- treinando
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+    <div role="dialog" aria-modal="true" aria-label={`Modo treino · ${divisao.foco || `Treino ${divisao.nome}`}`} className="fixed inset-0 z-50 flex flex-col bg-background">
       {/* Modo treino ocupa a tela toda: some o menu inferior do app. */}
       <style>{"[data-bottom-nav]{display:none}"}</style>
       {/* Cabeçalho fixo: divisão + cronômetro + sair */}
@@ -351,7 +385,7 @@ export function TreinoPlayer({
           <Timer className="size-4 text-[#7dd3fc]" />
           {fmtTempo(duracaoSeg)}
         </span>
-        <AlertDialog>
+        <AlertDialog open={confirmarSaida} onOpenChange={setConfirmarSaida}>
           <AlertDialogTrigger
             render={
               <button
@@ -367,13 +401,13 @@ export function TreinoPlayer({
             <AlertDialogHeader>
               <AlertDialogTitle>Sair do treino?</AlertDialogTitle>
               <AlertDialogDescription>
-                O progresso desta sessão não será salvo. Para registrar o
-                treino, use o botão Finalizar.
+                As séries marcadas ficam guardadas neste aparelho: dá para
+                continuar depois. Para enviar ao professor, use Finalizar.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Continuar treinando</AlertDialogCancel>
-              <AlertDialogAction onClick={aoFechar}>Sair</AlertDialogAction>
+              <AlertDialogAction onClick={() => sair(false)}>Sair</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -382,7 +416,7 @@ export function TreinoPlayer({
       {/* Barra de progresso */}
       <div className="h-1.5 w-full bg-secondary">
         <div
-          className="h-full bg-gradient-to-r from-[#0090D8] to-[#00A8E4] transition-all duration-500"
+          className="h-full bg-gradient-to-r from-cta-de to-cta-ate transition-all duration-500"
           style={{
             width: `${totalExercicios ? (completos / totalExercicios) * 100 : 0}%`,
           }}
@@ -423,7 +457,7 @@ export function TreinoPlayer({
                     >
                       {ex.exercicio?.nome ?? "Exercício"}
                       {ehDaVez ? (
-                        <span className="ml-2 inline-flex items-center rounded-full bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-2 py-0.5 align-middle text-[10px] font-bold text-white uppercase">
+                        <span className="ml-2 inline-flex items-center rounded-full bg-gradient-to-r from-cta-de to-cta-ate px-2 py-0.5 align-middle text-[10px] font-bold text-white uppercase">
                           agora
                         </span>
                       ) : null}
@@ -442,16 +476,11 @@ export function TreinoPlayer({
                         {ex.observacao}
                       </p>
                     ) : null}
-                    {completo && cargasUsadas[ex.id]?.trim() ? (
-                      <p className="mt-1 text-xs font-medium text-emerald-700">
-                        Usou {cargasUsadas[ex.id]!.trim()}
-                      </p>
-                    ) : null}
                   </div>
                 </div>
 
-                {/* Só no exercício da vez: anotar a carga real (opcional). */}
-                {ehDaVez ? (
+                {/* No exercício da vez e nos já feitos: anotar/corrigir a carga real (opcional). */}
+                {ehDaVez || completo ? (
                   <label className="mt-3 flex items-center gap-2 text-sm">
                     <span className="shrink-0 text-muted-foreground">Carga usada <span className="text-xs">(opcional)</span></span>
                     <input
@@ -476,7 +505,7 @@ export function TreinoPlayer({
                         className={cn(
                           "size-2.5 rounded-full transition-colors",
                           i < feitasEx
-                            ? "bg-gradient-to-r from-[#0090D8] to-[#00A8E4]"
+                            ? "bg-gradient-to-r from-cta-de to-cta-ate"
                             : "bg-secondary ring-1 ring-black/10",
                         )}
                       />
@@ -496,7 +525,7 @@ export function TreinoPlayer({
                       }
                       className={cn(
                         "px-4 font-semibold",
-                        ehDaVez && "bg-gradient-to-r from-[#0090D8] to-[#00A8E4]",
+                        ehDaVez && "bg-gradient-to-r from-cta-de to-cta-ate",
                       )}
                     >
                       <Check className="size-4" strokeWidth={3} />
@@ -540,7 +569,7 @@ export function TreinoPlayer({
                   <button
                     type="button"
                     onClick={() => setDescansoAte(null)}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-3 py-2 text-sm font-semibold transition-all hover:-translate-y-0.5"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cta-de to-cta-ate px-3 py-2 text-sm font-semibold transition-all hover:-translate-y-0.5"
                   >
                     <SkipForward className="size-4" />
                     Pular
@@ -570,7 +599,7 @@ export function TreinoPlayer({
           ) : (
             <Button
               onClick={abrirResumo}
-              className="h-12 w-full bg-gradient-to-r from-[#0090D8] to-[#00A8E4] text-sm font-semibold shadow-[0_8px_24px_rgba(0,144,216,0.4)]"
+              className="h-12 w-full bg-gradient-to-r from-cta-de to-cta-ate text-sm font-semibold shadow-[0_8px_24px_rgba(0,144,216,0.4)]"
             >
               Finalizar treino ({completos}/{totalExercicios})
             </Button>

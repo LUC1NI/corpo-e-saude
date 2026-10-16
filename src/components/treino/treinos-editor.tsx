@@ -69,6 +69,7 @@ import type {
   TreinoExercicio,
 } from "@/lib/tipos";
 import { plural } from "@/lib/formato";
+import { comRede } from "@/lib/acoes";
 import { cn } from "@/lib/utils";
 
 // ===========================================================================
@@ -575,7 +576,7 @@ function CelulaEditavel({
     const v = valor.trim();
     if (v === original) return;
     setSalvando(true);
-    const res = await ajustarTreinoExercicio(item.id, alunoId, campo, v);
+    const res = await comRede(ajustarTreinoExercicio(item.id, alunoId, campo, v));
     setSalvando(false);
     if (!res.ok) {
       toast.error(res.erro);

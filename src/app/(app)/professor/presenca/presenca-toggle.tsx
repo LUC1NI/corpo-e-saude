@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { alternarPresenca } from "@/lib/acoes-presenca";
+import { definirPresenca } from "@/lib/acoes-presenca";
+import { comRede } from "@/lib/acoes";
 import { cn } from "@/lib/utils";
 
 export function PresencaToggle({
@@ -34,11 +35,15 @@ export function PresencaToggle({
     setOtimista(null);
   }
   const presenteAgora = otimista ?? presente;
+  const [enviando, setEnviando] = useState(false);
 
   async function alternar() {
+    if (enviando) return;
     const novo = !presenteAgora;
     setOtimista(novo); // feedback imediato
-    const res = await alternarPresenca(alunoId, data, hora, professorId);
+    setEnviando(true);
+    const res = await comRede(definirPresenca(alunoId, data, hora, novo, professorId));
+    setEnviando(false);
     if (!res.ok) {
       setOtimista(null);
       toast.error(res.erro);
@@ -54,16 +59,16 @@ export function PresencaToggle({
     <button
       type="button"
       onClick={alternar}
-      disabled={pending}
+      disabled={pending || enviando}
       aria-pressed={presenteAgora}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-progress",
+        "inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors disabled:cursor-progress sm:min-h-9",
         presenteAgora
           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
           : "bg-background text-muted-foreground hover:bg-muted",
       )}
     >
-      {pending ? (
+      {pending || enviando ? (
         <Loader2 className="size-4 animate-spin" />
       ) : (
         <Check

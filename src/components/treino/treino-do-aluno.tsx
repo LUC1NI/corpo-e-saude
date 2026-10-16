@@ -1,12 +1,18 @@
 "use client";
 
 import { CalendarDays, Play } from "lucide-react";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { MidiaThumb } from "@/components/treino/midia-thumb";
 import { TreinoPlayer } from "@/components/treino/treino-player";
 import { Card } from "@/components/ui/card";
+import { apagarRascunho, CHAVE_RASCUNHO, lerRascunho } from "@/lib/treino-rascunho";
 import { cn } from "@/lib/utils";
+
+const assinarStorage = (aviso: () => void) => {
+  window.addEventListener("storage", aviso);
+  return () => window.removeEventListener("storage", aviso);
+};
 import { DIAS_SEMANA_CURTO, type TreinoComTudo } from "@/lib/tipos";
 
 /** "3×8-10 · 10 kg · 60 s" — a prescrição lida de uma vez. */
@@ -37,6 +43,11 @@ export function TreinoDoAluno({
   const indiceHoje = divisoes.findIndex((d) => d.dias_semana.includes(diaHoje));
   const [sel, setSel] = useState(indiceHoje >= 0 ? indiceHoje : 0);
   const [treinando, setTreinando] = useState(false);
+  // Treino deixado pela metade neste aparelho (lido só no navegador).
+  const rascunhoBruto = useSyncExternalStore(assinarStorage, () => localStorage.getItem(CHAVE_RASCUNHO), () => null);
+  const [descartado, setDescartado] = useState(false);
+  const rascunho = rascunhoBruto && !descartado ? lerRascunho() : null;
+  const divisaoRascunho = rascunho ? divisoes.find((d) => d.id === rascunho.divisaoId) : undefined;
 
   if (divisoes.length === 0) {
     return (
@@ -57,6 +68,34 @@ export function TreinoDoAluno({
 
   return (
     <div className="space-y-4">
+      {divisaoRascunho && !treinando ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          <p className="min-w-0 flex-1 text-sm">
+            <strong>Treino {divisaoRascunho.nome} em andamento.</strong> Suas séries marcadas estão guardadas.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setSel(divisoes.indexOf(divisaoRascunho));
+              setTreinando(true);
+            }}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+          >
+            <Play className="size-4 fill-current" />
+            Continuar
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              apagarRascunho();
+              setDescartado(true);
+            }}
+            className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            Descartar
+          </button>
+        </div>
+      ) : null}
       {/* Abas de divisão */}
       <div className="flex flex-wrap gap-2" role="group" aria-label="Divisões do treino">
         {divisoes.map((d, i) => {
@@ -151,7 +190,7 @@ export function TreinoDoAluno({
           <button
             type="button"
             onClick={() => setTreinando(true)}
-            className="inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#0090D8] to-[#00A8E4] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,144,216,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(0,168,228,0.5)] active:translate-y-0"
+            className="inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-cta-de to-cta-ate text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,144,216,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(0,168,228,0.5)] active:translate-y-0"
           >
             <Play className="size-4.5 fill-current" />
             Iniciar treino {ativa.nome}

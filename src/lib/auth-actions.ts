@@ -199,6 +199,10 @@ export async function redefinirSenhaAction(
     data: { senha_provisoria: false },
   });
   if (error) {
+    // O Supabase recusa repetir a senha atual (inclusive a provisória).
+    if (error.code === "same_password") {
+      return { erro: primeiroAcesso ? "Crie uma senha nova, diferente da provisória." : "A nova senha precisa ser diferente da atual." };
+    }
     return { erro: "Não foi possível atualizar a senha. Tente de novo." };
   }
 

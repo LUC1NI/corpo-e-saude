@@ -311,7 +311,7 @@ export default async function AlunoHome() {
 }
 
 const DESTAQUE =
-  "relative block overflow-hidden rounded-2xl bg-gradient-to-br from-[#0090D8] to-[#00A8E4] p-5 text-white shadow-[0_10px_30px_rgba(0,144,216,0.35)] transition-transform hover:-translate-y-0.5";
+  "relative block overflow-hidden rounded-2xl bg-gradient-to-br from-cta-de to-cta-ate p-5 text-white shadow-[0_10px_30px_rgba(0,144,216,0.35)] transition-transform hover:-translate-y-0.5";
 
 /** Presencial: destaque do próximo treino (dia, hora e professor). */
 function ProximoTreinoCard({ proximo }: { proximo: ProximoTreino | null }) {

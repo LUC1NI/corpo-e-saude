@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { BaixaButton } from "@/app/(app)/admin/financeiro/baixa-button";
+import { DesfazerBaixaButton } from "@/app/(app)/admin/financeiro/desfazer-baixa-button";
 import { ExcluirPagamentoButton } from "@/app/(app)/admin/financeiro/excluir-pagamento-button";
 import { AlunoForm } from "@/app/(app)/admin/alunos/aluno-form";
 import { ExcluirAlunoButton } from "@/app/(app)/admin/alunos/excluir-aluno-button";
@@ -240,7 +241,11 @@ async function AbaFinanceiro({ alunoId, nome, hoje }: { alunoId: string; nome: s
                       <BaixaButton pagamentoId={p.id} aluno={nome} competencia={p.competencia} valor={Number(p.valor)} />
                       <ExcluirPagamentoButton pagamentoId={p.id} />
                     </span>
-                  ) : null}
+                  ) : (
+                    <span className="flex w-full justify-end sm:w-auto">
+                      <DesfazerBaixaButton pagamentoId={p.id} descricao={`A mensalidade de ${formatMesAno(p.competencia)} (${formatBRL(p.valor)})`} />
+                    </span>
+                  )}
                 </li>
               );
             })}

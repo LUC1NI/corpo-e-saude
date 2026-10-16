@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { desfazerBaixa, marcarPagamentoPago } from "@/lib/acoes-financeiro";
 import { formatBRL, formatMesAno } from "@/lib/formato";
 import { FORMAS_PAGAMENTO } from "@/lib/schemas";
+import { comRede } from "@/lib/acoes";
 import { cn } from "@/lib/utils";
 
 /** Data de hoje (yyyy-MM-dd) no fuso do estúdio, no navegador. */
@@ -54,7 +55,7 @@ export function BaixaButton({
   const primeiroNome = aluno.split(" ")[0];
 
   async function desfazer() {
-    const res = await desfazerBaixa(pagamentoId);
+    const res = await comRede(desfazerBaixa(pagamentoId));
     if (res.ok) {
       toast.success("Baixa desfeita.");
       router.refresh();
@@ -65,7 +66,7 @@ export function BaixaButton({
 
   async function baixar(forma?: (typeof FORMAS_PAGAMENTO)[number]) {
     setFormaEmCurso(forma ?? "__sem__");
-    const res = await marcarPagamentoPago({ pagamentoId, forma, data });
+    const res = await comRede(marcarPagamentoPago({ pagamentoId, forma, data }));
     setFormaEmCurso(null);
     if (!res.ok) {
       toast.error(res.erro);

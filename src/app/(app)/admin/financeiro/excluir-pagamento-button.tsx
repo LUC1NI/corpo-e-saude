@@ -41,9 +41,9 @@ export function ExcluirPagamentoButton({
   return (
     <AlertDialog>
       <AlertDialogTrigger
-        aria-label="Excluir cobrança"
+        aria-label="Excluir mensalidade"
         disabled={carregando}
-        className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+        className="inline-flex size-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 sm:size-8 hover:text-destructive disabled:opacity-50"
       >
         <Trash2 className="size-4" />
       </AlertDialogTrigger>

@@ -465,51 +465,39 @@ export async function marcarTodosPresentes(
 }
 
 /**
- * Alterna a presença de um aluno em uma data (e opcionalmente um horário):
- * cria se não existir, remove se já existir. Base do roster diário. Funciona
- * para qualquer data (inclusive retroativa). Admin informa o `professorId`
- * da aula; professor usa a própria carteira.
+ * Define a presença de um aluno numa data (e opcionalmente num horário):
+ * `presente` true cria se faltar, false remove se existir. Definir (e não
+ * alternar) torna o toque idempotente: toque duplo ou dono e professor
+ * marcando a mesma aula não desfazem um ao outro. Vale para qualquer data.
+ * Admin informa o `professorId` da aula; professor usa a própria carteira.
  */
-export async function alternarPresenca(
+export async function definirPresenca(
   alunoId: string,
   data: string,
   hora: string | null,
+  presente: boolean,
   professorId: string | null = null,
 ): Promise<ResultadoAcao<{ presente: boolean }>> {
   const usuario = await assertPapel(["professor", "admin"]);
-  if (!entradaPresenca.safeParse({ alunoId, data, hora, professorId }).success) return falha("Dados inválidos.");
+  if (!entradaPresenca.safeParse({ alunoId, data, hora, professorId }).success || typeof presente !== "boolean") {
+    return falha("Dados inválidos.");
+  }
   const profId = await resolverProfessorPresenca(usuario.papel, professorId);
   if (!profId) return falha("Professor não encontrado.");
 
   const supabase = await createClient();
-
-  let consulta = supabase
-    .from("presencas")
-    .select("id")
-    .eq("aluno_id", alunoId)
-    .eq("data", data)
-    .eq("professor_id", profId);
+  let consulta = supabase.from("presencas").select("id").eq("aluno_id", alunoId).eq("data", data).eq("professor_id", profId);
   consulta = hora ? consulta.eq("hora", hora) : consulta.is("hora", null);
-
   const { data: existente } = await consulta.maybeSingle();
 
-  if (existente) {
-    const { error } = await supabase
-      .from("presencas")
-      .delete()
-      .eq("id", existente.id);
+  if (presente && !existente) {
+    const { error } = await supabase.from("presencas").insert({ aluno_id: alunoId, professor_id: profId, data, hora });
+    // 23505 = outra pessoa marcou no mesmo instante: o resultado desejado já vale.
+    if (error && error.code !== "23505") return falha("Não foi possível registrar a presença.");
+  } else if (!presente && existente) {
+    const { error } = await supabase.from("presencas").delete().eq("id", existente.id);
     if (error) return falha("Não foi possível atualizar a presença.");
-    revalidarPresenca();
-    return sucesso({ presente: false });
   }
-
-  const { error } = await supabase.from("presencas").insert({
-    aluno_id: alunoId,
-    professor_id: profId,
-    data,
-    hora,
-  });
-  if (error) return falha("Não foi possível registrar a presença.");
   revalidarPresenca();
-  return sucesso({ presente: true });
+  return sucesso({ presente });
 }

@@ -65,7 +65,7 @@ export function PagamentoPix({
     txid: "MENSALIDADE",
   });
   const linkComprovante = `https://wa.me/${WHATSAPP_PRINCIPAL}?text=${encodeURIComponent(
-    `Olá, Juliano! ${aluno ? `Sou ${aluno} e ` : ""}acabei de pagar ${descricao} (${formatBRL(valor)}) via Pix. Segue o comprovante.`,
+    `Olá! ${aluno ? `Sou ${aluno} e ` : ""}acabei de pagar ${descricao} (${formatBRL(valor)}) via Pix. Segue o comprovante.`,
   )}`;
 
   function marcarEnviado() {
@@ -170,7 +170,7 @@ export function PagamentoPix({
             </span>
             <div className="min-w-0 flex-1 space-y-2">
               <p className="text-sm font-medium">
-                Envie o comprovante ao Juliano — não esqueça! É assim que sua
+                Envie o comprovante ao estúdio — não esqueça! É assim que sua
                 mensalidade é confirmada.
               </p>
               <a

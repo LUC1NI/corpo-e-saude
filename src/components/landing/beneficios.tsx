@@ -71,7 +71,7 @@ export function Beneficios() {
               href={WHATSAPP_LINK}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-6 inline-flex h-12 items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-7 text-sm font-semibold text-white shadow-[0_8px_28px_rgba(0,144,216,0.55)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(0,168,228,0.6)] active:translate-y-0"
+              className="mt-6 inline-flex h-12 items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-cta-de to-cta-ate px-7 text-sm font-semibold text-white shadow-[0_8px_28px_rgba(0,144,216,0.55)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(0,168,228,0.6)] active:translate-y-0"
             >
               <IconeWhatsApp className="size-4.5" />
               Venha treinar conosco
@@ -101,7 +101,7 @@ export function Beneficios() {
           <span className="animar-flutuar absolute -top-4 -left-2 rounded-full bg-white px-4 py-2 text-xs font-bold text-[#033373] shadow-xl [animation:flutuar_6s_ease-in-out_infinite] sm:-left-6">
             + saúde
           </span>
-          <span className="animar-flutuar absolute -right-2 -bottom-4 rounded-full bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-4 py-2 text-xs font-bold text-white shadow-xl [animation:flutuar_7s_ease-in-out_1s_infinite] sm:-right-6">
+          <span className="animar-flutuar absolute -right-2 -bottom-4 rounded-full bg-gradient-to-r from-cta-de to-cta-ate px-4 py-2 text-xs font-bold text-white shadow-xl [animation:flutuar_7s_ease-in-out_1s_infinite] sm:-right-6">
             + autoestima
           </span>
         </Revelar>

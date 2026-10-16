@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CampoForm } from "@/components/ui-extra/campo-form";
+import { comRede } from "@/lib/acoes";
 import { criarDespesa } from "@/lib/acoes-financeiro";
 import { hojeISO } from "@/lib/financeiro";
 
@@ -33,13 +34,18 @@ export function DespesaForm({
   const [salvando, setSalvando] = useState(false);
 
   async function lancar() {
+    // Sem categoria a despesa some dos relatórios por tipo: obrigamos escolher.
+    if (categoriaId === SEM_CATEGORIA) {
+      toast.error("Escolha a categoria da despesa.");
+      return;
+    }
     setSalvando(true);
-    const res = await criarDespesa({
+    const res = await comRede(criarDespesa({
       descricao,
       categoria_id: categoriaId === SEM_CATEGORIA ? undefined : categoriaId,
       valor,
       data,
-    });
+    }));
     setSalvando(false);
     if (res.ok) {
       toast.success("Despesa lançada.");
@@ -63,20 +69,19 @@ export function DespesaForm({
           placeholder="Ex.: Aluguel de junho"
         />
       </CampoForm>
-      <CampoForm label="Categoria">
+      <CampoForm label="Categoria" htmlFor="cat" obrigatorio>
         <Select
           value={categoriaId}
           onValueChange={(v) => setCategoriaId(v ?? SEM_CATEGORIA)}
           items={{
-            [SEM_CATEGORIA]: "Sem categoria",
+            [SEM_CATEGORIA]: "Escolha…",
             ...Object.fromEntries(categorias.map((c) => [c.id, c.nome])),
           }}
         >
-          <SelectTrigger className="w-40">
+          <SelectTrigger id="cat" className="w-full sm:w-44">
             <SelectValue placeholder="Categoria" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={SEM_CATEGORIA}>Sem categoria</SelectItem>
             {categorias.map((c) => (
               <SelectItem key={c.id} value={c.id}>
                 {c.nome}

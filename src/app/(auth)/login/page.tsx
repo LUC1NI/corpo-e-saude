@@ -38,7 +38,7 @@ export default async function LoginPage({
   const { erro } = await searchParams;
   const mensagemInicial =
     erro === "inativo"
-      ? "Sua conta está inativa. Fale com o studio."
+      ? "Sua conta está inativa. Fale com o estúdio."
       : erro === "link"
         ? "Link inválido ou expirado. Tente novamente."
         : undefined;
@@ -132,7 +132,7 @@ export default async function LoginPage({
               href={WHATSAPP_LINK}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-4 text-sm font-semibold text-white shadow-[0_6px_20px_rgba(0,144,216,0.5)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,168,228,0.6)] active:translate-y-0"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-cta-de to-cta-ate px-4 text-sm font-semibold text-white shadow-[0_6px_20px_rgba(0,144,216,0.5)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,168,228,0.6)] active:translate-y-0"
             >
               <IconeWhatsApp className="size-4" />
               Agendar pelo WhatsApp
@@ -182,9 +182,9 @@ export default async function LoginPage({
         <div className="relative flex flex-1 flex-col items-center justify-center py-10">
           <div className="w-full max-w-sm">
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-              Bem-vindo de{" "}
+              Entre na sua{" "}
               <span className="bg-gradient-to-r from-[#0090D8] to-[#033373] bg-clip-text text-transparent">
-                volta!
+                conta
               </span>
             </h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
@@ -211,7 +211,7 @@ export default async function LoginPage({
                 href={WHATSAPP_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-4 text-sm font-semibold text-white shadow-[0_6px_20px_rgba(0,144,216,0.4)] transition-all hover:-translate-y-0.5 active:translate-y-0"
+                className="relative mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-cta-de to-cta-ate px-4 text-sm font-semibold text-white shadow-[0_6px_20px_rgba(0,144,216,0.4)] transition-all hover:-translate-y-0.5 active:translate-y-0"
               >
                 <IconeWhatsApp className="size-4" />
                 Agendar pelo WhatsApp

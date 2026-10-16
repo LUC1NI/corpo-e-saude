@@ -8,8 +8,8 @@ const TAMANHOS = {
 } as const;
 
 /**
- * Avatar circular com as iniciais do nome. Cor de fundo determinística
- * (derivada do nome) dentro da paleta da marca.
+ * Avatar circular com as iniciais do nome. Cor determinística (derivada do nome)
+ * numa paleta clara, com as iniciais em tom escuro (contraste AA).
  */
 export function AvatarIniciais({
   nome,
@@ -20,11 +20,14 @@ export function AvatarIniciais({
   tamanho?: keyof typeof TAMANHOS;
   className?: string;
 }) {
+  // Tons claros com iniciais em navy: legível e sem competir com os botões.
   const cores = [
-    "bg-[#0090D8]",
-    "bg-brand-navy",
-    "bg-[#00A8E4]",
-    "bg-[#0a3f86]",
+    "bg-[#E6F5FC] text-brand-navy",
+    "bg-[#E8EEF8] text-brand-navy",
+    "bg-[#E8F7EF] text-[#15603A]",
+    "bg-[#FFF3E0] text-[#8A4B08]",
+    "bg-[#F1ECFB] text-[#4B2E83]",
+    "bg-[#FDECEC] text-[#8E1F1F]",
   ];
   let soma = 0;
   for (const ch of nome) soma += ch.charCodeAt(0);
@@ -34,7 +37,7 @@ export function AvatarIniciais({
     <span
       aria-hidden
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white",
+        "inline-flex shrink-0 items-center justify-center rounded-full font-semibold",
         TAMANHOS[tamanho],
         cor,
         className,

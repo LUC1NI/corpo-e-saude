@@ -38,7 +38,7 @@ export function Rodape() {
               href={WHATSAPP_LINK}
               target="_blank"
               rel="noopener noreferrer"
-              className="relative inline-flex h-12 shrink-0 items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#0090D8] to-[#00A8E4] px-6 text-sm font-semibold text-white shadow-[0_8px_28px_rgba(0,144,216,0.55)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(0,168,228,0.6)] active:translate-y-0"
+              className="relative inline-flex h-12 shrink-0 items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-cta-de to-cta-ate px-6 text-sm font-semibold text-white shadow-[0_8px_28px_rgba(0,144,216,0.55)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(0,168,228,0.6)] active:translate-y-0"
             >
               <IconeWhatsApp className="size-4.5" />
               Falar no WhatsApp

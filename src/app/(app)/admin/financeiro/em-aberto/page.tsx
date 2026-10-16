@@ -96,7 +96,7 @@ export default async function EmAbertoPage() {
                 </CardTitle>
                 <CardDescription>Priorize a cobrança. O valor soma todos os meses em aberto do aluno.</CardDescription>
               </CardHeader>
-              <ReceberPorAluno grupos={gruposAtrasados} hoje={hoje} className="border-t" permitirExcluir />
+              <ReceberPorAluno grupos={gruposAtrasados} hoje={hoje} className="border-t" />
             </Card>
           ) : null}
 
@@ -109,7 +109,7 @@ export default async function EmAbertoPage() {
                 </CardTitle>
                 <CardDescription>Dentro do prazo. Dá para confirmar antecipado se o aluno já pagou.</CardDescription>
               </CardHeader>
-              <ReceberPorAluno grupos={gruposEmDia} hoje={hoje} className="border-t" permitirExcluir />
+              <ReceberPorAluno grupos={gruposEmDia} hoje={hoje} className="border-t" />
             </Card>
           ) : null}
         </div>

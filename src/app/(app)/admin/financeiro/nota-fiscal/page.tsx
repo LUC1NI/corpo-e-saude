@@ -11,7 +11,6 @@ import { carregarConfigFiscal } from "@/lib/nfse/servico";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
-import { NavFinanceiro } from "../nav-financeiro";
 import { SeloNota, type NotaResumo } from "../nota-acoes";
 import { resolverMes } from "../periodo";
 import { SeletorMes } from "../seletor-mes";
@@ -62,7 +61,6 @@ export default async function NotaFiscalPage({
         titulo="Nota fiscal"
         subtitulo="Configuração da NFS-e e relatório mensal para o contador."
       />
-      <NavFinanceiro ativa="/admin/financeiro/nota-fiscal" />
 
       <div
         role="status"

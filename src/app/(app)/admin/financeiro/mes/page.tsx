@@ -132,26 +132,25 @@ export default async function RelatorioMesPage({
     <>
       <PageHeader
         titulo="Relatório do mês"
-        subtitulo="Previsto, recebido, despesas e resultado — mês a mês."
         acoes={<SeletorMes periodo={periodo} base="/admin/financeiro/mes" />}
       />
       <NavFinanceiro ativa="/admin/financeiro/mes" />
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
-          titulo="Recebido no mês"
+          titulo="Entrou no caixa"
           valor={formatBRL(recebidoMes)}
           icone={CheckCircle2}
           tomIcone="sucesso"
-          rodape="Dinheiro que entrou no caixa"
+          rodape="Pagamentos recebidos no mês"
           href={`/admin/financeiro/recebimentos?mes=${periodo.chave}`}
         />
         <StatCard
-          titulo="Previsto no mês"
+          titulo="Mensalidades do mês"
           valor={formatBRL(previsto)}
           icone={TrendingUp}
           tomIcone="primary"
-          rodape={`${formatBRL(pago)} recebido · ${formatBRL(aberto)} em aberto`}
+          rodape={`${formatBRL(pago)} pagas · ${formatBRL(aberto)} em aberto`}
         />
         <StatCard
           titulo="Despesas do mês"
@@ -165,7 +164,7 @@ export default async function RelatorioMesPage({
           valor={formatBRL(resultado)}
           icone={Wallet}
           tomIcone={resultado >= 0 ? "sucesso" : "perigo"}
-          rodape="Recebido − despesas"
+          rodape="Entrou no caixa − despesas"
           tomRodape={resultado >= 0 ? "sucesso" : "perigo"}
         />
       </div>
@@ -176,7 +175,7 @@ export default async function RelatorioMesPage({
           <CardHeader>
             <CardTitle>Evolução do caixa</CardTitle>
             <CardDescription>
-              Recebido × despesas nos últimos {MESES_GRAFICO} meses.
+              Entradas × despesas nos últimos {MESES_GRAFICO} meses.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -197,7 +196,7 @@ export default async function RelatorioMesPage({
             <div className="space-y-3">
               <div className="flex items-end justify-between gap-3">
                 <div>
-                  <p className="text-xs text-muted-foreground">Já recebido</p>
+                  <p className="text-xs text-muted-foreground">Já pago</p>
                   <p className="text-xl font-bold text-emerald-600">
                     {formatBRL(pago)}
                   </p>
@@ -216,7 +215,7 @@ export default async function RelatorioMesPage({
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                {pctRecebido}% do previsto já foi recebido.
+                {pctRecebido}% das mensalidades do mês já foi pago.
               </p>
             </div>
 

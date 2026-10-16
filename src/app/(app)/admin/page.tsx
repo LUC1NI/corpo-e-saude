@@ -167,7 +167,7 @@ export default async function AdminInicio() {
             <p className="text-sm text-muted-foreground">{pct}% de {formatBRL(previsto)} previsto</p>
           </Card>
         </Link>
-        <Link href="/admin/financeiro/inadimplentes">
+        <Link href="/admin/financeiro/em-aberto">
           <Card className={cn("h-full gap-1 p-4 transition-shadow hover:shadow-md", totalAtraso > 0 && "border-red-200 bg-red-50/60")}>
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground"><AlertTriangle className="size-4 text-red-600" />Em atraso</p>
             <p className={cn("font-heading text-xl font-bold whitespace-nowrap tabular-nums sm:text-2xl", totalAtraso > 0 && "text-red-700")}>{formatBRL(totalAtraso)}</p>

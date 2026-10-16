@@ -140,7 +140,7 @@ export function GerenciarAula({
           tomOcupacao(n, capacidade),
         )}
       >
-        {n === 0 ? "Vazio" : contagem}
+        {n === 0 ? "Vazia" : contagem}
         {mostrarIniciais && n > 0 ? (
           <span className="hidden items-center gap-0.5 font-medium opacity-80 lg:inline-flex">
             · {nomesTurma.slice(0, 3).map(iniciais).join(" ")}

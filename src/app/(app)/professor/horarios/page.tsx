@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
+import { NavAgenda } from "@/components/presenca/nav-agenda";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { requireUsuario } from "@/lib/auth";
 import { hojeISO } from "@/lib/financeiro";
@@ -31,7 +32,7 @@ export default async function HorariosPage() {
   if (!professor) {
     return (
       <>
-        <PageHeader titulo="Horários" />
+        <PageHeader titulo="Agenda" />
         <PageEmpty
           icone={Clock}
           titulo="Perfil de professor não encontrado"
@@ -108,10 +109,11 @@ export default async function HorariosPage() {
   return (
     <>
       <PageHeader
-        titulo="Horários"
-        subtitulo="Sua grade da semana e os alunos de cada aula. Toque numa aula para gerenciar."
+        titulo="Agenda"
+        subtitulo="Toque numa aula para ver ou trocar os alunos."
         acoes={<AdicionarHorarioProf diaInicial={diaHoje} />}
       />
+      <NavAgenda papel="professor" ativa="grade" />
 
       {faixas.length === 0 ? (
         <Card>
@@ -253,10 +255,7 @@ export default async function HorariosPage() {
       )}
 
       <p className="mt-3 text-xs text-muted-foreground">
-        <span className="font-medium text-emerald-700">Livre</span> = sem alunos
-        · <span className="font-medium text-sky-700">N/cap</span> = alunos
-        agendados · <span className="font-medium text-amber-700">cheio</span> ao
-        atingir a capacidade · toque numa aula para atribuir alunos ou removê-la.
+        Vazia = sem alunos · 2/4 = 2 alunos de 4 vagas.
       </p>
     </>
   );

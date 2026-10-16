@@ -3,15 +3,10 @@ import { buttonVariants } from "@/components/ui/button";
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 import Link from "@/components/ui-extra/link";
 import { linkCobranca, type GrupoCobranca } from "@/lib/cobranca";
-import { formatBRL, formatDiaMes } from "@/lib/formato";
+import { formatBRL, formatDiaMes, formatMesExtenso } from "@/lib/formato";
 import { cn } from "@/lib/utils";
 
 import { BaixaButton } from "./baixa-button";
-import { ExcluirPagamentoButton } from "./excluir-pagamento-button";
-
-const fmtMesLongo = new Intl.DateTimeFormat("pt-BR", { month: "long", timeZone: "UTC" });
-/** "2026-10-01" → "outubro". */
-const mesPorExtenso = (competencia: string) => fmtMesLongo.format(new Date(`${competencia.slice(0, 10)}T00:00:00Z`));
 
 /**
  * Lista "a receber" com uma linha por aluno: quanto deve, desde quando,
@@ -23,14 +18,11 @@ export function ReceberPorAluno({
   hoje,
   className,
   itemClassName,
-  permitirExcluir = false,
 }: {
   grupos: GrupoCobranca[];
   hoje: string;
   className?: string;
   itemClassName?: (indice: number) => string | undefined;
-  /** Mostra a lixeira da cobrança mais antiga (cobrança gerada por engano). */
-  permitirExcluir?: boolean;
 }) {
   return (
     <ul className={cn("divide-y", className)}>
@@ -67,20 +59,19 @@ export function ReceberPorAluno({
                 href={linkCobranca(g.nome, g.telefone, g.atrasado ? g.vencidos : g.itens)}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`Lembrar ${g.nome} pelo WhatsApp`}
-                className={cn(buttonVariants({ variant: "outline", size: "sm" }), "text-emerald-700")}
+                aria-label={`Cobrar ${g.nome} pelo WhatsApp`}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
               >
-                <IconeWhatsApp className="size-4" />
-                Lembrar
+                <IconeWhatsApp className="size-4 text-[#25D366]" />
+                Cobrar
               </a>
               <BaixaButton
                 pagamentoId={primeira.id}
                 aluno={g.nome}
                 competencia={primeira.competencia}
                 valor={Number(primeira.valor)}
-                rotulo={meses > 1 ? `Recebi ${mesPorExtenso(primeira.competencia)}` : undefined}
+                rotulo={`Recebi ${formatBRL(Number(primeira.valor))}${meses > 1 ? ` · ${formatMesExtenso(primeira.competencia).slice(0, 3)}` : ""}`}
               />
-              {permitirExcluir ? <ExcluirPagamentoButton pagamentoId={primeira.id} /> : null}
             </div>
           </li>
         );

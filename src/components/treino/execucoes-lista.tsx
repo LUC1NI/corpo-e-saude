@@ -74,7 +74,7 @@ export function ExecucoesLista({
               <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
                 {e.nome_divisao}
               </span>
-              <div className="min-w-0 flex-1 leading-tight">
+              <div className="min-w-0 flex-1 basis-44 leading-tight">
                 <p className="text-sm font-semibold">
                   {e.foco_divisao || `Treino ${e.nome_divisao}`}
                 </p>

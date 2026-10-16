@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { GerenciarAula } from "@/components/horarios/gerenciar-aula";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
+import { NavAgenda } from "@/components/presenca/nav-agenda";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { requireUsuario } from "@/lib/auth";
 import { hojeISO } from "@/lib/financeiro";
@@ -111,8 +112,8 @@ export default async function AdminHorariosPage({
   return (
     <>
       <PageHeader
-        titulo="Grade de horários"
-        subtitulo="Quantos alunos em cada aula, por professor."
+        titulo="Agenda"
+        subtitulo="Toque numa aula para incluir ou tirar alunos."
         acoes={
           professores.length > 0 ? (
             <AdicionarHorario
@@ -123,6 +124,7 @@ export default async function AdminHorariosPage({
           ) : undefined
         }
       />
+      <NavAgenda papel="admin" ativa="grade" />
 
       {/* Seletor de dia — 7 colunas iguais, com ponto indicando "hoje" */}
       <div className="mb-5 grid grid-cols-7 gap-1.5">
@@ -220,9 +222,6 @@ export default async function AdminHorariosPage({
         </Card>
       )}
 
-      <p className="mt-3 text-sm text-muted-foreground">
-        Toque numa aula para incluir ou tirar alunos.
-      </p>
     </>
   );
 }

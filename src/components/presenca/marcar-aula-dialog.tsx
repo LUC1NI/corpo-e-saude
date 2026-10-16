@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck } from "lucide-react";
+import { CalendarCheck, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 
-import { PresencaToggle } from "../../professor/presenca/presenca-toggle";
+import { MarcarTodos } from "@/app/(app)/professor/presenca/marcar-todos";
+import { PresencaToggle } from "@/app/(app)/professor/presenca/presenca-toggle";
+import { cn } from "@/lib/utils";
 
 /**
  * Diálogo do admin para marcar presença de uma aula (de qualquer dia, inclusive
@@ -40,14 +42,15 @@ export function MarcarAulaDialog({
 }) {
   const [aberto, setAberto] = useState(false);
   const presentesSet = new Set(presentes);
+  const feita = alunos.length > 0 && alunos.every((a) => presentesSet.has(a.id));
 
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger
         render={
-          <Button variant="outline" size="sm" className="w-full">
-            <CalendarCheck className="size-4" />
-            Marcar presença
+          <Button variant={feita ? "ghost" : "outline"} size="sm" className={cn("min-h-11 sm:min-h-8", feita && "text-emerald-700")}>
+            {feita ? <CheckCircle2 className="size-4" /> : <CalendarCheck className="size-4" />}
+            {feita ? "Chamada feita" : "Fazer chamada"}
           </Button>
         }
       />
@@ -55,17 +58,17 @@ export function MarcarAulaDialog({
         <DialogHeader>
           <DialogTitle>Presença · {rotuloHorario}</DialogTitle>
           <DialogDescription>
-            {professorNome} · marque quem compareceu. Vale para qualquer dia,
-            mesmo depois do horário.
+            {professorNome} · toque em quem veio.
           </DialogDescription>
         </DialogHeader>
 
         {alunos.length === 0 ? (
           <p className="py-4 text-sm text-muted-foreground">
-            Nenhum aluno agendado nesta aula. Atribua alunos ao horário na grade
-            do professor.
+            Nenhum aluno nesta aula. Inclua alunos tocando na aula em Horários.
           </p>
         ) : (
+          <>
+          <MarcarTodos alunoIds={alunos.filter((a) => !presentesSet.has(a.id)).map((a) => a.id)} data={data} hora={hora} professorId={professorId} />
           <ul className="max-h-72 divide-y overflow-y-auto rounded-lg border">
             {alunos.map((a) => (
               <li
@@ -86,6 +89,7 @@ export function MarcarAulaDialog({
               </li>
             ))}
           </ul>
+          </>
         )}
       </DialogContent>
     </Dialog>

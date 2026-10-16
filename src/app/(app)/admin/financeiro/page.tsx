@@ -17,20 +17,17 @@ import { StatCard } from "@/components/ui-extra/stat-card";
 import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { requireUsuario } from "@/lib/auth";
 import { agruparPorAluno, type CobrancaAberta } from "@/lib/cobranca";
-import { formatBRL, formatData, plural } from "@/lib/formato";
+import { formatBRL, formatData, formatMesExtenso, plural } from "@/lib/formato";
 import { hojeISO } from "@/lib/financeiro";
 import { executarRenovacao } from "@/lib/renovacao";
 import { createClient } from "@/lib/supabase/server";
 import { exigir } from "@/lib/utils";
 import type { StatusPagamento as TStatusPagamento } from "@/lib/tipos";
-import Link from "@/components/ui-extra/link";
 import { addDays, format, parseISO } from "date-fns";
-import { ArrowRight } from "lucide-react";
 
 import { DespesaForm } from "./despesa-form";
 import { ExcluirDespesaButton } from "./excluir-despesa-button";
 import { NavFinanceiro } from "./nav-financeiro";
-import { ReceberPorAluno } from "./receber-por-aluno";
 
 interface DespesaItem {
   id: string;
@@ -116,25 +113,24 @@ export default async function FinanceiroPage() {
     <>
       <PageHeader
         titulo="Financeiro"
-        subtitulo="Visão geral do caixa. Toque em um indicador para abrir o detalhe."
       />
       <NavFinanceiro ativa="/admin/financeiro" />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
-          titulo="Recebido no mês"
+          titulo="Entrou no caixa"
           valor={formatBRL(recebidoMes)}
           icone={CheckCircle2}
           tomIcone="sucesso"
-          rodape="Dinheiro que entrou no caixa"
+          rodape="Pagamentos recebidos neste mês"
           href="/admin/financeiro/recebimentos"
         />
         <StatCard
-          titulo="Previsto no mês"
+          titulo={`Mensalidades de ${formatMesExtenso(inicioMes)}`}
           valor={formatBRL(previstoMes)}
           icone={TrendingUp}
           tomIcone="primary"
-          rodape={`${formatBRL(pagoDoMes)} recebido · ${formatBRL(abertoDoMes)} em aberto`}
+          rodape={`${formatBRL(pagoDoMes)} pagas · ${formatBRL(abertoDoMes)} em aberto`}
           href="/admin/financeiro/mes"
         />
         <StatCard
@@ -142,37 +138,24 @@ export default async function FinanceiroPage() {
           valor={formatBRL(totalAberto)}
           icone={Wallet}
           tomIcone="alerta"
-          rodape={plural(abertos.length, "cobrança em aberto", "cobranças em aberto")}
+          rodape={plural(abertos.length, "mensalidade", "mensalidades")}
           href="/admin/financeiro/em-aberto"
         />
         <StatCard
-          titulo="Inadimplentes"
+          titulo="Atrasados"
           valor={String(inadimplentes)}
           icone={AlertTriangle}
           tomIcone="perigo"
           rodape={
             inadimplentes > 0
-              ? "Alunos com mensalidade vencida"
+              ? plural(inadimplentes, "aluno devendo", "alunos devendo")
               : "Nenhum aluno em atraso 🎉"
           }
           tomRodape={inadimplentes > 0 ? "perigo" : "sucesso"}
-          href="/admin/financeiro/inadimplentes"
+          href="/admin/financeiro/em-aberto"
         />
       </div>
 
-      <Card className="mt-6 gap-0 overflow-hidden p-0">
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <CardTitle>A receber</CardTitle>
-          <Link href="/admin/financeiro/em-aberto" className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary sm:min-h-0">
-            Ver tudo em aberto <ArrowRight className="size-4" />
-          </Link>
-        </div>
-        {aReceber.length === 0 ? (
-          <p className="px-5 pb-5 text-muted-foreground">Nada atrasado nem vencendo nos próximos 7 dias. ✓</p>
-        ) : (
-          <ReceberPorAluno grupos={aReceber} hoje={hoje} className="border-t" />
-        )}
-      </Card>
 
       <Card id="despesa" className="mt-6 scroll-mt-20">
         <CardHeader>
@@ -180,7 +163,7 @@ export default async function FinanceiroPage() {
           <CardDescription>
             {despesas.length > 0
               ? `${formatBRL(totalDespesasMes)} em ${plural(despesas.length, "lançamento", "lançamentos")}.`
-              : "Lance as despesas do studio para acompanhar o resultado do mês."}
+              : "Lance as despesas do estúdio para acompanhar o resultado do mês."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">

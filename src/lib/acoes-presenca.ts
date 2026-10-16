@@ -464,69 +464,6 @@ export async function marcarTodosPresentes(
   return sucesso();
 }
 
-export async function marcarPresenca(
-  alunoId: string,
-  data: string,
-  hora: string | null,
-  professorId: string | null = null,
-): Promise<ResultadoAcao> {
-  const usuario = await assertPapel(["professor", "admin"]);
-  if (!entradaPresenca.safeParse({ alunoId, data, hora, professorId }).success) return falha("Dados inválidos.");
-  const profId = await resolverProfessorPresenca(usuario.papel, professorId);
-  if (!profId) return falha("Professor não encontrado.");
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("presencas").insert({
-    aluno_id: alunoId,
-    professor_id: profId,
-    data,
-    hora,
-  });
-  if (error) return falha("Não foi possível registrar a presença.");
-
-  revalidarPresenca();
-  return sucesso();
-}
-
-export async function removerPresenca(id: string): Promise<ResultadoAcao> {
-  await assertPapel(["professor", "admin"]);
-  const supabase = await createClient();
-  const { error } = await supabase.from("presencas").delete().eq("id", id);
-  if (error) return falha("Não foi possível remover a presença.");
-
-  revalidarPresenca();
-  return sucesso();
-}
-
-/**
- * Corrige uma presença já registrada: muda a data e/ou o horário (null =
- * sem horário). O RLS garante que só o professor responsável (ou o admin)
- * edita, e o índice único impede duplicar o mesmo aluno no mesmo dia/horário.
- */
-export async function atualizarPresenca(
-  id: string,
-  data: string,
-  hora: string | null,
-): Promise<ResultadoAcao> {
-  await assertPapel(["professor", "admin"]);
-  if (!data) return falha("Informe a data.");
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("presencas")
-    .update({ data, hora: hora || null })
-    .eq("id", id);
-  if (error) {
-    if (error.code === "23505") {
-      return falha("Já existe presença desse aluno nesse dia/horário.");
-    }
-    return falha("Não foi possível atualizar a presença.");
-  }
-
-  revalidarPresenca();
-  return sucesso();
-}
-
 /**
  * Alterna a presença de um aluno em uma data (e opcionalmente um horário):
  * cria se não existir, remove se já existir. Base do roster diário. Funciona

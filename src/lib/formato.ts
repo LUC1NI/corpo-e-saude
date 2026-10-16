@@ -73,6 +73,16 @@ export function formatMesAno(data: Date | string): string {
   return `${MESES_CURTOS[d.getMonth()]}/${d.getFullYear()}`;
 }
 
+const MESES_LONGOS = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+
+/** Mês por extenso: "2026-10-01" → "outubro". */
+export function formatMesExtenso(data: Date | string): string {
+  return MESES_LONGOS[paraData(data).getMonth()]!;
+}
+
 /**
  * Texto digitado no padrão brasileiro → string numérica que o Zod entende.
  * "1.234,56" → "1234.56" · "R$ 2.500" → "2500" · "72,5" → "72.5" · "1.70" → "1.70".

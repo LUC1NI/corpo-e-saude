@@ -25,7 +25,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { CampoForm } from "@/components/ui-extra/campo-form";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { StatusBadge } from "@/components/ui-extra/status-badge";
-import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { InputSugestoes } from "@/components/ui-extra/input-sugestoes";
 import { BotaoExcluir } from "@/components/treino/botao-excluir";
 import { MidiaThumb } from "@/components/treino/midia-thumb";
@@ -607,11 +606,20 @@ function CelulaEditavel({
       placeholder="-"
       className={cn(
         "h-11 rounded-md border border-input/60 bg-background px-2 text-base tabular-nums transition-colors hover:border-input focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 sm:h-9 sm:text-sm",
-        campo === "series" ? "w-12" : "w-24",
+        "w-full",
       )}
     />
   );
 }
+
+/** Colunas da prescrição (desktop): nome · séries · reps · carga · descanso · ações. */
+const GRADE_EXERCICIO = "sm:grid-cols-[minmax(0,1fr)_4rem_6.5rem_6.5rem_6.5rem_4.5rem]";
+const CAMPOS_INLINE: [CampoInline, string, string][] = [
+  ["series", "Séries", "Séries"],
+  ["repeticoes", "Repetições", "Reps"],
+  ["carga", "Carga", "Carga"],
+  ["descanso", "Descanso", "Descanso"],
+];
 
 // ===========================================================================
 // Bloco de uma divisão (tabela de exercícios)
@@ -626,10 +634,10 @@ function DivisaoBloco({
   exercicios: Exercicio[];
 }) {
   return (
-    <div className="rounded-lg border">
-      <div className="flex items-center justify-between gap-2 border-b bg-secondary/40 px-4 py-2.5">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">
+    <div className="overflow-hidden rounded-xl border">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-secondary/40 px-3 py-2.5 sm:px-4">
+        <div className="min-w-0 flex-1 basis-40">
+          <p className="text-sm font-semibold">
             {divisao.nome}
             {divisao.foco ? (
               <span className="ml-2 font-normal text-muted-foreground">
@@ -689,76 +697,62 @@ function DivisaoBloco({
           para buscar na biblioteca ou digitar um novo na hora.
         </p>
       ) : (
-        <div className="p-3 sm:p-0">
-          <p className="px-1 pb-2 text-xs text-muted-foreground sm:px-4 sm:pt-3">
-            Toque em séries, reps, carga ou descanso para ajustar — salva ao sair do campo.
-          </p>
-          <TabelaResponsiva
-            dados={divisao.exercicios}
-            getKey={(ex) => ex.id}
-            colunas={[
-              {
-                cabecalho: "Exercício",
-                principal: true,
-                celula: (ex) => (
-                  <div className="flex items-center gap-2.5">
-                    <MidiaThumb
-                      url={ex.exercicio?.midia_url}
-                      nome={ex.exercicio?.nome ?? "exercício"}
-                      tamanho="sm"
-                    />
-                    <div className="min-w-0">
-                      <span className="font-medium">
-                        {ex.exercicio?.nome ?? "-"}
-                      </span>
-                      {ex.observacao ? (
-                        <span className="block text-xs text-muted-foreground">
-                          {ex.observacao}
-                        </span>
-                      ) : null}
+        <>
+          {/* Cabeçalho das colunas (desktop). Mesma grade em todas as divisões. */}
+          <div aria-hidden className={cn(GRADE_EXERCICIO, "hidden px-4 pt-3 pb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase sm:grid")}>
+            <span>Exercício</span>
+            <span>Séries</span>
+            <span>Reps</span>
+            <span>Carga</span>
+            <span>Descanso</span>
+            <span />
+          </div>
+          <ul className="divide-y">
+            {divisao.exercicios.map((ex) => {
+              const acoes = (
+                <>
+                  <ExercicioDivisaoDialog
+                    alunoId={alunoId}
+                    divisaoId={divisao.id}
+                    exercicios={exercicios}
+                    item={ex}
+                    ordem={ex.ordem}
+                    gatilho={
+                      <Button variant="ghost" size="icon-sm" aria-label={`Editar ${ex.exercicio?.nome ?? "exercício"}`} className="text-muted-foreground">
+                        <Pencil className="size-3.5" />
+                      </Button>
+                    }
+                  />
+                  <BotaoExcluir
+                    onConfirm={() => removerTreinoExercicio(ex.id, alunoId)}
+                    titulo="Remover exercício"
+                    descricao={`Remover "${ex.exercicio?.nome ?? "exercício"}" desta divisão?`}
+                    sucessoMsg="Exercício removido."
+                  />
+                </>
+              );
+              return (
+                <li key={ex.id} className={cn(GRADE_EXERCICIO, "grid grid-cols-4 items-end gap-x-2 gap-y-1.5 px-3 py-2.5 sm:items-center sm:px-4")}>
+                  <div className="col-span-4 flex min-w-0 items-center gap-2.5 sm:col-span-1">
+                    <MidiaThumb url={ex.exercicio?.midia_url} nome={ex.exercicio?.nome ?? "exercício"} tamanho="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{ex.exercicio?.nome ?? "-"}</p>
+                      {ex.observacao ? <p className="truncate text-xs text-muted-foreground">{ex.observacao}</p> : null}
                     </div>
+                    <div className="flex shrink-0 items-center sm:hidden">{acoes}</div>
                   </div>
-                ),
-              },
-              { cabecalho: "Séries", celula: (ex) => <CelulaEditavel key={`${ex.id}-${ex.series ?? ""}`} item={ex} campo="series" rotulo="Séries" alunoId={alunoId} /> },
-              { cabecalho: "Reps", celula: (ex) => <CelulaEditavel key={`${ex.id}-${ex.repeticoes ?? ""}`} item={ex} campo="repeticoes" rotulo="Repetições" alunoId={alunoId} /> },
-              { cabecalho: "Carga", celula: (ex) => <CelulaEditavel key={`${ex.id}-${ex.carga ?? ""}`} item={ex} campo="carga" rotulo="Carga" alunoId={alunoId} /> },
-              { cabecalho: "Descanso", celula: (ex) => <CelulaEditavel key={`${ex.id}-${ex.descanso ?? ""}`} item={ex} campo="descanso" rotulo="Descanso" alunoId={alunoId} /> },
-              {
-                cabecalho: "Ações",
-                alinhar: "right",
-                semRotuloMobile: true,
-                celula: (ex) => (
-                  <div className="flex justify-end gap-1">
-                    <ExercicioDivisaoDialog
-                      alunoId={alunoId}
-                      divisaoId={divisao.id}
-                      exercicios={exercicios}
-                      item={ex}
-                      ordem={ex.ordem}
-                      gatilho={
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label="Editar exercício"
-                          className="text-muted-foreground"
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
-                      }
-                    />
-                    <BotaoExcluir
-                      onConfirm={() => removerTreinoExercicio(ex.id, alunoId)}
-                      titulo="Remover exercício"
-                      descricao={`Remover "${ex.exercicio?.nome ?? "exercício"}" desta divisão?`}
-                      sucessoMsg="Exercício removido."
-                    />
-                  </div>
-                ),
-              },
-            ]}
-          />
-        </div>
+                  {CAMPOS_INLINE.map(([campo, rotulo, curto]) => (
+                    <div key={campo} className="min-w-0">
+                      <span aria-hidden className="mb-0.5 block text-[11px] font-medium text-muted-foreground sm:hidden">{curto}</span>
+                      <CelulaEditavel key={`${ex.id}-${ex[campo] ?? ""}`} item={ex} campo={campo} rotulo={rotulo} alunoId={alunoId} />
+                    </div>
+                  ))}
+                  <div className="hidden justify-end sm:flex">{acoes}</div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
     </div>
   );
@@ -780,7 +774,7 @@ function FichaCard({
   redirecionarAoExcluir?: string;
 }) {
   return (
-    <Card className="gap-4 p-5">
+    <Card className="gap-4 p-3 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -814,6 +808,9 @@ function FichaCard({
       </div>
 
       <div className="space-y-3">
+        {ficha.divisoes.some((d) => d.exercicios.length > 0) ? (
+          <p className="text-xs text-muted-foreground">Toque num número para mudar. Salva sozinho.</p>
+        ) : null}
         {ficha.divisoes.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Nenhuma divisão ainda. Adicione o Treino A, B, C…

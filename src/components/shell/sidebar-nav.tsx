@@ -22,11 +22,16 @@ export function SidebarNav({
   onNavegar?: () => void;
 }) {
   const pathname = usePathname();
+  // Só o item mais específico acende (ex.: /admin/financeiro/nota-fiscal acende
+  // "Nota fiscal", não também "Financeiro").
+  const ativoHref = itens
+    .filter((i) => [i.href, ...(i.tambem ?? [])].some((h) => estaAtivo(pathname, h)))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
     <nav className="flex flex-1 flex-col gap-1">
       {itens.map((item) => {
-        const ativo = estaAtivo(pathname, item.href);
+        const ativo = item.href === ativoHref;
         const Icone = item.icone;
         return (
           <div key={item.href} className="contents">

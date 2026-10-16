@@ -3,6 +3,7 @@ import {
   Clock,
   CreditCard,
   Dumbbell,
+  FileText,
   Home,
   LayoutDashboard,
   LineChart,
@@ -21,6 +22,8 @@ export interface ItemNav {
   icone: LucideIcon;
   /** Abre um grupo na sidebar (ex.: "Configurações"). */
   secao?: string;
+  /** Outras rotas que também acendem este item (ex.: a Agenda cobre a grade). */
+  tambem?: string[];
 }
 
 /** Navegação do admin (dono), na ordem do uso diário; configuração no fim. */
@@ -28,20 +31,19 @@ export const navAdmin: ItemNav[] = [
   { titulo: "Início", href: "/admin", icone: LayoutDashboard },
   { titulo: "Financeiro", href: "/admin/financeiro", icone: Wallet },
   { titulo: "Alunos", href: "/admin/alunos", icone: Users },
-  { titulo: "Horários", href: "/admin/horarios", icone: Clock },
-  { titulo: "Presença", href: "/admin/presenca", icone: CalendarCheck },
+  { titulo: "Agenda", href: "/admin/presenca", icone: CalendarCheck, tambem: ["/admin/horarios"] },
   { titulo: "Modelos de treino", href: "/admin/treinos", icone: Dumbbell },
   { titulo: "Planos", href: "/admin/planos", icone: CreditCard, secao: "Configurações" },
   { titulo: "Professores", href: "/admin/professores", icone: UserCog },
-  { titulo: "QR e acesso dos alunos", href: "/admin/acesso-alunos", icone: QrCode },
+  { titulo: "Acesso dos alunos", href: "/admin/acesso-alunos", icone: QrCode },
+  { titulo: "Nota fiscal", href: "/admin/financeiro/nota-fiscal", icone: FileText },
 ];
 
 /** Navegação do professor — apenas a própria carteira de alunos. */
 export const navProfessor: ItemNav[] = [
   { titulo: "Hoje", href: "/professor", icone: LayoutDashboard },
   { titulo: "Meus alunos", href: "/professor/alunos", icone: Users },
-  { titulo: "Presença", href: "/professor/presenca", icone: CalendarCheck },
-  { titulo: "Horários", href: "/professor/horarios", icone: Clock },
+  { titulo: "Agenda", href: "/professor/presenca", icone: CalendarCheck, tambem: ["/professor/horarios"] },
   { titulo: "Modelos de treino", href: "/professor/treinos", icone: Dumbbell },
 ];
 

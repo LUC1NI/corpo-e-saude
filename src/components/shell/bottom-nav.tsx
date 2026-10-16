@@ -23,7 +23,7 @@ export function BottomNav({ papel = "aluno", tipo = "presencial" }: { papel?: Pa
       <div className="mx-auto flex w-full max-w-md items-stretch justify-around px-2 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))]">
         {navInferior(papel, tipo).map((item) => {
           const Icone = item.icone;
-          const selecionado = ativo(pathname, item.href);
+          const selecionado = [item.href, ...(item.tambem ?? [])].some((h) => ativo(pathname, h));
           return (
             <Link
               key={item.href}

@@ -20,7 +20,7 @@ import { formatDataExtenso, plural } from "@/lib/formato";
 import { dividirAulasDoDia } from "@/lib/historico-aulas";
 import { getProfessorAtual } from "@/lib/professor";
 import { createClient } from "@/lib/supabase/server";
-import { horaCurta } from "@/lib/tipos";
+import { DIAS_SEMANA, horaCurta } from "@/lib/tipos";
 import { cn } from "@/lib/utils";
 
 type Aula = { id: string; hora_inicio: string; hora_fim: string; capacidade: number | null };
@@ -63,7 +63,7 @@ export default async function ProfessorHoje() {
         <PageEmpty
           icone={Users}
           titulo="Perfil de professor não encontrado"
-          descricao="Fale com o administrador do studio."
+          descricao="Fale com o administrador do estúdio."
         />
       </>
     );
@@ -84,9 +84,8 @@ export default async function ProfessorHoje() {
   ] = await Promise.all([
     supabase
       .from("horarios")
-      .select("id, hora_inicio, hora_fim, capacidade, aluno_horarios(alunos(id, nome))")
+      .select("id, dia_semana, hora_inicio, hora_fim, capacidade, aluno_horarios(alunos(id, nome, status))")
       .eq("professor_id", professor.id)
-      .eq("dia_semana", agora.getDay())
       .order("hora_inicio"),
     supabase.from("presencas").select("aluno_id, hora").eq("professor_id", professor.id).eq("data", hoje),
     supabase
@@ -101,12 +100,27 @@ export default async function ProfessorHoje() {
     supabase.from("treino_execucoes").select("aluno_id").gte("finalizado_em", limiteTreino),
   ]);
 
-  const aulas = ((aulasData ?? []) as unknown as (Aula & {
-    aluno_horarios: { alunos: Aluno | null }[];
-  })[]).map(({ aluno_horarios, ...a }) => ({
-    ...a,
-    turma: aluno_horarios.map((v) => v.alunos).filter((x): x is Aluno => !!x),
-  }));
+  // Grade da semana inteira (para achar a próxima aula), só aulas com aluno ativo:
+  // aula vazia não é compromisso do professor.
+  const semana = ((aulasData ?? []) as unknown as (Aula & {
+    dia_semana: number;
+    aluno_horarios: { alunos: (Aluno & { status: string }) | null }[];
+  })[])
+    .map(({ aluno_horarios, ...a }) => ({
+      ...a,
+      turma: aluno_horarios
+        .map((v) => v.alunos)
+        .filter((x): x is Aluno & { status: string } => !!x && x.status === "ativo")
+        .map(({ id, nome }) => ({ id, nome })),
+    }))
+    .filter((a) => a.turma.length > 0);
+  const aulas = semana.filter((a) => a.dia_semana === agora.getDay());
+  // Próxima aula em outro dia (amanhã, depois…) quando hoje já acabou.
+  let proximaOutroDia: { aula: (typeof semana)[number]; dias: number } | null = null;
+  for (let n = 1; n <= 7 && !proximaOutroDia; n++) {
+    const aula = semana.find((a) => a.dia_semana === (agora.getDay() + n) % 7);
+    if (aula) proximaOutroDia = { aula, dias: n };
+  }
   const presentesPorHora = new Map<string, number>();
   for (const p of (presData ?? []) as { hora: string | null }[]) {
     const h = (p.hora ?? "").slice(0, 5);
@@ -124,18 +138,20 @@ export default async function ProfessorHoje() {
   const avaliadosRecente = new Set(((avalData ?? []) as { aluno_id: string }[]).map((r) => r.aluno_id));
   const comFicha = new Set(((fichasData ?? []) as { aluno_id: string }[]).map((r) => r.aluno_id));
   const treinaram = new Set(((execData ?? []) as { aluno_id: string }[]).map((r) => r.aluno_id));
+  // Uma linha por aluno, com tudo o que falta (o mesmo aluno não aparece duas vezes).
   const pendencias: { aluno: Aluno; texto: string; ancora: string }[] = [];
   for (const a of alunos) {
-    if (!comAnamnese.has(a.id)) pendencias.push({ aluno: a, texto: "sem anamnese", ancora: "?aba=saude#anamnese" });
-    else if (!avaliadosRecente.has(a.id))
-      pendencias.push({ aluno: a, texto: `avaliação há mais de ${DIAS_REAVALIAR} dias`, ancora: "?aba=saude#avaliacoes" });
-    if (a.tipo === "online" && !comFicha.has(a.id))
-      pendencias.push({ aluno: a, texto: "online sem ficha de treino", ancora: "?aba=treino" });
-    else if (a.tipo === "online" && !treinaram.has(a.id))
-      pendencias.push({ aluno: a, texto: `não treina há ${DIAS_SEM_TREINAR}+ dias`, ancora: "?aba=treino" });
+    const itens: [string, string][] = [];
+    if (!comAnamnese.has(a.id)) itens.push(["sem anamnese", "?aba=saude#anamnese"]);
+    else if (!avaliadosRecente.has(a.id)) itens.push([`avaliação há mais de ${DIAS_REAVALIAR} dias`, "?aba=saude#avaliacoes"]);
+    if (a.tipo === "online" && !comFicha.has(a.id)) itens.push(["sem treino montado", "?aba=treino"]);
+    else if (a.tipo === "online" && !treinaram.has(a.id)) itens.push([`não treina há ${DIAS_SEM_TREINAR}+ dias`, "?aba=treino"]);
+    if (itens.length) pendencias.push({ aluno: a, texto: itens.map((i) => i[0]).join(" · "), ancora: itens[0]![1] });
   }
 
-  const linkChamada = (a: Aula) => `/professor/presenca?data=${hoje}&hora=${a.hora_inicio}`;
+  const linkChamada = () => `/professor/presenca?data=${hoje}`;
+  const nomeDia = (n: number, dia: number) =>
+    n === 1 ? `amanhã, ${DIAS_SEMANA[dia]!.toLowerCase()}` : DIAS_SEMANA[dia]!.toLowerCase();
 
   return (
     <>
@@ -159,7 +175,7 @@ export default async function ProfessorHoje() {
               </p>
               <Turma alunos={dia.agora.turma} />
               <Link
-                href={linkChamada(dia.agora)}
+                href={linkChamada()}
                 className={cn(buttonVariants({ size: "lg" }), "bg-white text-primary hover:bg-white/90 sm:w-fit sm:px-8")}
               >
                 <CalendarCheck className="size-5" />
@@ -170,7 +186,7 @@ export default async function ProfessorHoje() {
 
           {/* A SEGUIR */}
           {dia.aSeguir ? (
-            <Link href={linkChamada(dia.aSeguir)} className="block">
+            <Link href={linkChamada()} className="block">
               <Card className="flex-row items-center gap-4 p-4 transition-colors hover:bg-secondary/40">
                 <div className="min-w-0 flex-1 space-y-1">
                   <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
@@ -189,13 +205,28 @@ export default async function ProfessorHoje() {
           ) : null}
 
           {!dia.agora && !dia.aSeguir ? (
-            <Card className="flex-row items-center gap-3 p-5">
+            <Card className="flex-row items-center gap-4 p-5">
               <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
                 <Clock className="size-5" />
               </span>
-              <p className="text-muted-foreground">
-                {aulas.length === 0 ? "Nenhuma aula na sua grade hoje." : "As aulas de hoje já terminaram."}
-              </p>
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  {aulas.length === 0 ? "Sem aulas hoje." : "As aulas de hoje terminaram."}
+                </p>
+                {proximaOutroDia ? (
+                  <>
+                    <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                      Próxima aula · {nomeDia(proximaOutroDia.dias, proximaOutroDia.aula.dia_semana)}
+                    </p>
+                    <p className="font-heading text-xl font-bold tabular-nums">
+                      {horaCurta(proximaOutroDia.aula.hora_inicio)} – {horaCurta(proximaOutroDia.aula.hora_fim)}
+                    </p>
+                    <div className="text-muted-foreground">
+                      <Turma alunos={proximaOutroDia.aula.turma} />
+                    </div>
+                  </>
+                ) : null}
+              </div>
             </Card>
           ) : null}
 
@@ -212,7 +243,7 @@ export default async function ProfessorHoje() {
                 {semChamada.map((a) => (
                   <Link
                     key={a.id}
-                    href={linkChamada(a)}
+                    href={linkChamada()}
                     className="inline-flex h-11 items-center rounded-full bg-white px-4 text-sm font-semibold tabular-nums ring-1 ring-amber-300 hover:bg-amber-100 sm:h-9"
                   >
                     {horaCurta(a.hora_inicio)}
@@ -226,7 +257,7 @@ export default async function ProfessorHoje() {
           {dia.maisTarde.length + dia.passadas.length > 0 ? (
             <details className="group rounded-xl border bg-card">
               <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 text-sm font-medium">
-                Todas as aulas de hoje ({aulas.length})
+                Aulas de hoje ({aulas.length})
                 <ChevronRight className="size-4 transition-transform group-open:rotate-90" />
               </summary>
               <ul className="divide-y border-t">
@@ -235,7 +266,7 @@ export default async function ProfessorHoje() {
                   return (
                     <li key={a.id}>
                       <Link
-                        href={linkChamada(a)}
+                        href={linkChamada()}
                         className={cn("flex min-h-12 items-center gap-3 px-4 py-2 hover:bg-muted/50", passou && "opacity-60")}
                       >
                         <span className="w-24 shrink-0 font-medium tabular-nums">

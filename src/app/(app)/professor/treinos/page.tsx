@@ -22,7 +22,7 @@ export default async function ProfessorTreinosPage() {
 
       <section className="mb-8">
         <h2 className="mb-3 font-heading text-lg font-bold">
-          Treinos montados
+          Modelos de treino
         </h2>
         <ListaModelos modelos={modelos} basePath="/professor/treinos" />
       </section>

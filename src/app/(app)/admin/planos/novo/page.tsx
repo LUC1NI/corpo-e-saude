@@ -7,7 +7,7 @@ export default async function NovoPlanoPage() {
   await requireUsuario(["admin"]);
   return (
     <>
-      <PageHeader titulo="Novo plano" subtitulo="Cadastre um plano do studio." />
+      <PageHeader titulo="Novo plano" subtitulo="Cadastre um plano do estúdio." />
       <PlanoForm />
     </>
   );

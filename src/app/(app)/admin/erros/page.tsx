@@ -38,7 +38,7 @@ export default async function ErrosPage() {
     <>
       <PageHeader
         titulo="Erros recentes"
-        subtitulo="Últimos 50 erros registrados pelo sistema (crons e telas)."
+        subtitulo="Últimos 50 erros do sistema."
       />
       {erros.length === 0 ? (
         <PageEmpty

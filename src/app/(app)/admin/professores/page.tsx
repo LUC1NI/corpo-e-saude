@@ -47,7 +47,7 @@ export default async function ProfessoresPage() {
     <>
       <PageHeader
         titulo="Professores"
-        subtitulo="Equipe do studio e acessos."
+        subtitulo="Equipe do estúdio e acessos."
         acoes={<AdicionarProfessor />}
       />
 

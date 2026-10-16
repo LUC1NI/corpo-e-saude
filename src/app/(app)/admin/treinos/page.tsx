@@ -15,14 +15,14 @@ export default async function AdminTreinosPage() {
   return (
     <>
       <PageHeader
-        titulo="Treinos"
-        subtitulo="Treinos reutilizáveis do studio e a biblioteca de exercícios."
+        titulo="Modelos de treino"
+        subtitulo="Monte uma vez e aplique a vários alunos."
         acoes={<NovoModeloButton basePath="/admin/treinos" />}
       />
 
       <section className="mb-8">
         <h2 className="mb-3 font-heading text-lg font-bold">
-          Treinos montados
+          Modelos de treino
         </h2>
         <ListaModelos modelos={modelos} basePath="/admin/treinos" />
       </section>

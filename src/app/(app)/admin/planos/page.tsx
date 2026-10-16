@@ -28,7 +28,6 @@ export default async function PlanosPage() {
     <>
       <PageHeader
         titulo="Planos"
-        subtitulo="Catálogo de planos e valores do studio."
         acoes={
           <Link href="/admin/planos/novo" className={cn(buttonVariants())}>
             <Plus className="size-4" />
@@ -59,25 +58,18 @@ export default async function PlanosPage() {
                 {
                   cabecalho: "Plano",
                   principal: true,
-                  celula: (p) => p.nome,
+                  // Só o "Inativo" merece selo; ativo é o normal.
+                  celula: (p) => (
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                      {p.nome}
+                      {!p.ativo ? <StatusBadge tom="neutro">Inativo</StatusBadge> : null}
+                    </span>
+                  ),
                 },
                 { cabecalho: "Valor", celula: (p) => formatBRL(p.valor) },
                 {
-                  cabecalho: "Periodicidade",
+                  cabecalho: "Cobrança",
                   celula: (p) => ROTULO_PERIODICIDADE[p.periodicidade],
-                },
-                {
-                  cabecalho: "Duração",
-                  celula: (p) =>
-                    p.duracao_meses ? `${p.duracao_meses} meses` : "-",
-                },
-                {
-                  cabecalho: "Status",
-                  celula: (p) => (
-                    <StatusBadge tom={p.ativo ? "sucesso" : "neutro"}>
-                      {p.ativo ? "Ativo" : "Inativo"}
-                    </StatusBadge>
-                  ),
                 },
                 {
                   cabecalho: "Ações",

@@ -27,7 +27,7 @@ export default async function AdminModeloTreinoPage({
     <>
       <PageHeader
         titulo={modelo.nome}
-        subtitulo="Treino reutilizável: aplique na página de qualquer aluno com “Usar treino pronto”."
+        subtitulo="Para usar: abra o aluno › Treino › Usar modelo."
         acoes={
           <Link
             href="/admin/treinos"

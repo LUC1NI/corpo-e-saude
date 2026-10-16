@@ -282,8 +282,7 @@ async function AbaTreino({ alunoId, online }: { alunoId: string; online: boolean
     <>
       <Card id="treino">
         <CardHeader>
-          <CardTitle>{online ? "Ficha de treino" : "Treino"}</CardTitle>
-          {online ? <CardDescription>Use um treino pronto e ajuste, ou monte do zero.</CardDescription> : null}
+          <CardTitle>Treino</CardTitle>
         </CardHeader>
         <CardContent>
           {online ? (

@@ -5,7 +5,6 @@ import Link from "@/components/ui-extra/link";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -21,6 +20,8 @@ import { NavFinanceiro } from "../nav-financeiro";
 import { EmitirPendentesButton, NotaAcoes, type NotaResumo } from "../nota-acoes";
 import { resolverMes } from "../periodo";
 import { SeletorMes } from "../seletor-mes";
+import { situacaoEmissao } from "@/lib/nfse/provedor";
+import { carregarConfigFiscal } from "@/lib/nfse/servico";
 import { exigir } from "@/lib/utils";
 
 interface Recebido {
@@ -65,7 +66,7 @@ export default async function RecebimentosPage({
 
   // Notas dos pagamentos listados (1 consulta) + total pendente para o lote.
   const ids = recebidos.map((p) => p.id);
-  const [{ data: notasData }, { count: pendentes }] = await Promise.all([
+  const [{ data: notasData }, { count: pendentes }, configFiscal] = await Promise.all([
     ids.length
       ? supabase
           .from("notas_fiscais")
@@ -77,7 +78,10 @@ export default async function RecebimentosPage({
       .from("notas_fiscais")
       .select("id", { count: "exact", head: true })
       .in("status", ["aguardando_configuracao", "erro"]),
+    carregarConfigFiscal(supabase),
   ]);
+  // Emissão desligada: nada de "Sem nota / Emitir" em cada linha (só as notas que já existem).
+  const notasLigadas = situacaoEmissao(configFiscal).tipo !== "desativada";
   // A nota "da vez" é a não cancelada; se só houver canceladas, a mais recente.
   const notaPorPagamento = new Map<string, NotaResumo>();
   for (const n of (notasData ?? []) as (NotaResumo & { pagamento_id: string })[]) {
@@ -103,7 +107,6 @@ export default async function RecebimentosPage({
     <>
       <PageHeader
         titulo="Recebimentos"
-        subtitulo="Tudo o que entrou no caixa, mês a mês, com a forma de pagamento."
         acoes={
           <SeletorMes periodo={periodo} base="/admin/financeiro/recebimentos" />
         }
@@ -134,13 +137,11 @@ export default async function RecebimentosPage({
       <Card>
         <CardHeader>
           <CardTitle>Pagamentos confirmados</CardTitle>
-          <CardDescription>
-            Ordenados do mais recente. Toque no nome para abrir o aluno. A
-            coluna Nota mostra a nota fiscal de cada mensalidade.
-          </CardDescription>
-          <div className="pt-2">
-            <EmitirPendentesButton quantidade={pendentes ?? 0} />
-          </div>
+          {notasLigadas ? (
+            <div className="pt-2">
+              <EmitirPendentesButton quantidade={pendentes ?? 0} />
+            </div>
+          ) : null}
         </CardHeader>
         <CardContent>
           {recebidos.length === 0 ? (
@@ -179,12 +180,11 @@ export default async function RecebimentosPage({
                     <span className="text-sm font-semibold tabular-nums text-emerald-700">
                       + {formatBRL(p.valor)}
                     </span>
-                    <div className="sm:max-w-72">
-                      <NotaAcoes
-                        pagamentoId={p.id}
-                        nota={notaPorPagamento.get(p.id) ?? null}
-                      />
-                    </div>
+                    {notasLigadas || notaPorPagamento.has(p.id) ? (
+                      <div className="sm:max-w-72">
+                        <NotaAcoes pagamentoId={p.id} nota={notaPorPagamento.get(p.id) ?? null} />
+                      </div>
+                    ) : null}
                   </div>
                 </li>
               ))}

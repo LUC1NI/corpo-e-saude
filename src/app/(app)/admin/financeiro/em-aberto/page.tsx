@@ -47,7 +47,6 @@ export default async function EmAbertoPage() {
     <>
       <PageHeader
         titulo="Em aberto"
-        subtitulo="Tudo o que ainda não entrou no caixa — confirme o pagamento direto daqui."
       />
       <NavFinanceiro ativa="/admin/financeiro/em-aberto" />
 
@@ -94,7 +93,7 @@ export default async function EmAbertoPage() {
                   <AlertTriangle className="size-4" />
                   Atrasadas · {plural(gruposAtrasados.length, "aluno", "alunos")}
                 </CardTitle>
-                <CardDescription>Priorize a cobrança. O valor soma todos os meses em aberto do aluno.</CardDescription>
+                <CardDescription>Valor = meses em atraso.</CardDescription>
               </CardHeader>
               <ReceberPorAluno grupos={gruposAtrasados} hoje={hoje} className="border-t" />
             </Card>
@@ -107,7 +106,6 @@ export default async function EmAbertoPage() {
                   <CalendarClock className="size-4 text-primary" />
                   No prazo · {plural(gruposEmDia.length, "aluno", "alunos")}
                 </CardTitle>
-                <CardDescription>Dentro do prazo. Dá para confirmar antecipado se o aluno já pagou.</CardDescription>
               </CardHeader>
               <ReceberPorAluno grupos={gruposEmDia} hoje={hoje} className="border-t" />
             </Card>

@@ -1,6 +1,5 @@
 "use client";
 
-import { CalendarClock, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -103,58 +102,24 @@ export function MatriculaCard({
   if (matricula) {
     return (
       <div className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        {/* O plano numa linha: o que importa no dia a dia. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <div className="min-w-0">
-            <p className="text-base font-semibold text-foreground">
-              {matricula.plano_nome}
-            </p>
+            <p className="text-base font-semibold text-foreground">{matricula.plano_nome}</p>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {formatBRL(matricula.valor)} ·{" "}
-              {ROTULO_PERIODICIDADE[matricula.periodicidade]}
+              {formatBRL(matricula.valor)} · {ROTULO_PERIODICIDADE[matricula.periodicidade].toLowerCase()} ·{" "}
+              {matricula.renovacao_automatica
+                ? `próxima mensalidade gerada em ${formatData(matricula.data_proxima_cobranca)}`
+                : "não renova automaticamente"}
             </p>
           </div>
-          <StatusBadge tom="sucesso">Matrícula ativa</StatusBadge>
+          <StatusBadge tom="sucesso">Ativa</StatusBadge>
         </div>
-
-        <dl className="grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-2">
-          <div className="flex items-center gap-3 bg-card p-3.5">
-            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <CalendarClock className="size-4.5" />
-            </span>
-            <div className="min-w-0">
-              <dt className="text-xs text-muted-foreground">
-                Próxima cobrança
-              </dt>
-              <dd className="font-medium text-foreground">
-                {formatData(matricula.data_proxima_cobranca)}
-              </dd>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 bg-card p-3.5">
-            <span
-              className={
-                matricula.renovacao_automatica
-                  ? "inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600"
-                  : "inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
-              }
-            >
-              <RefreshCw className="size-4.5" />
-            </span>
-            <div className="min-w-0">
-              <dt className="text-xs text-muted-foreground">
-                Renovação automática
-              </dt>
-              <dd className="font-medium text-foreground">
-                {matricula.renovacao_automatica ? "Ativada" : "Desativada"}
-              </dd>
-            </div>
-          </div>
-        </dl>
 
         <AlertDialog>
           <AlertDialogTrigger
             render={
-              <Button type="button" variant="destructive" size="sm" />
+              <Button type="button" variant="ghost" size="sm" className="-ml-2 text-destructive hover:bg-destructive/10 hover:text-destructive" />
             }
             disabled={salvando}
           >

@@ -39,13 +39,10 @@ export function corFrequencia(pct: number): {
   /** Versão translúcida para fundos/preenchimentos suaves. */
   suave: string;
 } {
-  const p = Math.max(0, Math.min(100, pct));
-  const hue = Math.round((p / 100) * 130); // 0 vermelho → 130 verde
-  return {
-    forte: `hsl(${hue} 82% 45%)`,
-    texto: `hsl(${hue} 72% 36%)`,
-    suave: `hsl(${hue} 82% 45% / 0.14)`,
-  };
+  // Três faixas de status (sem amarelo-lima): texto sempre com contraste AA.
+  if (pct >= 75) return { forte: "#16A34A", texto: "#15803D", suave: "#E8F7EF" };
+  if (pct >= 50) return { forte: "#F59E0B", texto: "#B45309", suave: "#FFF6E0" };
+  return { forte: "#DC3B3B", texto: "#B42318", suave: "#FDECEC" };
 }
 
 /** Abaixo disto (aulas esperadas) ainda é cedo para julgar a frequência. */

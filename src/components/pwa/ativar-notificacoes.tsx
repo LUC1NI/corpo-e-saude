@@ -138,7 +138,8 @@ export function AtivarNotificacoes({
     }
   }
 
-  if (!CHAVE_PUBLICA || estado === "carregando") return null;
+  // Navegador sem suporte: não há nada que o aluno possa fazer, então nada aparece.
+  if (!CHAVE_PUBLICA || estado === "carregando" || estado === "nao_suportado") return null;
 
   if (modo === "convite") {
     if (estado !== "disponivel") return null;

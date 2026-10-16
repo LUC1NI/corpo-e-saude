@@ -1,6 +1,7 @@
 import { CalendarCheck, ChevronLeft, ChevronRight, Clock, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FrequenciaCard } from "@/components/ui-extra/frequencia";
 import Link from "@/components/ui-extra/link";
@@ -62,6 +63,11 @@ export default async function AlunoHorariosPage({
           icone={Clock}
           titulo="Seu acompanhamento é online"
           descricao="Você não tem horários fixos no estúdio. Seu treino fica na aba Treino."
+          acao={
+            <Link href="/aluno/treino" className={buttonVariants()}>
+              Ver meu treino
+            </Link>
+          }
         />
       </div>
     );

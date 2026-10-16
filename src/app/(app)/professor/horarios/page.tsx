@@ -36,7 +36,7 @@ export default async function HorariosPage() {
         <PageEmpty
           icone={Clock}
           titulo="Perfil de professor não encontrado"
-          descricao="Fale com o administrador do studio."
+          descricao="Fale com o administrador do estúdio."
         />
       </>
     );

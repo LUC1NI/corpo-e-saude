@@ -27,7 +27,7 @@ export default async function ProfessorAlunosPage({
         <PageEmpty
           icone={Users}
           titulo="Perfil de professor não encontrado"
-          descricao="Fale com o administrador do studio."
+          descricao="Fale com o administrador do estúdio."
         />
       </>
     );
@@ -49,7 +49,6 @@ export default async function ProfessorAlunosPage({
     <>
       <PageHeader
         titulo="Meus Alunos"
-        subtitulo="Sua carteira de alunos. Abra um aluno para anamnese, avaliação e treino."
         acoes={
           <Link href="/professor/alunos/novo" className={cn(buttonVariants())}>
             <Plus className="size-4" />

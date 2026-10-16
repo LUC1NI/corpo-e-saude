@@ -8,7 +8,7 @@ import { AtivarNotificacoes } from "@/components/pwa/ativar-notificacoes";
 import { requireUsuario } from "@/lib/auth";
 import { getAlunoAtual } from "@/lib/aluno";
 import { hojeISO, precisaPagar, situacaoMensalidade } from "@/lib/financeiro";
-import { formatBRL, formatDiaMes, formatMesAno } from "@/lib/formato";
+import { formatBRL, formatDiaMes, formatMesAno, formatMesExtenso } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
 import {
   type Periodicidade,
@@ -101,7 +101,10 @@ export default async function AlunoMensalidadePage() {
 
   const emAberto = pagamentos.filter((p) => efetivo(p) !== "pago");
   const situacao = situacaoMensalidade(emAberto, hoje);
-  const { tom, titulo, detalhe } = textosMensalidade(situacao);
+  const { tom, titulo, detalhe } = textosMensalidade(
+    situacao,
+    matricula ? { data: matricula.data_proxima_cobranca, valor: matricula.valor } : null,
+  );
   const agir = precisaPagar(situacao);
   const HeroIcone = tom === "ok" ? CheckCircle2 : tom === "aviso" ? CalendarClock : AlertCircle;
 
@@ -139,7 +142,8 @@ export default async function AlunoMensalidadePage() {
           <div className="mt-4">
             <PagamentoPix
               valor={valorPagar}
-              descricao={agir ? detalhe : `Mensalidade do plano ${matricula?.plano_nome ?? ""}`}
+              descricao={agir ? detalhe : matricula ? `a mensalidade de ${formatMesExtenso(matricula.data_proxima_cobranca)}` : "a mensalidade"}
+              rotulo={!agir && matricula ? `Pagar ${formatMesExtenso(matricula.data_proxima_cobranca)} adiantado` : undefined}
               variante={agir ? "destaque" : "discreto"}
               tamanho={agir ? "lg" : "default"}
             />

@@ -135,7 +135,7 @@ function FichaDialog({
                 : "Editar ficha"
               : ehModelo
                 ? "Novo treino"
-                : "Nova ficha"}
+                : "Novo treino"}
           </DialogTitle>
           <DialogDescription>
             {ehModelo
@@ -646,13 +646,13 @@ function DivisaoBloco({
               </span>
             ) : null}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {divisao.dias_semana.length
-              ? divisao.dias_semana
-                  .map((d) => DIAS_SEMANA_CURTO[d])
-                  .join(" · ")
-              : "Sem dias definidos"}
-          </p>
+          {alunoId ? (
+            <p className="text-xs text-muted-foreground">
+              {divisao.dias_semana.length
+                ? divisao.dias_semana.map((d) => DIAS_SEMANA_CURTO[d]).join(" · ")
+                : "Sem dias definidos"}
+            </p>
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <ExercicioDivisaoDialog
@@ -780,9 +780,12 @@ function FichaCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-heading text-base font-semibold">{ficha.nome}</h3>
-            <StatusBadge tom={ficha.ativo ? "sucesso" : "neutro"}>
-              {ficha.ativo ? "Ativa" : "Inativa"}
-            </StatusBadge>
+            {/* "Ativa" só faz sentido no treino de um aluno, não num modelo. */}
+            {alunoId ? (
+              <StatusBadge tom={ficha.ativo ? "sucesso" : "neutro"}>
+                {ficha.ativo ? "Ativo" : "Inativo"}
+              </StatusBadge>
+            ) : null}
           </div>
           {ficha.objetivo ? (
             <p className="mt-1 text-sm text-muted-foreground">{ficha.objetivo}</p>
@@ -896,7 +899,7 @@ function AplicarModeloDialog({
     const res = await aplicarModeloAoAluno(id, alunoId);
     setAplicando(null);
     if (res.ok) {
-      toast.success("Treino aplicado. Ajuste o que quiser.");
+      toast.success("Modelo aplicado. Ajuste o que quiser.");
       setAberto(false);
       router.refresh();
     } else {
@@ -910,23 +913,21 @@ function AplicarModeloDialog({
         render={
           <Button>
             <Sparkles className="size-4" />
-            Usar treino pronto
+            Usar modelo
           </Button>
         }
       />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Treinos prontos</DialogTitle>
+          <DialogTitle>Modelos de treino</DialogTitle>
           <DialogDescription>
-            Aplica uma cópia do treino a este aluno. Depois é só ajustar um
-            exercício ou outro.
+            Copia o modelo para este aluno. Depois é só ajustar.
           </DialogDescription>
         </DialogHeader>
 
         {modelos.length === 0 ? (
           <p className="py-2 text-sm text-muted-foreground">
-            Você ainda não montou nenhum treino. Monte seus treinos
-            reutilizáveis na aba <strong>Treinos</strong> e aplique-os aqui.
+            Você ainda não tem modelos. Monte em <strong>Modelos de treino</strong> e aplique aqui.
           </p>
         ) : (
           <div className="max-h-80 space-y-2 overflow-y-auto">
@@ -1002,7 +1003,7 @@ export function TreinosEditor({
             gatilho={
               <Button variant="outline">
                 <Plus className="size-4" />
-                Nova ficha
+                Novo treino
               </Button>
             }
           />
@@ -1020,7 +1021,7 @@ export function TreinosEditor({
           <PageEmpty
             icone={Dumbbell}
             titulo="Este aluno ainda não tem treino"
-            descricao="Aplique um treino pronto e ajuste o que quiser, ou monte do zero."
+            descricao="Use um modelo e ajuste, ou monte do zero."
             acao={
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <AplicarModeloDialog alunoId={alunoId} modelos={modelos} />

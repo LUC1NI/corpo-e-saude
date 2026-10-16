@@ -1,8 +1,6 @@
-import { Search } from "lucide-react";
-
+import { BuscaAlunos } from "@/components/shell/busca-alunos";
 import { LogoMarca } from "@/components/shell/logo-marca";
 import { MobileSidebar } from "@/components/shell/mobile-sidebar";
-import Link from "@/components/ui-extra/link";
 import {
   NotificacoesButton,
   type AlertaNotificacao,
@@ -31,24 +29,7 @@ export function AppHeader({
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-2">
-        <Link
-          href={basePath}
-          aria-label="Buscar aluno"
-          className="inline-flex size-11 items-center justify-center rounded-lg border bg-background text-muted-foreground sm:hidden"
-        >
-          <Search className="size-5" />
-        </Link>
-        {/* Form GET: Enter navega para a lista de alunos já filtrada. */}
-        <form action={basePath} className="relative hidden sm:block">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="search"
-            name="q"
-            placeholder="Buscar aluno…"
-            aria-label="Buscar aluno"
-            className="h-9 w-56 rounded-lg border bg-secondary/60 pr-3 pl-9 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-          />
-        </form>
+        <BuscaAlunos basePath={basePath} />
         <NotificacoesButton itens={alertas} mensagemVazia={mensagemVazia} />
       </div>
     </header>

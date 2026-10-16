@@ -477,7 +477,7 @@ export function CadastroRapido({
           <span>
             <span className="block font-medium">Criar acesso agora</span>
             <span className="block text-sm text-muted-foreground">
-              {email.trim() ? "Gera a senha e a mensagem pronta para o WhatsApp." : "Precisa do e-mail do aluno."}
+              {email.trim() ? "Gera a senha e a mensagem pronta para o WhatsApp." : "Preencha o e-mail acima para liberar."}
             </span>
           </span>
           <Switch

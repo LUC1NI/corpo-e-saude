@@ -84,6 +84,7 @@ export default async function AlunoHome() {
   const online = aluno?.tipo === "online";
   let treinos: TreinoComTudo[] = [];
   let abertos: { vencimento: string; valor: number }[] = [];
+  let proxima: { data: string; valor: number } | null = null;
   let temAvaliacoes = false;
   let treinosMes = 0;
   let proximo: ProximoTreino | null = null;
@@ -102,6 +103,7 @@ export default async function AlunoHome() {
       { count: execs },
       { count: execHoje },
       { data: agendaData },
+      { data: matriculaData },
     ] = await Promise.all([
       // Ficha de treino é do aluno ONLINE; o presencial treina na aula.
       online ? getTreinosDoAluno(aluno.id) : Promise.resolve([]),
@@ -144,8 +146,16 @@ export default async function AlunoHome() {
               "horarios(dia_semana, hora_inicio, hora_fim, professores(nome))",
             )
             .eq("aluno_id", aluno.id),
+      supabase
+        .from("matriculas")
+        .select("data_proxima_cobranca, planos(valor)")
+        .eq("aluno_id", aluno.id)
+        .eq("status", "ativa")
+        .maybeSingle(),
     ]);
     treinos = treinosData;
+    const m = matriculaData as unknown as { data_proxima_cobranca: string; planos: { valor: number } | null } | null;
+    proxima = m?.planos ? { data: m.data_proxima_cobranca, valor: m.planos.valor } : null;
     abertos = (abertosData ?? []) as typeof abertos;
     temAvaliacoes = (avals ?? 0) > 0;
     const pesos = (pesosData ?? []) as { data: string; peso: number }[];
@@ -202,7 +212,7 @@ export default async function AlunoHome() {
   const divisaoHoje =
     principal?.divisoes.find((d) => d.dias_semana.includes(diaHoje)) ?? null;
   const situacao = situacaoMensalidade(abertos, hoje);
-  const situacaoTextos = textosMensalidade(situacao);
+  const situacaoTextos = textosMensalidade(situacao, proxima);
   const situacaoTom = situacaoTextos.tom;
 
   return (
@@ -264,7 +274,9 @@ export default async function AlunoHome() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="font-semibold">
-              {treinosMes > 0 ? `${plural(treinosMes, "treino", "treinos")} este mês` : "Nenhum treino este mês"}
+              {online
+                ? treinosMes > 0 ? `${plural(treinosMes, "treino", "treinos")} este mês` : "Nenhum treino este mês"
+                : treinosMes > 0 ? `${plural(treinosMes, "aula", "aulas")} este mês` : "Nenhuma aula este mês"}
             </p>
             <p className="text-sm text-muted-foreground">
               {treinosMes === 0
@@ -419,7 +431,7 @@ function TreinoDeHoje({
             </ul>
           ) : null}
           <span className="relative mt-4 flex h-12 items-center justify-center rounded-xl bg-white font-semibold text-primary">
-            {concluido ? "Ver treino de hoje" : "Começar treino"}
+            {concluido ? "Ver treino de hoje" : `Começar treino ${divisaoHoje.nome}`}
           </span>
         </Link>
       ) : temFicha ? (

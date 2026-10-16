@@ -52,7 +52,11 @@ export function ExecucoesLista({
                 <span className="font-medium capitalize">{dia}</span>
                 <span className="text-muted-foreground"> · {fmtDuracao(e.duracao_segundos)}</span>
               </span>
-              {sensacao ? <span role="img" title={sensacao.rotulo} aria-label={sensacao.rotulo}>{sensacao.emoji}</span> : null}
+              {sensacao ? (
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  <span aria-hidden>{sensacao.emoji}</span> {sensacao.rotulo}
+                </span>
+              ) : null}
               <span className={cn("shrink-0 text-xs font-semibold tabular-nums", completo ? "text-emerald-700" : "text-amber-700")}>
                 {e.exercicios_feitos}/{e.exercicios_previstos}{completo ? " ✓" : ""}
               </span>

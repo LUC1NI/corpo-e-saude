@@ -30,7 +30,7 @@ export function AcompanhamentoCards({
         <CardHeader>
           <CardTitle>Anamnese</CardTitle>
           <CardDescription>
-            Ficha de saúde do aluno. Informação sensível, de acesso restrito.
+            Dados de saúde · acesso restrito.
           </CardDescription>
         </CardHeader>
         <CardContent>

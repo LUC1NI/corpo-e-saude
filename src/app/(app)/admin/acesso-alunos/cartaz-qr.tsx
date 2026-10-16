@@ -1,17 +1,13 @@
 "use client";
 
-import { Download, FileImage, Printer } from "lucide-react";
+import { FileImage, Printer } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
-import { flushSync } from "react-dom";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 const LOGO = "/icons/icon-192.png";
-type Tamanho = "A4" | "A5";
-
 function baixar(href: string, nome: string) {
   const a = document.createElement("a");
   a.href = href;
@@ -52,25 +48,7 @@ function carregarImagem(src: string): Promise<HTMLImageElement> {
 }
 
 export function CartazQr({ svg, url }: { svg: string; url: string }) {
-  const [tamanho, setTamanho] = useState<Tamanho>("A4");
   const qrSrc = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-
-  function imprimir(t: Tamanho) {
-    flushSync(() => setTamanho(t)); // aplica o @page antes de abrir a impressão
-    window.print();
-  }
-
-  async function baixarSvg() {
-    try {
-      const final = await svgComLogo(svg);
-      const blob = new Blob([final], { type: "image/svg+xml" });
-      const href = URL.createObjectURL(blob);
-      baixar(href, "qrcode-area-do-aluno.svg");
-      URL.revokeObjectURL(href);
-    } catch {
-      toast.error("Não foi possível gerar o SVG.");
-    }
-  }
 
   async function baixarPng() {
     try {
@@ -94,7 +72,7 @@ export function CartazQr({ svg, url }: { svg: string; url: string }) {
     <div className="space-y-5">
       {/* Tamanho da folha e "só o cartaz" na impressão. */}
       <style>{`
-        @page { size: ${tamanho} portrait; margin: 12mm; }
+        @page { size: A4 portrait; margin: 12mm; }
         @media print {
           body * { visibility: hidden !important; }
           #cartaz-qr, #cartaz-qr * { visibility: visible !important; }
@@ -102,26 +80,18 @@ export function CartazQr({ svg, url }: { svg: string; url: string }) {
             position: absolute; inset: 0; margin: 0 !important;
             border: 0 !important; box-shadow: none !important;
           }
-          #cartaz-qr .qr { width: ${tamanho === "A4" ? "125mm" : "88mm"} !important; }
+          #cartaz-qr .qr { width: 125mm !important; }
         }
       `}</style>
 
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => imprimir("A4")}>
+        <Button onClick={() => window.print()}>
           <Printer className="size-4" />
-          Imprimir A4
-        </Button>
-        <Button variant="outline" onClick={() => imprimir("A5")}>
-          <Printer className="size-4" />
-          Imprimir A5
+          Imprimir cartaz
         </Button>
         <Button variant="outline" onClick={baixarPng}>
           <FileImage className="size-4" />
-          Baixar PNG
-        </Button>
-        <Button variant="outline" onClick={baixarSvg}>
-          <Download className="size-4" />
-          Baixar SVG
+          Baixar imagem
         </Button>
       </div>
 

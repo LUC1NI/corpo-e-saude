@@ -193,7 +193,7 @@ export function TreinoDoAluno({
             className="inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-cta-de to-cta-ate text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,144,216,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(0,168,228,0.5)] active:translate-y-0"
           >
             <Play className="size-4.5 fill-current" />
-            Iniciar treino {ativa.nome}
+            Começar treino {ativa.nome}
           </button>
         </div>
       ) : null}

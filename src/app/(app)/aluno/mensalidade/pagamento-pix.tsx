@@ -31,6 +31,7 @@ export function PagamentoPix({
   valor,
   descricao,
   variante = "principal",
+  rotulo,
   tamanho = "lg",
   aluno,
 }: {
@@ -38,6 +39,8 @@ export function PagamentoPix({
   descricao: string;
   /** principal = botão azul · destaque = branco sobre cor · discreto = contorno */
   variante?: "principal" | "destaque" | "discreto";
+  /** Texto do botão (padrão: "Pagar com Pix"). */
+  rotulo?: string;
   tamanho?: "lg" | "default";
   /** Nome do aluno, para o dono identificar o comprovante. */
   aluno?: string;
@@ -111,7 +114,7 @@ export function PagamentoPix({
             )}
           >
             <QrCode className="size-4" />
-            {variante === "discreto" ? "Pagar adiantado" : "Pagar com Pix"}
+            {rotulo ?? (variante === "discreto" ? "Pagar adiantado" : "Pagar com Pix")}
           </Button>
         }
       />
@@ -191,7 +194,7 @@ export function PagamentoPix({
     {enviado ? (
       <p className={cn("mt-2 flex items-center justify-center gap-1.5 text-sm", variante === "principal" ? "text-emerald-700" : "text-white")}>
         <CheckCircle2 className="size-4" />
-        Comprovante enviado. O studio confirma em breve.
+        Comprovante enviado. O estúdio confirma em breve.
       </p>
     ) : null}
     </>

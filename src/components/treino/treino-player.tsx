@@ -318,6 +318,7 @@ export function TreinoPlayer({
                   <button
                     key={chave}
                     type="button"
+                    aria-pressed={sensacao === chave}
                     onClick={() =>
                       setSensacao(sensacao === chave ? undefined : chave)
                     }

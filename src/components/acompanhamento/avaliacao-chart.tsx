@@ -76,7 +76,7 @@ export function AvaliacaoChart({ dados }: { dados: PontoAvaliacao[] }) {
               </linearGradient>
             </defs>
             <CartesianGrid stroke="#edf1f6" vertical={false} />
-            <XAxis dataKey="data" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#8a93a1" }} />
+            <XAxis dataKey="data" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 12, fill: "#8a93a1" }} />
             {/* Domínio ajustado aos dados (com folga): começando em zero a evolução some. */}
             <YAxis
               domain={[(min: number) => Math.floor(min - 2), (max: number) => Math.ceil(max + 2)]}

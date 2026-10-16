@@ -68,7 +68,9 @@ export default async function AdminInicio() {
   const recebido = soma(exigir(recebidoRes, "recebimentos") as { valor: number }[]);
   const despesas = soma(exigir(despesasRes, "despesas") as { valor: number }[]);
   const resultado = recebido - despesas;
-  const pct = previsto > 0 ? Math.min(100, Math.round((recebido / previsto) * 100)) : 0;
+  // Mesma conta do Mês a mês: mensalidades DESTE mês já pagas ÷ previstas (não o caixa todo).
+  const pagoDoMes = soma(mes.filter((p) => p.status === "pago"));
+  const pct = previsto > 0 ? Math.min(100, Math.round((pagoDoMes / previsto) * 100)) : 0;
 
   // Receber: agrupado por aluno (atrasados primeiro, depois vencendo em 7 dias).
   const grupos = agruparPorAluno(abertos, hoje);
@@ -162,7 +164,7 @@ export default async function AdminInicio() {
             <div className="h-2 overflow-hidden rounded-full bg-secondary" aria-hidden>
               <div className="h-full rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
             </div>
-            <p className="text-sm text-muted-foreground">{pct}% das mensalidades do mês</p>
+            <p className="text-sm text-muted-foreground">{pct}% das mensalidades pagas</p>
           </Card>
         </Link>
         <Link href="/admin/financeiro/em-aberto">

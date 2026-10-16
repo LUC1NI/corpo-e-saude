@@ -29,7 +29,7 @@ export function ExcluirDespesaButton({ id }: { id: string }) {
       aria-label="Excluir despesa"
       onClick={excluir}
       disabled={carregando}
-      className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+      className="inline-flex size-11 items-center justify-center rounded-lg text-muted-foreground sm:size-8 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
     >
       {carregando ? (
         <Loader2 className="size-4 animate-spin" />

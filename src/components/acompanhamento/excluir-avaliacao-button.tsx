@@ -35,7 +35,7 @@ export function ExcluirAvaliacaoButton({
       aria-label="Excluir avaliação"
       onClick={excluir}
       disabled={carregando}
-      className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+      className="inline-flex size-11 items-center justify-center rounded-md text-muted-foreground sm:size-7 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
     >
       {carregando ? (
         <Loader2 className="size-3.5 animate-spin" />

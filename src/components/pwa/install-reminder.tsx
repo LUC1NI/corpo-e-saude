@@ -39,7 +39,8 @@ export function PwaInstallReminder() {
     dispensarInstalacao();
   }
 
-  if (!elegivel || pathname === "/aluno/bem-vindo") return null;
+  // No treino o rodapé é do botão "Iniciar treino".
+  if (!elegivel || pathname === "/aluno/bem-vindo" || pathname === "/aluno/treino") return null;
   if (!ios && !evento) return null;
 
   return (

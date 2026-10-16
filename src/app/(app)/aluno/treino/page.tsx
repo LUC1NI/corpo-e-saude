@@ -107,7 +107,7 @@ export default async function AlunoTreinoPage() {
               Treinos concluídos
             </h2>
           </div>
-          <ExecucoesLista execucoes={execucoes} />
+          <ExecucoesLista execucoes={execucoes} compacta />
         </section>
       ) : null}
     </div>

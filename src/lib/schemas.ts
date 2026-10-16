@@ -282,6 +282,8 @@ export const execucaoSchema = z.object({
         series: z.number().int().min(0).max(50),
         series_feitas: z.number().int().min(0).max(50),
         carga: opcional(z.string().max(60)),
+        /** Carga que o aluno realmente usou (quando difere da prescrita). */
+        carga_usada: opcional(z.string().max(60)),
       }),
     )
     .min(1, "Nenhum exercício no treino.")

@@ -15,8 +15,13 @@ import { MESES_POR_PERIODICIDADE, type Periodicidade } from "@/lib/tipos";
  * Brasília, seja qual for o fuso do servidor.
  */
 export function agoraNoEstudio(): Date {
+  return noEstudio(new Date());
+}
+
+/** Um instante (ex.: timestamptz do banco) no relógio de parede do estúdio. */
+export function noEstudio(instante: Date | string): Date {
   return new Date(
-    new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
+    new Date(instante).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
   );
 }
 

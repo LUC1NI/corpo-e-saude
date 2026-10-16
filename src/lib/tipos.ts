@@ -225,6 +225,8 @@ export interface ExecucaoDetalhe {
   series: number;
   series_feitas: number;
   carga: string | null;
+  /** Carga que o aluno informou ter usado (snapshots antigos não têm). */
+  carga_usada?: string | null;
 }
 
 /** Treino concluído pelo aluno no modo treino (retorno para o professor). */

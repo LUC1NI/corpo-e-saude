@@ -1,4 +1,6 @@
-import { CalendarCheck, Clock, TrendingUp } from "lucide-react";
+import { format, isValid, parseISO } from "date-fns";
+import { CalendarCheck, Clock, History, TrendingUp } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Link from "@/components/ui-extra/link";
 
 import { Card, CardAction, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,13 +9,13 @@ import { FrequenciaBadge } from "@/components/ui-extra/frequencia";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { PresencasAgrupadas } from "@/components/ui-extra/presencas-agrupadas";
-import { StatCard } from "@/components/ui-extra/stat-card";
 import { requireUsuario } from "@/lib/auth";
-import { hojeISO } from "@/lib/financeiro";
-import { formatData } from "@/lib/formato";
+import { agoraNoEstudio, hojeISO } from "@/lib/financeiro";
+import { formatData, plural } from "@/lib/formato";
 import { getFrequenciaAlunos } from "@/lib/frequencia";
 import { createClient } from "@/lib/supabase/server";
 import { DIAS_SEMANA, horaCurta } from "@/lib/tipos";
+import { cn } from "@/lib/utils";
 
 import { MarcarAulaDialog } from "./marcar-aula-dialog";
 import { SeletorData } from "./seletor-data";
@@ -26,73 +28,84 @@ interface PresencaLinha {
   professores: { nome: string } | null;
 }
 
+type Aba = "aulas" | "frequencia" | "historico";
+
+const ABAS: { id: Aba; rotulo: string; icone: LucideIcon }[] = [
+  { id: "aulas", rotulo: "Aulas do dia", icone: CalendarCheck },
+  { id: "frequencia", rotulo: "Frequência", icone: TrendingUp },
+  { id: "historico", rotulo: "Histórico", icone: History },
+];
+
 export default async function AdminPresencaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ data?: string }>;
+  searchParams: Promise<{ data?: string; aba?: string; vazios?: string }>;
 }) {
   await requireUsuario(["admin"]);
+  const sp = await searchParams;
+  const aba: Aba = ABAS.some((a) => a.id === sp.aba) ? (sp.aba as Aba) : "aulas";
+  // Só aceita data real ("2026-02-31" cai para hoje).
+  const d = sp.data && parseISO(sp.data);
+  const data = d && isValid(d) && format(d, "yyyy-MM-dd") === sp.data ? sp.data : undefined;
+  const sufixoData = data ? `data=${data}` : "";
+
+  return (
+    <>
+      <PageHeader
+        titulo="Presença"
+        subtitulo="Quem veio em cada aula — dá para lançar também dias anteriores."
+      />
+      <nav aria-label="Seções da presença" className="mb-6 flex flex-wrap gap-1.5">
+        {ABAS.map((a) => {
+          const ativa = a.id === aba;
+          return (
+            <Link
+              key={a.id}
+              href={`/admin/presenca?${[a.id === "aulas" ? "" : `aba=${a.id}`, sufixoData].filter(Boolean).join("&")}`}
+              aria-current={ativa ? "page" : undefined}
+              className={cn(
+                "inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm whitespace-nowrap transition-all sm:min-h-9",
+                ativa
+                  ? "bg-primary font-semibold text-primary-foreground shadow-sm"
+                  : "border bg-card font-medium text-foreground/80 shadow-sm hover:border-primary/40 hover:text-foreground",
+              )}
+            >
+              <a.icone className={cn("size-3.5", ativa ? "text-primary-foreground" : "text-primary")} />
+              {a.rotulo}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {aba === "aulas" ? (
+        <AulasDoDia data={data} mostrarVazios={sp.vazios === "1"} />
+      ) : aba === "frequencia" ? (
+        <Frequencia />
+      ) : (
+        <Historico />
+      )}
+    </>
+  );
+}
+
+async function AulasDoDia({ data: dataParam, mostrarVazios }: { data?: string; mostrarVazios: boolean }) {
   const supabase = await createClient();
   const hoje = hojeISO();
-  const sp = await searchParams;
-  const data = sp.data ?? hoje;
+  const data = dataParam ?? hoje; // já validada na página
   const diaSel = new Date(`${data}T00:00:00`).getDay();
+  const ehHoje = data === hoje;
+  const agora = format(agoraNoEstudio(), "HH:mm");
 
-  const [
-    { count: presencasHoje },
-    { count: presencasDia },
-    { data: recentesData },
-    { data: horsDiaData },
-    { data: vincData },
-    { data: presDiaData },
-    { data: alunosAtivosData },
-  ] = await Promise.all([
-    supabase
-      .from("presencas")
-      .select("id", { count: "exact", head: true })
-      .eq("data", hoje),
-    supabase
-      .from("presencas")
-      .select("id", { count: "exact", head: true })
-      .eq("data", data),
-    supabase
-      .from("presencas")
-      .select("id, data, hora, alunos(nome), professores(nome)")
-      .order("data", { ascending: false })
-      .order("criado_em", { ascending: false })
-      .limit(50),
+  const [{ data: horsDiaData }, { data: vincData }, { data: presDiaData }] = await Promise.all([
     supabase
       .from("horarios")
       .select("id, hora_inicio, hora_fim, capacidade, professor_id, professores(nome)")
       .eq("dia_semana", diaSel)
       .order("hora_inicio"),
     supabase.from("aluno_horarios").select("horario_id, alunos(id, nome, status)"),
-    supabase
-      .from("presencas")
-      .select("aluno_id, professor_id, hora")
-      .eq("data", data),
-    supabase
-      .from("alunos")
-      .select("id, nome")
-      .eq("status", "ativo")
-      .order("nome"),
+    supabase.from("presencas").select("aluno_id, professor_id, hora").eq("data", data),
   ]);
 
-  const recentes = (recentesData ?? []) as unknown as PresencaLinha[];
-
-  // Frequência (assiduidade) dos alunos ativos nas últimas 8 semanas.
-  const alunosAtivos = (alunosAtivosData ?? []) as { id: string; nome: string }[];
-  const freqMap = await getFrequenciaAlunos(
-    supabase,
-    alunosAtivos.map((a) => a.id),
-    hoje,
-  );
-  const frequencias = alunosAtivos
-    .map((a) => ({ ...a, freq: freqMap.get(a.id) }))
-    .filter((a) => a.freq && a.freq.pct !== null)
-    .sort((a, b) => (a.freq!.pct ?? 0) - (b.freq!.pct ?? 0));
-
-  // Aulas do dia selecionado (todos os professores).
   const horsDia = (horsDiaData ?? []) as unknown as {
     id: string;
     hora_inicio: string;
@@ -114,178 +127,196 @@ export default async function AdminPresencaPage({
     alunosPorHorario.set(v.horario_id, lista);
   }
 
-  const presDia = (presDiaData ?? []) as {
-    aluno_id: string;
-    professor_id: string | null;
-    hora: string | null;
-  }[];
-  const aulasDia = horsDia.map((h) => {
-    const alunos = (alunosPorHorario.get(h.id) ?? []).sort((a, b) =>
-      a.nome.localeCompare(b.nome),
-    );
-    const presentes = presDia
-      .filter(
-        (p) => p.professor_id === h.professor_id && p.hora === h.hora_inicio,
-      )
-      .map((p) => p.aluno_id);
-    return { ...h, alunos, presentes };
-  });
-
-  const ehHoje = data === hoje;
+  const presDia = (presDiaData ?? []) as { aluno_id: string; professor_id: string | null; hora: string | null }[];
+  const aulasDia = horsDia.map((h) => ({
+    ...h,
+    alunos: (alunosPorHorario.get(h.id) ?? []).sort((a, b) => a.nome.localeCompare(b.nome)),
+    presentes: presDia
+      .filter((p) => p.professor_id === h.professor_id && p.hora === h.hora_inicio)
+      .map((p) => p.aluno_id),
+    emAndamento: ehHoje && h.hora_inicio.slice(0, 5) <= agora && agora < h.hora_fim.slice(0, 5),
+  }));
+  // Horário sem aluno fixo nem presença é ruído: fica escondido atrás de um link
+  // (ainda dá para abrir e lançar um avulso).
+  const comAlunos = aulasDia.filter((a) => a.alunos.length > 0 || a.presentes.length > 0);
+  const vazios = aulasDia.length - comAlunos.length;
+  const lista = mostrarVazios ? aulasDia : comAlunos;
+  // Hoje: a aula em andamento e as próximas primeiro; as que já acabaram vão
+  // para o fim (continuam lá para lançar presença atrasada).
+  const acabou = (a: (typeof aulasDia)[number]) => ehHoje && a.hora_fim.slice(0, 5) <= agora;
+  const visiveis = [...lista.filter((a) => !acabou(a)), ...lista.filter(acabou)];
 
   return (
-    <>
-      <PageHeader
-        titulo="Presença"
-        subtitulo="Acompanhe e lance presenças do studio — inclusive de dias anteriores."
-      />
-
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard
-          titulo="Presenças hoje"
-          valor={String(presencasHoje ?? 0)}
-          icone={CalendarCheck}
-          tomIcone="primary"
-        />
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          {ehHoje ? "Hoje" : formatData(data)} · {DIAS_SEMANA[diaSel]}
+        </CardTitle>
+        <CardAction>
+          <span className="text-sm text-muted-foreground">
+            {plural(presDia.length, "presença", "presenças")}
+          </span>
+        </CardAction>
+      </CardHeader>
+      <div className="px-6 pb-2">
+        <SeletorData data={data} />
       </div>
-
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Aulas · {DIAS_SEMANA[diaSel]}</CardTitle>
-        </CardHeader>
-        <div className="px-6 pb-2">
-          <SeletorData data={data} />
-          <p className="mt-2 text-sm text-muted-foreground">
-            {ehHoje ? "Hoje" : formatData(data)} · {presencasDia ?? 0} presença(s)
-            registrada(s). Toque em “Marcar presença” para lançar (funciona
-            mesmo após o horário).
-          </p>
-        </div>
-        {aulasDia.length === 0 ? (
-          <PageEmpty
-            icone={Clock}
-            titulo="Nenhuma aula neste dia"
-            descricao="Não há horários cadastrados para este dia na grade dos professores."
-          />
-        ) : (
-          <div className="grid gap-3 px-6 pb-6 sm:grid-cols-2 xl:grid-cols-3">
-            {aulasDia.map((a) => {
-              const lotada =
-                a.capacidade != null && a.presentes.length >= a.capacidade;
-              return (
-                <div
-                  key={a.id}
-                  className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold">
-                        {horaCurta(a.hora_inicio)}–{horaCurta(a.hora_fim)}
-                      </p>
-                      <span
-                        className={
-                          lotada
-                            ? "text-xs font-medium text-amber-600"
-                            : "text-xs text-muted-foreground"
-                        }
-                      >
-                        {a.presentes.length}
-                        {a.capacidade != null ? `/${a.capacidade}` : ""}{" "}
-                        presente(s)
+      {visiveis.length === 0 ? (
+        <PageEmpty
+          icone={Clock}
+          titulo={aulasDia.length === 0 ? "Nenhuma aula neste dia" : "Nenhum aluno agendado neste dia"}
+          descricao={
+            aulasDia.length === 0
+              ? "Não há horários cadastrados para este dia na grade dos professores."
+              : "Os horários existem, mas nenhum tem aluno fixo."
+          }
+        />
+      ) : (
+        <ul className="mx-6 mb-2 divide-y rounded-xl border">
+          {visiveis.map((a) => {
+            return (
+              <li
+                key={a.id}
+                className={cn(
+                  "flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3",
+                  a.emAndamento && "bg-primary/5",
+                )}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-2 font-semibold tabular-nums">
+                    {horaCurta(a.hora_inicio)}–{horaCurta(a.hora_fim)}
+                    {a.emAndamento ? (
+                      <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
+                        agora
                       </span>
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {a.professores?.nome ?? "-"}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {a.alunos.length} aluno(s) agendado(s)
-                    </p>
-                  </div>
-                  <MarcarAulaDialog
-                    data={data}
-                    hora={a.hora_inicio}
-                    professorId={a.professor_id}
-                    professorNome={a.professores?.nome ?? "Professor"}
-                    rotuloHorario={`${horaCurta(a.hora_inicio)}–${horaCurta(a.hora_fim)}`}
-                    alunos={a.alunos}
-                    presentes={a.presentes}
-                  />
+                    ) : null}
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {a.professores?.nome ?? "-"} ·{" "}
+                    {a.presentes.length > a.alunos.length
+                      ? `${a.presentes.length} presentes · ${a.alunos.length} agendados`
+                      : `${a.presentes.length} de ${a.alunos.length} presentes`}
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
-
-      {frequencias.length > 0 ? (
-        <Card className="mb-6 overflow-hidden p-0">
-          <CardHeader className="p-5">
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="size-4 text-primary" />
-              Frequência dos alunos
-            </CardTitle>
-            <CardAction>
-              <span className="text-xs text-muted-foreground">
-                últimas 8 semanas
-              </span>
-            </CardAction>
-          </CardHeader>
-          <ul className="divide-y border-t">
-            {frequencias.map((a) => (
-              <li key={a.id}>
-                <Link
-                  href={`/admin/alunos/${a.id}`}
-                  className="flex items-center justify-between gap-3 px-5 py-2.5 transition-colors hover:bg-muted/50"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <AvatarIniciais nome={a.nome} tamanho="sm" />
-                    <span className="truncate text-sm font-medium">
-                      {a.nome}
-                    </span>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {a.freq!.presente}/{a.freq!.esperado}
-                    </span>
-                    <FrequenciaBadge pct={a.freq!.pct} />
-                  </div>
-                </Link>
+                <MarcarAulaDialog
+                  data={data}
+                  hora={a.hora_inicio}
+                  professorId={a.professor_id}
+                  professorNome={a.professores?.nome ?? "Professor"}
+                  rotuloHorario={`${horaCurta(a.hora_inicio)}–${horaCurta(a.hora_fim)}`}
+                  alunos={a.alunos}
+                  presentes={a.presentes}
+                />
               </li>
-            ))}
-          </ul>
-        </Card>
-      ) : null}
+            );
+          })}
+        </ul>
+      )}
+      {vazios > 0 ? (
+        <div className="px-6 pb-5">
+          <Link
+            href={`/admin/presenca?data=${data}${mostrarVazios ? "" : "&vazios=1"}`}
+            className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline sm:min-h-0"
+          >
+            {mostrarVazios
+              ? "Esconder horários sem aluno"
+              : `Mostrar ${plural(vazios, "horário sem aluno", "horários sem aluno")}`}
+          </Link>
+        </div>
+      ) : (
+        <div className="pb-4" />
+      )}
+    </Card>
+  );
+}
 
-      <Card className="overflow-hidden p-0">
-        <CardHeader className="p-5">
-          <CardTitle>Presenças recentes</CardTitle>
-          <CardAction>
-            <span className="text-xs text-muted-foreground">
-              agrupadas por dia · toque para abrir
-            </span>
-          </CardAction>
-        </CardHeader>
-        {recentes.length === 0 ? (
-          <PageEmpty
-            icone={CalendarCheck}
-            titulo="Nenhuma presença registrada"
-            descricao="As presenças marcadas pelos professores aparecem aqui."
+async function Frequencia() {
+  const supabase = await createClient();
+  const hoje = hojeISO();
+  const { data } = await supabase.from("alunos").select("id, nome").eq("status", "ativo").order("nome");
+  const alunosAtivos = (data ?? []) as { id: string; nome: string }[];
+  const freqMap = await getFrequenciaAlunos(supabase, alunosAtivos.map((a) => a.id), hoje);
+  // Menor frequência primeiro: é quem precisa de atenção.
+  const frequencias = alunosAtivos
+    .map((a) => ({ ...a, freq: freqMap.get(a.id) }))
+    .filter((a) => a.freq && a.freq.pct !== null)
+    .sort((a, b) => (a.freq!.pct ?? 0) - (b.freq!.pct ?? 0));
+
+  return (
+    <Card className="overflow-hidden p-0">
+      <CardHeader className="p-5">
+        <CardTitle>Frequência dos alunos</CardTitle>
+        <CardAction>
+          <span className="text-xs text-muted-foreground">últimas 8 semanas · menor primeiro</span>
+        </CardAction>
+      </CardHeader>
+      {frequencias.length === 0 ? (
+        <PageEmpty
+          icone={TrendingUp}
+          titulo="Ainda sem dados de frequência"
+          descricao="A frequência aparece quando os alunos têm horários fixos e presenças marcadas."
+        />
+      ) : (
+        <ul className="divide-y border-t">
+          {frequencias.map((a) => (
+            <li key={a.id}>
+              <Link
+                href={`/admin/alunos/${a.id}`}
+                className="flex items-center justify-between gap-3 px-5 py-2.5 transition-colors hover:bg-muted/50"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <AvatarIniciais nome={a.nome} tamanho="sm" />
+                  <span className="truncate text-sm font-medium">{a.nome}</span>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {a.freq!.presente}/{a.freq!.esperado}
+                  </span>
+                  <FrequenciaBadge pct={a.freq!.pct} />
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+async function Historico() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("presencas")
+    .select("id, data, hora, alunos(nome), professores(nome)")
+    .order("data", { ascending: false })
+    .order("criado_em", { ascending: false })
+    .limit(50);
+  const recentes = (data ?? []) as unknown as PresencaLinha[];
+
+  return (
+    <Card className="overflow-hidden p-0">
+      <CardHeader className="p-5">
+        <CardTitle>Presenças recentes</CardTitle>
+        <CardAction>
+          <span className="text-xs text-muted-foreground">últimas 50 · por dia</span>
+        </CardAction>
+      </CardHeader>
+      {recentes.length === 0 ? (
+        <PageEmpty
+          icone={CalendarCheck}
+          titulo="Nenhuma presença registrada"
+          descricao="As presenças marcadas pelos professores aparecem aqui."
+        />
+      ) : (
+        <div className="border-t">
+          <PresencasAgrupadas
+            itens={recentes}
+            hoje={hojeISO()}
+            renderPrincipal={(p) => p.alunos?.nome ?? "-"}
+            renderSecundario={(p) => `${p.professores?.nome ?? "—"}${p.hora ? ` · ${horaCurta(p.hora)}` : ""}`}
           />
-        ) : (
-          <div className="border-t">
-            <PresencasAgrupadas
-              itens={recentes}
-              hoje={hoje}
-              renderPrincipal={(p) => p.alunos?.nome ?? "-"}
-              renderSecundario={(p) =>
-                `${p.professores?.nome ?? "—"}${
-                  p.hora ? ` · ${horaCurta(p.hora)}` : ""
-                }`
-              }
-            />
-          </div>
-        )}
-      </Card>
-    </>
+        </div>
+      )}
+    </Card>
   );
 }

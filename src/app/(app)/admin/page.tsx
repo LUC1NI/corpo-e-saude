@@ -1,23 +1,22 @@
 import { addDays, format, parseISO, startOfMonth, subMonths } from "date-fns";
 import { AlertTriangle, ArrowRight, CalendarCheck, CheckCircle2, Clock, Plus, Receipt, Users, Wallet } from "lucide-react";
 
-import { CNPJ } from "@/components/landing/dados";
-import { IconeWhatsApp } from "@/components/landing/icone-whatsapp";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { AvatarIniciais } from "@/components/ui-extra/avatar-iniciais";
 import Link from "@/components/ui-extra/link";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { requireUsuario } from "@/lib/auth";
+import { agruparPorAluno, type CobrancaAberta } from "@/lib/cobranca";
 import { agoraNoEstudio, hojeISO } from "@/lib/financeiro";
-import { formatBRL, formatDataExtenso, formatDiaMes, formatMesAno, plural } from "@/lib/formato";
+import { formatBRL, formatDataExtenso, plural } from "@/lib/formato";
 import { dividirAulasDoDia } from "@/lib/historico-aulas";
 import { executarRenovacao } from "@/lib/renovacao";
 import { createClient } from "@/lib/supabase/server";
 import { horaCurta } from "@/lib/tipos";
 import { cn, exigir } from "@/lib/utils";
 
-import { BaixaButton } from "./financeiro/baixa-button";
+import { ReceberPorAluno } from "./financeiro/receber-por-aluno";
 import { FaturamentoChart, type PontoFaturamento } from "./faturamento-chart";
 
 const fmtMes = new Intl.DateTimeFormat("pt-BR", { month: "short" });
@@ -25,29 +24,6 @@ const mesCurto = (d: Date) => {
   const m = fmtMes.format(d).replace(".", "");
   return m.charAt(0).toUpperCase() + m.slice(1);
 };
-
-interface Aberto {
-  id: string;
-  aluno_id: string;
-  competencia: string;
-  vencimento: string;
-  valor: number;
-  alunos: { nome: string; telefone: string | null } | null;
-}
-
-/** Mensagem pronta de cobrança gentil para o WhatsApp do aluno. */
-function linkCobranca(nome: string, telefone: string | null, itens: Aberto[]): string {
-  const total = itens.reduce((s, p) => s + Number(p.valor), 0);
-  const meses = itens.map((p) => formatMesAno(p.competencia)).join(", ");
-  const texto = [
-    `Olá, ${nome.split(" ")[0]}! Tudo bem? 😊`,
-    `Passando para lembrar da mensalidade de ${meses} (${formatBRL(total)}).`,
-    `Pix (CNPJ): ${CNPJ}. Se já pagou, me manda o comprovante e eu dou baixa. Obrigado!`,
-  ].join("\n");
-  const digitos = (telefone ?? "").replace(/\D/g, "");
-  const fone = digitos.length >= 10 ? (digitos.startsWith("55") && digitos.length > 11 ? digitos : `55${digitos}`) : "";
-  return `https://wa.me/${fone}?text=${encodeURIComponent(texto)}`;
-}
 
 export default async function AdminInicio() {
   const usuario = await requireUsuario(["admin"]);
@@ -86,7 +62,7 @@ export default async function AdminInicio() {
       supabase.from("alunos").select("id", { count: "exact", head: true }).eq("status", "ativo"),
     ]);
 
-  const abertos = exigir(abertosRes, "cobranças") as unknown as Aberto[];
+  const abertos = exigir(abertosRes, "cobranças") as unknown as CobrancaAberta[];
   const mes = exigir(mesRes, "mês") as { valor: number; status: string }[];
   const soma = (l: { valor: number }[]) => l.reduce((s, p) => s + Number(p.valor), 0);
   const previsto = soma(mes);
@@ -96,20 +72,8 @@ export default async function AdminInicio() {
   const pct = previsto > 0 ? Math.min(100, Math.round((recebido / previsto) * 100)) : 0;
 
   // Receber: agrupado por aluno (atrasados primeiro, depois vencendo em 7 dias).
-  const porAluno = new Map<string, { nome: string; telefone: string | null; itens: Aberto[] }>();
-  for (const p of abertos) {
-    const g = porAluno.get(p.aluno_id) ?? { nome: p.alunos?.nome ?? "Aluno", telefone: p.alunos?.telefone ?? null, itens: [] };
-    g.itens.push(p);
-    porAluno.set(p.aluno_id, g);
-  }
-  const grupos = [...porAluno.entries()].map(([id, g]) => ({
-    id,
-    ...g,
-    total: soma(g.itens),
-    atrasado: g.itens.some((p) => p.vencimento < hoje),
-  }));
+  const grupos = agruparPorAluno(abertos, hoje);
   const atrasados = grupos.filter((g) => g.atrasado);
-  const vencendo = grupos.filter((g) => !g.atrasado);
   const totalAtraso = atrasados.reduce((s, g) => s + soma(g.itens.filter((p) => p.vencimento < hoje)), 0);
 
   // Série de 6 meses (recebido por mês de pagamento).
@@ -238,48 +202,12 @@ export default async function AdminInicio() {
           {grupos.length === 0 ? (
             <p className="px-5 pb-5 text-muted-foreground">Nada para receber nos próximos 7 dias. ✓</p>
           ) : (
-            <ul className="divide-y border-t">
-              {[...atrasados, ...vencendo].slice(0, 8).map((g, i) => (
-                <li key={g.id} className={cn("px-5 py-3", i >= 4 && "hidden lg:block")}>
-                  <div className="flex items-center gap-3">
-                    <AvatarIniciais nome={g.nome} tamanho="sm" />
-                    <div className="min-w-0 flex-1">
-                      <Link href={`/admin/alunos/${g.id}`} className="block truncate font-semibold hover:underline">{g.nome}</Link>
-                      <p className={cn("text-sm", g.atrasado ? "font-medium text-red-700" : "text-muted-foreground")}>
-                        {g.atrasado
-                          ? `${g.itens.length > 1 ? `${g.itens.length} meses · ` : ""}atrasado desde ${formatDiaMes(g.itens[0]!.vencimento)}`
-                          : `vence ${g.itens[0]!.vencimento === hoje ? "hoje" : formatDiaMes(g.itens[0]!.vencimento)}`}
-                      </p>
-                    </div>
-                    <span className="font-heading font-bold tabular-nums">{formatBRL(g.total)}</span>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2 pl-11">
-                    <a
-                      href={linkCobranca(g.nome, g.telefone, g.itens)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Lembrar ${g.nome} pelo WhatsApp`}
-                      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "text-emerald-700")}
-                    >
-                      <IconeWhatsApp className="size-4" />
-                      Lembrar
-                    </a>
-                    {/* Um botão só: o mês mais antigo. O próximo aparece depois da baixa. */}
-                    <BaixaButton
-                      pagamentoId={g.itens[0]!.id}
-                      aluno={g.nome}
-                      competencia={g.itens[0]!.competencia}
-                      valor={Number(g.itens[0]!.valor)}
-                      rotulo={
-                        g.itens.length > 1
-                          ? `Recebi ${formatMesAno(g.itens[0]!.competencia).split("/")[0]!.toLowerCase()}`
-                          : undefined
-                      }
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <ReceberPorAluno
+              grupos={grupos.slice(0, 8)}
+              hoje={hoje}
+              className="border-t"
+              itemClassName={(i) => (i >= 4 ? "hidden lg:block" : undefined)}
+            />
           )}
         </Card>
 

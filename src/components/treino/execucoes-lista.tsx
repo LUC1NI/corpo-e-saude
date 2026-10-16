@@ -1,8 +1,9 @@
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CheckCircle2, Clock, MessageSquareText } from "lucide-react";
 
 import { PageEmpty } from "@/components/ui-extra/page-empty";
+import { noEstudio } from "@/lib/financeiro";
 import { SENSACOES, type TreinoExecucao } from "@/lib/tipos";
 import { cn } from "@/lib/utils";
 
@@ -19,8 +20,11 @@ function fmtDuracao(seg: number): string {
  */
 export function ExecucoesLista({
   execucoes,
+  compacta = false,
 }: {
   execucoes: TreinoExecucao[];
+  /** Uma linha por treino ("Qua 07/10 · C · 50 min · 6/6 ✓") — visão do aluno. */
+  compacta?: boolean;
 }) {
   if (execucoes.length === 0) {
     return (
@@ -29,6 +33,33 @@ export function ExecucoesLista({
         titulo="Nenhum treino registrado"
         descricao="Quando o aluno concluir um treino pelo aplicativo, o retorno aparece aqui."
       />
+    );
+  }
+
+  if (compacta) {
+    return (
+      <ul className="divide-y rounded-2xl border bg-card">
+        {execucoes.map((e) => {
+          const completo = e.exercicios_feitos >= e.exercicios_previstos;
+          const sensacao = e.sensacao ? SENSACOES[e.sensacao] : null;
+          const dia = format(noEstudio(e.finalizado_em), "EEE dd/MM", { locale: ptBR });
+          return (
+            <li key={e.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+              <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                {e.nome_divisao}
+              </span>
+              <span className="min-w-0 flex-1 truncate">
+                <span className="font-medium capitalize">{dia}</span>
+                <span className="text-muted-foreground"> · {fmtDuracao(e.duracao_segundos)}</span>
+              </span>
+              {sensacao ? <span role="img" title={sensacao.rotulo} aria-label={sensacao.rotulo}>{sensacao.emoji}</span> : null}
+              <span className={cn("shrink-0 text-xs font-semibold tabular-nums", completo ? "text-emerald-700" : "text-amber-700")}>
+                {e.exercicios_feitos}/{e.exercicios_previstos}{completo ? " ✓" : ""}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
     );
   }
 
@@ -48,7 +79,7 @@ export function ExecucoesLista({
                   {e.foco_divisao || `Treino ${e.nome_divisao}`}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {format(parseISO(e.finalizado_em), "EEEE, dd/MM 'às' HH:mm", {
+                  {format(noEstudio(e.finalizado_em), "EEEE, dd/MM 'às' HH:mm", {
                     locale: ptBR,
                   })}
                 </p>
@@ -94,7 +125,13 @@ export function ExecucoesLista({
                     >
                       <span className="min-w-0 flex-1 truncate font-medium">
                         {d.nome}
-                        {d.carga ? (
+                        {d.carga_usada && d.carga_usada !== d.carga ? (
+                          <span className="text-muted-foreground">
+                            {" "}
+                            · usou <strong className="text-foreground">{d.carga_usada}</strong>
+                            {d.carga ? ` (prescrito ${d.carga})` : ""}
+                          </span>
+                        ) : d.carga ? (
                           <span className="text-muted-foreground">
                             {" "}
                             · {d.carga}

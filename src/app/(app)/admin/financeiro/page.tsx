@@ -16,20 +16,21 @@ import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { requireUsuario } from "@/lib/auth";
+import { agruparPorAluno, type CobrancaAberta } from "@/lib/cobranca";
 import { formatBRL, formatData, plural } from "@/lib/formato";
 import { hojeISO } from "@/lib/financeiro";
 import { executarRenovacao } from "@/lib/renovacao";
 import { createClient } from "@/lib/supabase/server";
 import { exigir } from "@/lib/utils";
 import type { StatusPagamento as TStatusPagamento } from "@/lib/tipos";
+import Link from "@/components/ui-extra/link";
+import { addDays, format, parseISO } from "date-fns";
+import { ArrowRight } from "lucide-react";
 
 import { DespesaForm } from "./despesa-form";
 import { ExcluirDespesaButton } from "./excluir-despesa-button";
-import {
-  MensalidadesAbertas,
-  type PagamentoAberto,
-} from "./mensalidades-abertas";
 import { NavFinanceiro } from "./nav-financeiro";
+import { ReceberPorAluno } from "./receber-por-aluno";
 
 interface DespesaItem {
   id: string;
@@ -58,10 +59,10 @@ export default async function FinanceiroPage() {
     await Promise.all([
     supabase
       .from("pagamentos")
-      .select("id, aluno_id, competencia, vencimento, valor, status, alunos(nome)")
+      .select("id, aluno_id, competencia, vencimento, valor, status, alunos(nome, telefone)")
       .in("status", ["pendente", "vencido"])
       .order("vencimento")
-      .limit(100),
+      .limit(300),
     supabase
       .from("pagamentos")
       .select("valor, status")
@@ -81,7 +82,7 @@ export default async function FinanceiroPage() {
     supabase.from("categorias_despesa").select("id, nome").order("nome"),
   ]);
 
-  const abertos = exigir(abertosRes, "cobranças") as unknown as PagamentoAberto[];
+  const abertos = exigir(abertosRes, "cobranças") as unknown as CobrancaAberta[];
   const mes = exigir(mesRes, "cobranças do mês") as {
     valor: number;
     status: TStatusPagamento;
@@ -104,12 +105,12 @@ export default async function FinanceiroPage() {
   const totalAberto = abertos.reduce((s, p) => s + Number(p.valor), 0);
   const totalDespesasMes = despesas.reduce((s, d) => s + Number(d.valor), 0);
 
+  // A receber agora: atrasados + o que vence nos próximos 7 dias, por aluno.
+  const ate7dias = format(addDays(parseISO(hoje), 7), "yyyy-MM-dd");
+  const aReceber = agruparPorAluno(abertos.filter((p) => p.vencimento <= ate7dias), hoje);
+
   // Inadimplentes: alunos distintos com pelo menos uma cobrança vencida.
-  const inadimplentes = new Set(
-    abertos
-      .filter((p) => p.status === "vencido" || p.vencimento < hoje)
-      .map((p) => p.aluno_id),
-  ).size;
+  const inadimplentes = aReceber.filter((g) => g.atrasado).length;
 
   return (
     <>
@@ -159,7 +160,19 @@ export default async function FinanceiroPage() {
         />
       </div>
 
-      <MensalidadesAbertas abertos={abertos} hoje={hoje} />
+      <Card className="mt-6 gap-0 overflow-hidden p-0">
+        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+          <CardTitle>A receber</CardTitle>
+          <Link href="/admin/financeiro/em-aberto" className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary sm:min-h-0">
+            Ver tudo em aberto <ArrowRight className="size-4" />
+          </Link>
+        </div>
+        {aReceber.length === 0 ? (
+          <p className="px-5 pb-5 text-muted-foreground">Nada atrasado nem vencendo nos próximos 7 dias. ✓</p>
+        ) : (
+          <ReceberPorAluno grupos={aReceber} hoje={hoje} className="border-t" />
+        )}
+      </Card>
 
       <Card id="despesa" className="mt-6 scroll-mt-20">
         <CardHeader>

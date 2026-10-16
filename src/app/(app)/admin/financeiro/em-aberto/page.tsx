@@ -1,9 +1,7 @@
 import { AlertTriangle, CalendarClock, CheckCircle2, Wallet } from "lucide-react";
-import Link from "@/components/ui-extra/link";
 
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -13,61 +11,13 @@ import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
 import { requireUsuario } from "@/lib/auth";
 import { hojeISO } from "@/lib/financeiro";
-import { formatBRL, formatData, formatMesAno, plural } from "@/lib/formato";
+import { agruparPorAluno, type CobrancaAberta } from "@/lib/cobranca";
+import { formatBRL, plural } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
-import type { StatusPagamento as TStatusPagamento } from "@/lib/tipos";
 
-import { BaixaButton } from "../baixa-button";
-import { ExcluirPagamentoButton } from "../excluir-pagamento-button";
 import { NavFinanceiro } from "../nav-financeiro";
+import { ReceberPorAluno } from "../receber-por-aluno";
 import { exigir } from "@/lib/utils";
-
-interface Aberto {
-  id: string;
-  aluno_id: string;
-  competencia: string;
-  vencimento: string;
-  valor: number;
-  status: TStatusPagamento;
-  alunos: { nome: string } | null;
-}
-
-function ListaCobrancas({ itens }: { itens: Aberto[] }) {
-  return (
-    <ul className="divide-y rounded-lg border">
-      {itens.map((p) => (
-        // No celular: nome + valor em cima, botões embaixo (alvos de toque
-        // confortáveis). No desktop: tudo em uma linha.
-        <li
-          key={p.id}
-          className="px-4 py-3 sm:flex sm:items-center sm:justify-between sm:gap-3"
-        >
-          <div className="flex items-center justify-between gap-3 sm:min-w-0 sm:flex-1">
-            <Link
-              href={`/admin/alunos/${p.aluno_id}`}
-              className="min-w-0 transition-colors hover:text-primary"
-            >
-              <p className="truncate text-sm font-medium">
-                {p.alunos?.nome ?? "Aluno"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {formatMesAno(p.competencia)} · vence{" "}
-                {formatData(p.vencimento)}
-              </p>
-            </Link>
-            <span className="shrink-0 text-sm font-semibold tabular-nums">
-              {formatBRL(p.valor)}
-            </span>
-          </div>
-          <div className="mt-2 flex items-center justify-end gap-1.5 sm:mt-0 sm:shrink-0">
-            <BaixaButton pagamentoId={p.id} aluno={p.alunos?.nome ?? "aluno"} competencia={p.competencia} valor={Number(p.valor)} />
-            <ExcluirPagamentoButton pagamentoId={p.id} />
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 export default async function EmAbertoPage() {
   await requireUsuario(["admin"]);
@@ -76,18 +26,18 @@ export default async function EmAbertoPage() {
 
   const res = await supabase
     .from("pagamentos")
-    .select("id, aluno_id, competencia, vencimento, valor, status, alunos(nome)")
+    .select("id, aluno_id, competencia, vencimento, valor, status, alunos(nome, telefone)")
     .in("status", ["pendente", "vencido"])
     .order("vencimento")
     .limit(300);
 
-  const abertos = exigir(res, "lista") as unknown as Aberto[];
-  const vencidas = abertos.filter(
-    (p) => p.status === "vencido" || p.vencimento < hoje,
-  );
-  const aVencer = abertos.filter(
-    (p) => p.status !== "vencido" && p.vencimento >= hoje,
-  );
+  const abertos = exigir(res, "lista") as unknown as CobrancaAberta[];
+  const vencidas = abertos.filter((p) => p.vencimento < hoje);
+  const aVencer = abertos.filter((p) => p.vencimento >= hoje);
+  // Uma linha por aluno; quem tem qualquer mês atrasado vai para "Atrasadas".
+  const grupos = agruparPorAluno(abertos, hoje);
+  const gruposAtrasados = grupos.filter((g) => g.atrasado);
+  const gruposEmDia = grupos.filter((g) => !g.atrasado);
 
   const totalAberto = abertos.reduce((s, p) => s + Number(p.valor), 0);
   const totalVencido = vencidas.reduce((s, p) => s + Number(p.valor), 0);
@@ -137,39 +87,29 @@ export default async function EmAbertoPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {vencidas.length > 0 ? (
-            <Card className="border-red-200">
-              <CardHeader>
+          {gruposAtrasados.length > 0 ? (
+            <Card className="gap-0 overflow-hidden border-red-200 p-0">
+              <CardHeader className="p-5">
                 <CardTitle className="flex items-center gap-2 text-red-700">
                   <AlertTriangle className="size-4" />
-                  Vencidas ({vencidas.length})
+                  Atrasadas · {plural(gruposAtrasados.length, "aluno", "alunos")}
                 </CardTitle>
-                <CardDescription>
-                  Já passaram do vencimento — priorize a cobrança. Toque no
-                  nome para abrir o aluno.
-                </CardDescription>
+                <CardDescription>Priorize a cobrança. O valor soma todos os meses em aberto do aluno.</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ListaCobrancas itens={vencidas} />
-              </CardContent>
+              <ReceberPorAluno grupos={gruposAtrasados} hoje={hoje} className="border-t" permitirExcluir />
             </Card>
           ) : null}
 
-          {aVencer.length > 0 ? (
-            <Card>
-              <CardHeader>
+          {gruposEmDia.length > 0 ? (
+            <Card className="gap-0 overflow-hidden p-0">
+              <CardHeader className="p-5">
                 <CardTitle className="flex items-center gap-2">
-                  <CalendarClock className="size-4 text-primary" />A vencer (
-                  {aVencer.length})
+                  <CalendarClock className="size-4 text-primary" />
+                  No prazo · {plural(gruposEmDia.length, "aluno", "alunos")}
                 </CardTitle>
-                <CardDescription>
-                  Dentro do prazo. Você pode confirmar antecipado se o aluno já
-                  pagou.
-                </CardDescription>
+                <CardDescription>Dentro do prazo. Dá para confirmar antecipado se o aluno já pagou.</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ListaCobrancas itens={aVencer} />
-              </CardContent>
+              <ReceberPorAluno grupos={gruposEmDia} hoje={hoje} className="border-t" permitirExcluir />
             </Card>
           ) : null}
         </div>

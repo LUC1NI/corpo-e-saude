@@ -45,6 +45,7 @@ export async function registrarExecucao(
       series: e.series,
       series_feitas: e.series_feitas,
       carga: e.carga ?? null,
+      carga_usada: e.carga_usada ?? null,
     })),
     sensacao: d.sensacao ?? null,
     observacao: d.observacao ?? null,

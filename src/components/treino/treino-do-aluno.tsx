@@ -7,15 +7,12 @@ import { MidiaThumb } from "@/components/treino/midia-thumb";
 import { TreinoPlayer } from "@/components/treino/treino-player";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { DIAS_SEMANA, DIAS_SEMANA_CURTO, type TreinoComTudo } from "@/lib/tipos";
+import { DIAS_SEMANA_CURTO, type TreinoComTudo } from "@/lib/tipos";
 
-function Chip({ rotulo, valor }: { rotulo: string; valor: string | number }) {
-  return (
-    <span className="inline-flex items-baseline gap-1 rounded-md bg-secondary px-2 py-0.5 text-xs">
-      <span className="text-muted-foreground">{rotulo}</span>
-      <span className="font-semibold">{valor}</span>
-    </span>
-  );
+/** "3×8-10 · 10 kg · 60 s" — a prescrição lida de uma vez. */
+function resumoPrescricao(ex: { series: number | null; repeticoes: string | null; carga: string | null; descanso: string | null }): string {
+  const volume = ex.series != null && ex.repeticoes ? `${ex.series}×${ex.repeticoes}` : ex.series != null ? `${ex.series} séries` : ex.repeticoes;
+  return [volume, ex.carga, ex.descanso].filter(Boolean).join(" · ");
 }
 
 /**
@@ -61,32 +58,24 @@ export function TreinoDoAluno({
   return (
     <div className="space-y-4">
       {/* Abas de divisão */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Divisões do treino">
         {divisoes.map((d, i) => {
           const hoje = d.dias_semana.includes(diaHoje);
           return (
             <button
               key={d.id}
               type="button"
+              aria-pressed={i === sel}
+              aria-label={`Treino ${d.nome}${d.foco ? ` · ${d.foco}` : ""}${hoje ? " (hoje)" : ""}`}
               onClick={() => setSel(i)}
               className={cn(
-                "flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors",
+                "flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl border px-3 text-sm font-medium transition-colors",
                 i === sel
                   ? "border-primary bg-primary text-primary-foreground"
                   : "hover:bg-secondary",
               )}
             >
               <span className="font-bold">{d.nome}</span>
-              {d.foco ? (
-                <span
-                  className={cn(
-                    "text-xs",
-                    i === sel ? "text-primary-foreground/80" : "text-muted-foreground",
-                  )}
-                >
-                  {d.foco}
-                </span>
-              ) : null}
               {hoje ? (
                 <span
                   className={cn(
@@ -113,7 +102,7 @@ export function TreinoDoAluno({
             </span>
             <div className="leading-tight">
               <p className="text-sm font-semibold">
-                {ehHoje ? "Treino de hoje" : ativa.foco || "Treino"}
+                {ativa.foco || `Treino ${ativa.nome}`}{ehHoje ? " · hoje" : ""}
               </p>
               {ativa.dias_semana.length ? (
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -131,16 +120,6 @@ export function TreinoDoAluno({
           </p>
         ) : (
           <>
-            {permitirIniciar ? (
-              <button
-                type="button"
-                onClick={() => setTreinando(true)}
-                className="inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#0090D8] to-[#00A8E4] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,144,216,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(0,168,228,0.5)] active:translate-y-0"
-              >
-                <Play className="size-4.5 fill-current" />
-                Iniciar treino
-              </button>
-            ) : null}
             <ul className="divide-y">
             {ativa.exercicios.map((ex) => (
               <li key={ex.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
@@ -150,12 +129,9 @@ export function TreinoDoAluno({
                 />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{ex.exercicio?.nome ?? "Exercício"}</p>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {ex.series != null ? <Chip rotulo="Séries" valor={ex.series} /> : null}
-                    {ex.repeticoes ? <Chip rotulo="Reps" valor={ex.repeticoes} /> : null}
-                    {ex.carga ? <Chip rotulo="Carga" valor={ex.carga} /> : null}
-                    {ex.descanso ? <Chip rotulo="Descanso" valor={ex.descanso} /> : null}
-                  </div>
+                  {resumoPrescricao(ex) ? (
+                    <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground/80">{resumoPrescricao(ex)}</p>
+                  ) : null}
                   {ex.observacao ? (
                     <p className="mt-1.5 text-xs text-muted-foreground">
                       {ex.observacao}
@@ -169,9 +145,19 @@ export function TreinoDoAluno({
         )}
       </Card>
 
-      <p className="text-center text-xs text-muted-foreground">
-        Hoje é {DIAS_SEMANA[diaHoje]}.
-      </p>
+      {/* Botão fixo no rodapé (zona do polegar), acima do menu inferior. */}
+      {permitirIniciar && ativa.exercicios.length > 0 ? (
+        <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 lg:bottom-4">
+          <button
+            type="button"
+            onClick={() => setTreinando(true)}
+            className="inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#0090D8] to-[#00A8E4] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,144,216,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(0,168,228,0.5)] active:translate-y-0"
+          >
+            <Play className="size-4.5 fill-current" />
+            Iniciar treino {ativa.nome}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
+import { z } from "zod";
 
 import { assertPapel } from "@/lib/auth";
 import { falha, sucesso, type ResultadoAcao } from "@/lib/acoes";
@@ -530,4 +531,47 @@ export async function aplicarModeloAoAluno(
 
   revalidarAluno(alunoId);
   return sucesso({ id: ficha.id as string });
+}
+
+const ajusteSchema = z.discriminatedUnion("campo", [
+  z.object({
+    campo: z.literal("series"),
+    valor: z.preprocess(
+      (v) => (v === "" ? null : v),
+      z.coerce.number({ message: "Séries deve ser um número." }).int().positive("Séries deve ser maior que zero.").max(50).nullable(),
+    ),
+  }),
+  z.object({
+    campo: z.enum(["repeticoes", "carga", "descanso"]),
+    valor: z.string().trim().max(40).transform((v) => v || null),
+  }),
+]);
+
+/**
+ * Ajuste rápido de UM campo da prescrição (edição na tabela). Grava só o
+ * campo alterado, para dois ajustes seguidos não desfazerem um ao outro.
+ */
+export async function ajustarTreinoExercicio(
+  id: string,
+  alunoId: string | null,
+  campo: "series" | "repeticoes" | "carga" | "descanso",
+  valor: string,
+): Promise<ResultadoAcao> {
+  await assertPapel(["admin", "professor"]);
+  const parsed = ajusteSchema.safeParse({ campo, valor });
+  if (!parsed.success || !z.string().uuid().safeParse(id).success) {
+    return falha(parsed.error?.issues[0]?.message ?? "Dados inválidos.");
+  }
+
+  const supabase = await createClient();
+  // RLS barra exercício de aluno de outro professor: aí nenhuma linha volta.
+  const { data, error } = await supabase
+    .from("treino_exercicios")
+    .update({ [parsed.data.campo]: parsed.data.valor })
+    .eq("id", id)
+    .select("id");
+  if (error || !data?.length) return falha("Não foi possível salvar o ajuste.");
+
+  revalidarAluno(alunoId);
+  return sucesso();
 }

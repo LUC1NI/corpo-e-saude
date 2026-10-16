@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Dumbbell, Layers, Pencil, Plus, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
@@ -32,6 +32,7 @@ import { MidiaThumb } from "@/components/treino/midia-thumb";
 import { SeletorDiasSemana } from "@/components/treino/seletor-dias";
 import {
   adicionarTreinoExercicio,
+  ajustarTreinoExercicio,
   aplicarModeloAoAluno,
   atualizarDivisao,
   atualizarTreino,
@@ -69,6 +70,7 @@ import type {
   TreinoExercicio,
 } from "@/lib/tipos";
 import { plural } from "@/lib/formato";
+import { cn } from "@/lib/utils";
 
 // ===========================================================================
 // Dialog: ficha de treino (do aluno) ou treino-modelo (alunoId null)
@@ -543,6 +545,75 @@ function ExercicioDivisaoDialog({
 }
 
 // ===========================================================================
+// Célula editável da prescrição: séries/reps/carga/descanso direto na tabela.
+// Enter (ou sair do campo) salva; Esc desfaz. Progressão de carga sem modal.
+// ===========================================================================
+type CampoInline = "series" | "repeticoes" | "carga" | "descanso";
+
+function CelulaEditavel({
+  item,
+  campo,
+  rotulo,
+  alunoId,
+}: {
+  item: TreinoExercicio & { exercicio?: { nome: string } | null };
+  campo: CampoInline;
+  rotulo: string;
+  alunoId: string | null;
+}) {
+  const router = useRouter();
+  const original = item[campo] == null ? "" : String(item[campo]);
+  const [valor, setValor] = useState(original);
+  const [salvando, setSalvando] = useState(false);
+  // Esc dispara o blur antes do estado atualizar: o ref impede salvar.
+  const cancelado = useRef(false);
+
+  async function salvar() {
+    if (cancelado.current) {
+      cancelado.current = false;
+      return;
+    }
+    const v = valor.trim();
+    if (v === original) return;
+    setSalvando(true);
+    const res = await ajustarTreinoExercicio(item.id, alunoId, campo, v);
+    setSalvando(false);
+    if (!res.ok) {
+      toast.error(res.erro);
+      setValor(original);
+      return;
+    }
+    toast.success("Ajuste salvo.", { duration: 1500 });
+    router.refresh();
+  }
+
+  return (
+    <input
+      aria-label={`${rotulo} de ${item.exercicio?.nome ?? "exercício"}`}
+      value={valor}
+      onChange={(e) => setValor(e.target.value)}
+      onBlur={salvar}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+        if (e.key === "Escape") {
+          cancelado.current = true;
+          setValor(original);
+          e.currentTarget.blur();
+        }
+      }}
+      disabled={salvando}
+      inputMode={campo === "series" ? "numeric" : "text"}
+      maxLength={campo === "series" ? 2 : 40}
+      placeholder="-"
+      className={cn(
+        "h-11 rounded-md border border-input/60 bg-background px-2 text-base tabular-nums transition-colors hover:border-input focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 sm:h-9 sm:text-sm",
+        campo === "series" ? "w-12" : "w-24",
+      )}
+    />
+  );
+}
+
+// ===========================================================================
 // Bloco de uma divisão (tabela de exercícios)
 // ===========================================================================
 function DivisaoBloco({
@@ -619,6 +690,9 @@ function DivisaoBloco({
         </p>
       ) : (
         <div className="p-3 sm:p-0">
+          <p className="px-1 pb-2 text-xs text-muted-foreground sm:px-4 sm:pt-3">
+            Toque em séries, reps, carga ou descanso para ajustar — salva ao sair do campo.
+          </p>
           <TabelaResponsiva
             dados={divisao.exercicios}
             getKey={(ex) => ex.id}
@@ -646,10 +720,10 @@ function DivisaoBloco({
                   </div>
                 ),
               },
-              { cabecalho: "Séries", celula: (ex) => ex.series ?? "-" },
-              { cabecalho: "Reps", celula: (ex) => ex.repeticoes ?? "-" },
-              { cabecalho: "Carga", celula: (ex) => ex.carga ?? "-" },
-              { cabecalho: "Descanso", celula: (ex) => ex.descanso ?? "-" },
+              { cabecalho: "Séries", celula: (ex) => <CelulaEditavel key={`${ex.id}-${ex.series ?? ""}`} item={ex} campo="series" rotulo="Séries" alunoId={alunoId} /> },
+              { cabecalho: "Reps", celula: (ex) => <CelulaEditavel key={`${ex.id}-${ex.repeticoes ?? ""}`} item={ex} campo="repeticoes" rotulo="Repetições" alunoId={alunoId} /> },
+              { cabecalho: "Carga", celula: (ex) => <CelulaEditavel key={`${ex.id}-${ex.carga ?? ""}`} item={ex} campo="carga" rotulo="Carga" alunoId={alunoId} /> },
+              { cabecalho: "Descanso", celula: (ex) => <CelulaEditavel key={`${ex.id}-${ex.descanso ?? ""}`} item={ex} campo="descanso" rotulo="Descanso" alunoId={alunoId} /> },
               {
                 cabecalho: "Ações",
                 alinhar: "right",

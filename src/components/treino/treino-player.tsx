@@ -85,6 +85,8 @@ export function TreinoPlayer({
     "facil" | "na_medida" | "dificil" | undefined
   >();
   const [observacao, setObservacao] = useState("");
+  // Carga que o aluno realmente usou, por exercício (opcional) — vai para o professor.
+  const [cargasUsadas, setCargasUsadas] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
 
   // Relógio único: cronômetro total + contagem do descanso (por timestamp,
@@ -203,6 +205,7 @@ export function TreinoPlayer({
         series: ex.series ?? 0,
         series_feitas: feitas[ex.id] ?? 0,
         carga: ex.carga ?? undefined,
+        carga_usada: cargasUsadas[ex.id]?.trim() || undefined,
       })),
       sensacao,
       observacao: observacao.trim() || undefined,
@@ -439,8 +442,30 @@ export function TreinoPlayer({
                         {ex.observacao}
                       </p>
                     ) : null}
+                    {completo && cargasUsadas[ex.id]?.trim() ? (
+                      <p className="mt-1 text-xs font-medium text-emerald-700">
+                        Usou {cargasUsadas[ex.id]!.trim()}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
+
+                {/* Só no exercício da vez: anotar a carga real (opcional). */}
+                {ehDaVez ? (
+                  <label className="mt-3 flex items-center gap-2 text-sm">
+                    <span className="shrink-0 text-muted-foreground">Carga usada <span className="text-xs">(opcional)</span></span>
+                    <input
+                      value={cargasUsadas[ex.id] ?? ""}
+                      onChange={(e) =>
+                        setCargasUsadas((a) => ({ ...a, [ex.id]: e.target.value }))
+                      }
+                      maxLength={60}
+                      inputMode="text"
+                      placeholder={ex.carga ? "igual à prescrita" : "ex.: 20 kg"}
+                      className="h-11 min-w-0 flex-1 rounded-lg border bg-background px-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
+                    />
+                  </label>
+                ) : null}
 
                 {/* Bolinhas de série + botão de marcar */}
                 <div className="mt-3 flex items-center justify-between gap-3">

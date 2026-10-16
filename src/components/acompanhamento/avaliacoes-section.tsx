@@ -11,10 +11,13 @@ import { AvaliacaoChart, type PontoAvaliacao } from "./avaliacao-chart";
 import { AvaliacaoForm } from "./avaliacao-form";
 import { ExcluirAvaliacaoButton } from "./excluir-avaliacao-button";
 
+/** Decimal com vírgula (81,4). */
+const num = (v: number) => Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+
 function resumoMedidas(medidas: Record<string, number> | null): string {
   if (!medidas) return "-";
   const partes = MEDIDAS_CAMPOS.filter((m) => medidas[m.chave] != null).map(
-    (m) => `${m.rotulo} ${medidas[m.chave]}`,
+    (m) => `${m.rotulo} ${num(medidas[m.chave]!)}`,
   );
   return partes.length ? partes.join(" · ") : "-";
 }
@@ -73,14 +76,14 @@ export function AvaliacoesSection({
               },
               {
                 cabecalho: "Peso",
-                celula: (a) => (a.peso != null ? `${a.peso} kg` : "-"),
+                celula: (a) => (a.peso != null ? `${num(a.peso)} kg` : "-"),
               },
-              { cabecalho: "IMC", celula: (a) => (a.imc != null ? a.imc : "-") },
+              { cabecalho: "IMC", celula: (a) => (a.imc != null ? num(a.imc) : "-") },
               {
                 cabecalho: "% Gord.",
                 celula: (a) =>
                   a.percentual_gordura != null
-                    ? `${a.percentual_gordura}%`
+                    ? `${num(a.percentual_gordura)}%`
                     : "-",
               },
               {

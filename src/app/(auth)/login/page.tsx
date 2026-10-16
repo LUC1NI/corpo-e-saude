@@ -64,7 +64,7 @@ export default async function LoginPage({
         <Link href="/" className="relative flex items-center gap-2.5">
           <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
             <Image
-              src="/icons/icon-192.png"
+              src="/icons/simbolo.png"
               alt="Logo Corpo & Saúde"
               width={36}
               height={36}
@@ -167,7 +167,7 @@ export default async function LoginPage({
           <span className="flex items-center gap-2 lg:hidden">
             <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-white">
               <Image
-                src="/icons/icon-192.png"
+                src="/icons/simbolo.png"
                 alt="Logo Corpo & Saúde"
                 width={26}
                 height={26}

@@ -1,5 +1,5 @@
 import { addDays, format, parseISO, startOfMonth, subMonths } from "date-fns";
-import { AlertTriangle, ArrowRight, CalendarCheck, CheckCircle2, Clock, Plus, Receipt, Users, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarCheck, CheckCircle2, Clock, Plus, Users, Wallet } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -41,7 +41,7 @@ export default async function AdminInicio() {
     /* segue com o que existe */
   }
 
-  const [abertosRes, mesRes, recebidoRes, despesasRes, historicoRes, aulasRes, presRes, alunosAtivos] =
+  const [abertosRes, mesRes, recebidoRes, despesasRes, historicoRes, aulasRes, alunosAtivos] =
     await Promise.all([
       supabase
         .from("pagamentos")
@@ -58,7 +58,6 @@ export default async function AdminInicio() {
         .select("id, hora_inicio, hora_fim, capacidade, professores(nome), aluno_horarios(alunos(id, nome))")
         .eq("dia_semana", agora.getDay())
         .order("hora_inicio"),
-      supabase.from("presencas").select("hora, professor_id").eq("data", hoje),
       supabase.from("alunos").select("id", { count: "exact", head: true }).eq("status", "ativo"),
     ]);
 
@@ -110,7 +109,6 @@ export default async function AdminInicio() {
   const dia = dividirAulasDoDia(aulas, format(agora, "HH:mm"));
   const agoraLista = aulas.filter((a) => dia.agora && a.hora_inicio === dia.agora.hora_inicio);
   const seguirLista = aulas.filter((a) => dia.aSeguir && a.hora_inicio === dia.aSeguir.hora_inicio);
-  const presentesHoje = (presRes.data ?? []).length;
 
   const hojeExtenso = formatDataExtenso(agora);
 
@@ -144,7 +142,7 @@ export default async function AdminInicio() {
         acoes={
           <div className="flex gap-2">
             <Link href="/admin/financeiro#despesa" className={buttonVariants({ variant: "outline" })}>
-              <Receipt className="size-4" />
+              <Plus className="size-4" />
               Despesa
             </Link>
             <Link href="/admin/alunos/novo" className={buttonVariants()}>
@@ -159,12 +157,12 @@ export default async function AdminInicio() {
       <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Link href="/admin/financeiro/recebimentos" className="col-span-2 xl:col-span-1">
           <Card className="h-full gap-2 p-4 transition-shadow hover:shadow-md">
-            <p className="flex items-center gap-1.5 text-sm text-muted-foreground"><CheckCircle2 className="size-4 text-emerald-600" />Recebido no mês</p>
+            <p className="flex items-center gap-1.5 text-sm text-muted-foreground"><CheckCircle2 className="size-4 text-emerald-600" />Entrou no caixa</p>
             <p className="font-heading text-2xl font-bold tabular-nums">{formatBRL(recebido)}</p>
             <div className="h-2 overflow-hidden rounded-full bg-secondary" aria-hidden>
               <div className="h-full rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
             </div>
-            <p className="text-sm text-muted-foreground">{pct}% de {formatBRL(previsto)} previsto</p>
+            <p className="text-sm text-muted-foreground">{pct}% das mensalidades do mês</p>
           </Card>
         </Link>
         <Link href="/admin/financeiro/em-aberto">
@@ -177,15 +175,21 @@ export default async function AdminInicio() {
         <Link href="/admin/financeiro/mes">
           <Card className="h-full gap-1 p-4 transition-shadow hover:shadow-md">
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground"><Wallet className="size-4 text-primary" />Resultado do mês</p>
-            <p className={cn("font-heading text-xl font-bold whitespace-nowrap tabular-nums sm:text-2xl", resultado < 0 ? "text-red-700" : "text-emerald-700")}>{formatBRL(resultado)}</p>
-            <p className="text-sm text-muted-foreground">{formatBRL(despesas)} em despesas</p>
+            {/* Número neutro: negativo no começo do mês é normal (aluguel antes das mensalidades). */}
+            <p className="font-heading text-xl font-bold whitespace-nowrap tabular-nums sm:text-2xl">{formatBRL(resultado)}</p>
+            <p className="text-sm text-muted-foreground">
+              <span className={cn("mr-1 rounded-full px-1.5 py-0.5 text-xs font-semibold", resultado < 0 ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700")}>
+                {resultado < 0 ? "negativo" : "positivo"}
+              </span>
+              {formatBRL(despesas)} em despesas
+            </p>
           </Card>
         </Link>
         <Link href="/admin/alunos" className="hidden xl:block">
           <Card className="h-full gap-1 p-4 transition-shadow hover:shadow-md">
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground"><Users className="size-4 text-primary" />Alunos ativos</p>
             <p className="font-heading text-2xl font-bold tabular-nums">{alunosAtivos.count ?? 0}</p>
-            <p className="text-sm text-muted-foreground">{plural(presentesHoje, "presença hoje", "presenças hoje")}</p>
+            <p className="text-sm text-muted-foreground">no estúdio e online</p>
           </Card>
         </Link>
       </div>

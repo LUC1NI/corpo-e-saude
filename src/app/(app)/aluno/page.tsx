@@ -223,13 +223,14 @@ export default async function AlunoHome() {
           href="/aluno/mensalidade"
           className={cn(
             "mt-4 flex min-h-12 items-center gap-3 rounded-xl px-3 py-2 transition-colors",
-            situacaoTom === "ok" ? "bg-white/10 hover:bg-white/15" : situacaoTom === "aviso" ? "bg-amber-500 text-amber-950" : "bg-red-600",
+            // Fundo sempre discreto: só o ícone leva a cor do status (lembrete, não alarme).
+            "bg-white/10 hover:bg-white/15",
           )}
         >
           <span
             className={cn(
               "inline-flex size-9 shrink-0 items-center justify-center rounded-lg",
-              situacaoTom === "ok" ? "bg-emerald-500" : "bg-white/20",
+              situacaoTom === "ok" ? "bg-emerald-500" : situacaoTom === "aviso" ? "bg-amber-400 text-amber-950" : "bg-red-500",
             )}
           >
             {situacaoTom === "ok" ? <CheckCircle2 className="size-5" /> : <AlertCircle className="size-5" />}
@@ -261,63 +262,53 @@ export default async function AlunoHome() {
 
       <AtivarNotificacoes modo="convite" />
 
-      {/* Frequência do mês */}
-      <Link href={online ? "/aluno/treino" : "/aluno/horarios"}>
-        <Card className="flex-row items-center gap-3 p-5 transition-colors hover:border-primary/40 hover:bg-secondary/30">
-          <span
-            className={cn(
-              "inline-flex size-10 shrink-0 items-center justify-center rounded-xl",
-              treinosMes > 0 ? "bg-emerald-50 text-emerald-600" : "bg-secondary text-muted-foreground",
-            )}
-          >
-            <CalendarCheck className="size-5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold">
-              {online
-                ? treinosMes > 0 ? `${plural(treinosMes, "treino", "treinos")} este mês` : "Nenhum treino este mês"
-                : treinosMes > 0 ? `${plural(treinosMes, "aula", "aulas")} este mês` : "Nenhuma aula este mês"}
-            </p>
+      {/* Frequência e evolução: dois chips lado a lado. */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link href={online ? "/aluno/treino" : "/aluno/horarios"} className="group">
+          <Card className="h-full gap-1 p-4 transition-colors group-hover:border-primary/40 group-hover:bg-secondary/30">
+            <span
+              className={cn(
+                "mb-1 inline-flex size-9 items-center justify-center rounded-xl",
+                treinosMes > 0 ? "bg-emerald-50 text-emerald-600" : "bg-secondary text-muted-foreground",
+              )}
+            >
+              <CalendarCheck className="size-5" />
+            </span>
+            <p className="font-heading text-2xl font-bold tabular-nums">{treinosMes}</p>
             <p className="text-sm text-muted-foreground">
-              {treinosMes === 0
-                ? online
-                  ? "Bora começar? O treino de hoje está pronto."
-                  : "Sua presença é marcada pelo professor na aula."
-                : treinosMes >= 8
-                  ? "Mês caprichado! 🔥"
-                  : "Continue nesse ritmo! 💪"}
+              {online ? (treinosMes === 1 ? "treino" : "treinos") : treinosMes === 1 ? "aula" : "aulas"} este mês
+              {treinosMes >= 8 ? " 🔥" : ""}
             </p>
-          </div>
-          <ChevronRight className="size-5 text-muted-foreground" />
-        </Card>
-      </Link>
+          </Card>
+        </Link>
 
-      {/* Evolução */}
-      <Link href="/aluno/evolucao">
-        <Card className="flex-row items-center gap-3 p-5 transition-colors hover:border-primary/40 hover:bg-secondary/30">
-          <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <LineChart className="size-5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold">Sua evolução</p>
-            <p className="text-sm text-muted-foreground">
-              {peso ? (
-                <>
-                  <span className="font-semibold text-foreground">
-                    {peso.atual.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg
-                  </span>
+        <Link href="/aluno/evolucao" className="group">
+          <Card className="h-full gap-1 p-4 transition-colors group-hover:border-primary/40 group-hover:bg-secondary/30">
+            <span className="mb-1 inline-flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <LineChart className="size-5" />
+            </span>
+            {peso ? (
+              <>
+                <p className="font-heading text-2xl font-bold tabular-nums">
+                  {peso.atual.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg
+                </p>
+                <p className="text-sm text-muted-foreground">
                   {peso.variacao !== null && Math.abs(peso.variacao) >= 0.1
-                    ? ` · ${peso.variacao > 0 ? "+" : "−"}${Math.abs(peso.variacao).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg desde ${formatMesAno(peso.desde).split("/")[0]}`
-                    : ""}
-                </>
-              ) : temAvaliacoes
-                ? "Peso, % de gordura e medidas."
-                : "Seus gráficos chegam com a avaliação física."}
-            </p>
-          </div>
-          <ChevronRight className="size-5 text-muted-foreground" />
-        </Card>
-      </Link>
+                    ? `${peso.variacao > 0 ? "+" : "−"}${Math.abs(peso.variacao).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg desde ${formatMesAno(peso.desde).split("/")[0]!.toLowerCase()}`
+                    : "Sua evolução"}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold">Sua evolução</p>
+                <p className="text-sm text-muted-foreground">
+                  {temAvaliacoes ? "Peso e medidas" : "Chega com a avaliação física"}
+                </p>
+              </>
+            )}
+          </Card>
+        </Link>
+      </div>
     </div>
   );
 }

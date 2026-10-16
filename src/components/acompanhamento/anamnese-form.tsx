@@ -7,6 +7,8 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 
+import { Pencil } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -32,6 +34,8 @@ export function AnamneseForm({
 }) {
   const router = useRouter();
   const [salvando, setSalvando] = useState(false);
+  // Com anamnese já salva, abre em modo leitura (mais fácil de bater o olho).
+  const [editando, setEditando] = useState(!valoresIniciais);
   const chaveRascunho = `anamnese-rascunho:${alunoId}`;
 
   const { register, handleSubmit, control, watch, reset } = useForm<
@@ -58,6 +62,7 @@ export function AnamneseForm({
     if (!salvo) return;
     try {
       reset(JSON.parse(salvo));
+      setEditando(true);
       toast.info("Rascunho recuperado — havia alterações não salvas.");
     } catch {
       localStorage.removeItem(chaveRascunho);
@@ -87,10 +92,40 @@ export function AnamneseForm({
     if (res.ok) {
       localStorage.removeItem(chaveRascunho);
       toast.success("Anamnese salva.");
+      setEditando(false);
       router.refresh();
     } else {
       toast.error(res.erro);
     }
+  }
+
+  if (!editando && valoresIniciais) {
+    const itens: [string, string | undefined][] = [
+      ["Objetivos", valoresIniciais.objetivos],
+      ["Histórico de saúde", valoresIniciais.historico_saude],
+      ["Lesões e restrições", valoresIniciais.lesoes_restricoes],
+      ["Medicação", valoresIniciais.medicacao],
+      ["Rotina e disponibilidade", valoresIniciais.rotina_disponibilidade],
+      ["Nível de atividade", valoresIniciais.nivel_atividade ?? undefined],
+    ];
+    return (
+      <div className="space-y-4">
+        <dl className="grid gap-4 sm:grid-cols-2">
+          {itens.map(([rotulo, valor]) => (
+            <div key={rotulo} className={rotulo === "Objetivos" ? "sm:col-span-2" : undefined}>
+              <dt className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{rotulo}</dt>
+              <dd className={valor ? "mt-1 whitespace-pre-line" : "mt-1 text-muted-foreground"}>
+                {valor || "Não informado"}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <Button type="button" variant="outline" onClick={() => setEditando(true)}>
+          <Pencil className="size-4" />
+          Editar anamnese
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -176,9 +211,25 @@ export function AnamneseForm({
         />
       </CampoForm>
 
-      <Button type="submit" loading={salvando}>
-        {salvando ? "Salvando…" : "Salvar anamnese"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" loading={salvando}>
+          {salvando ? "Salvando…" : "Salvar anamnese"}
+        </Button>
+        {valoresIniciais ? (
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={salvando}
+            onClick={() => {
+              localStorage.removeItem(chaveRascunho);
+              reset(valoresIniciais);
+              setEditando(false);
+            }}
+          >
+            Cancelar
+          </Button>
+        ) : null}
+      </div>
     </form>
   );
 }

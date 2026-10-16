@@ -25,7 +25,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       <div className="relative mb-6 flex flex-col items-center text-center">
         <div className="mb-3 overflow-hidden rounded-2xl bg-white p-3 shadow-[0_8px_30px_rgba(2,31,71,0.45)]">
           <Image
-            src="/icons/icon-192.png"
+            src="/icons/simbolo.png"
             alt="Corpo & Saúde"
             width={56}
             height={56}

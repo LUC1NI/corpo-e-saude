@@ -84,7 +84,12 @@ const JSON_LD = {
  */
 export default function LandingPage() {
   return (
-    <div className="bg-white">
+    // overflow-x-clip: elementos decorativos do hero vazavam 8px no celular (clip não quebra o header sticky).
+    <div className="overflow-x-clip bg-white">
+      {/* Sem JS o framer-motion deixaria as seções em opacity:0 — mostra tudo. */}
+      <noscript>
+        <style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}`}</style>
+      </noscript>
       <script
         type="application/ld+json"
         // Escapa `<` para que nenhum texto (ex.: uma resposta de FAQ futura)

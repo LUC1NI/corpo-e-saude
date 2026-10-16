@@ -192,12 +192,14 @@ export default async function HorariosPage() {
                     key={d}
                     className={cn(
                       "min-w-16 text-center",
-                      d === diaHoje && "text-primary",
+                      d === diaHoje && "bg-primary/10 font-bold text-primary",
                     )}
                   >
                     {DIAS_CURTOS[d]}
                     {d === diaHoje ? (
-                      <span className="ml-1 text-[10px] opacity-70">hoje</span>
+                      <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-white uppercase">
+                        hoje
+                      </span>
                     ) : null}
                   </TableHead>
                 ))}
@@ -231,11 +233,10 @@ export default async function HorariosPage() {
                         className={cn(
                           "text-center",
                           d === diaHoje && "bg-primary/5",
-                          d === diaHoje &&
-                            h.hora_fim <= horaAgora &&
-                            "opacity-55",
                         )}
                       >
+                        {/* Só a aula esmaece; o fundo da coluna "hoje" continua destacado. */}
+                        <div className={cn(d === diaHoje && h.hora_fim <= horaAgora && "opacity-60")}>
                         <GerenciarAula
                           horarioId={h.id}
                           rotulo={`${DIAS_CURTOS[d]} ${horaCurta(f.inicio)}–${horaCurta(f.fim)}`}
@@ -243,6 +244,7 @@ export default async function HorariosPage() {
                           atribuidos={atribuidos.map((a) => a.id)}
                           capacidade={h.capacidade}
                         />
+                        </div>
                       </TableCell>
                     );
                   })}

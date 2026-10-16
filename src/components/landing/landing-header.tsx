@@ -36,7 +36,7 @@ export function LandingHeader() {
         <a href="#inicio" className="flex items-center gap-2.5">
           <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
             <Image
-              src="/icons/icon-192.png"
+              src="/icons/simbolo.png"
               alt="Logo Corpo & Saúde"
               width={32}
               height={32}

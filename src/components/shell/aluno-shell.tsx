@@ -33,7 +33,7 @@ export function AlunoShell({
           <MenuAluno nome={nome} />
         </header>
 
-        <main className="mx-auto w-full max-w-2xl px-4 py-5 pb-24 lg:max-w-5xl lg:px-8 lg:py-8 lg:pb-10">
+        <main className="mx-auto w-full max-w-xl px-4 py-5 pb-24 lg:max-w-[560px] lg:py-8 lg:pb-10">
           {children}
         </main>
       </div>

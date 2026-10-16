@@ -118,17 +118,14 @@ export default async function AlunoMensalidadePage() {
       {/* Situação atual */}
       <section
         className={cn(
-          "rounded-2xl p-5 text-white shadow-sm",
-          tom === "ok" && "bg-brand-navy",
-          tom === "aviso" && "bg-amber-700",
-          tom === "atraso" && "bg-red-700",
+          "rounded-2xl bg-brand-navy p-5 text-white shadow-sm",
         )}
       >
         <div className="flex items-center gap-3">
           <span
             className={cn(
               "inline-flex size-11 shrink-0 items-center justify-center rounded-xl",
-              tom === "ok" ? "bg-emerald-500" : "bg-white/15",
+              tom === "ok" ? "bg-emerald-500" : tom === "aviso" ? "bg-amber-400 text-amber-950" : "bg-red-500",
             )}
           >
             <HeroIcone className="size-6" />

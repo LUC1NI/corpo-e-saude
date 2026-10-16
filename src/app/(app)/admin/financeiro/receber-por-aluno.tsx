@@ -25,7 +25,8 @@ export function ReceberPorAluno({
   itemClassName?: (indice: number) => string | undefined;
 }) {
   return (
-    <ul className={cn("divide-y", className)}>
+    // @container: em linha única só quando o card é largo (página Em aberto), não na coluna do painel.
+    <ul className={cn("@container divide-y", className)}>
       {grupos.map((g, i) => {
         const primeira = g.itens[0]!;
         const meses = g.itens.length;
@@ -33,8 +34,16 @@ export function ReceberPorAluno({
         const valorPrincipal = g.atrasado ? g.totalVencido : g.total;
         const aVencer = g.total - valorPrincipal;
         return (
-          <li key={g.id} className={cn("px-5 py-3", itemClassName?.(i))}>
-            <div className="flex items-center gap-3">
+          <li
+            key={g.id}
+            className={cn(
+              "px-5 py-3",
+              g.atrasado && "border-l-[3px] border-l-red-500 pl-[17px]",
+              itemClassName?.(i),
+            )}
+          >
+            <div className="@2xl:flex @2xl:items-center @2xl:gap-4">
+            <div className="flex min-w-0 items-center gap-3 @2xl:flex-1">
               <AvatarIniciais nome={g.nome} tamanho="sm" />
               <div className="min-w-0 flex-1">
                 <Link href={`/admin/alunos/${g.id}`} className="block truncate font-semibold hover:underline">
@@ -54,7 +63,7 @@ export function ReceberPorAluno({
                 ) : null}
               </span>
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2 pl-11">
+            <div className="mt-2 flex flex-wrap items-center gap-2 pl-11 @2xl:mt-0 @2xl:shrink-0 @2xl:pl-0">
               <a
                 href={linkCobranca(g.nome, g.telefone, g.atrasado ? g.vencidos : g.itens)}
                 target="_blank"
@@ -72,6 +81,7 @@ export function ReceberPorAluno({
                 valor={Number(primeira.valor)}
                 rotulo={`Recebi ${formatBRL(Number(primeira.valor))}${meses > 1 ? ` · ${formatMesExtenso(primeira.competencia).slice(0, 3)}` : ""}`}
               />
+            </div>
             </div>
           </li>
         );

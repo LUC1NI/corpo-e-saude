@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-const LOGO = "/icons/icon-192.png";
+const LOGO = "/icons/simbolo.png";
 function baixar(href: string, nome: string) {
   const a = document.createElement("a");
   a.href = href;

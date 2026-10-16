@@ -492,8 +492,11 @@ export function CadastroRapido({
         </label>
       </Secao>
 
-      {/* Botão fixo na zona do polegar no celular */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 p-3 backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0">
+      {/* Botão fixo na zona do polegar no celular. A barra de navegação de baixo
+          (z-40) ficava POR CIMA dele e escondia o "Salvar": some durante o cadastro,
+          como no modo treino (o "Cancelar" volta para a lista). */}
+      <style>{"@media (max-width: 639px){[data-bottom-nav]{display:none}}"}</style>
+      <div className="fixed inset-x-0 bottom-0 z-30 pb-[calc(0.75rem+env(safe-area-inset-bottom))] border-t bg-background/95 p-3 backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0">
         <div className="mx-auto flex max-w-xl gap-2">
           <Button type="submit" size="lg" className="flex-1" loading={salvando}>
             {gerarAcesso && email.trim() ? "Salvar e gerar acesso" : "Salvar aluno"}

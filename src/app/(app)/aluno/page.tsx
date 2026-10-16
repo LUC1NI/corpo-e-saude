@@ -218,7 +218,7 @@ export default async function AlunoHome() {
   return (
     <div className="space-y-5">
       <section className="rounded-2xl bg-brand-navy p-5 text-white shadow-sm lg:p-7">
-        <p className="text-2xl font-bold lg:text-3xl">Olá, {primeiro} 👋</p>
+        <h1 className="text-2xl font-bold lg:text-3xl">Olá, {primeiro} 👋</h1>
         <Link
           href="/aluno/mensalidade"
           className={cn(
@@ -237,7 +237,7 @@ export default async function AlunoHome() {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block font-semibold">{situacaoTom === "ok" ? "Mensalidade em dia" : situacaoTextos.titulo}</span>
-            <span className="block truncate text-sm opacity-85">{situacaoTextos.detalhe}</span>
+            <span className="line-clamp-2 block text-sm opacity-85">{situacaoTextos.detalhe}</span>
           </span>
           <ChevronRight className="size-5 shrink-0 opacity-70" />
         </Link>

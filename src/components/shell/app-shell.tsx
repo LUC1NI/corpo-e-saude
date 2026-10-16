@@ -5,7 +5,7 @@ import { AppSidebar } from "@/components/shell/app-sidebar";
 import { BottomNav } from "@/components/shell/bottom-nav";
 import type { AlertaNotificacao } from "@/components/shell/notificacoes-button";
 import type { Papel } from "@/lib/auth";
-import { hojeISO } from "@/lib/financeiro";
+import { hojeISO, noEstudio } from "@/lib/financeiro";
 import { formatBRL, formatData } from "@/lib/formato";
 import { createClient } from "@/lib/supabase/server";
 
@@ -98,7 +98,7 @@ async function alertasProfessor(): Promise<AlertaNotificacao[]> {
   ).map((e) => ({
     id: e.id,
     titulo: e.alunos?.nome ?? "Aluno",
-    descricao: `Concluiu o treino ${e.nome_divisao} · ${formatData(e.finalizado_em.slice(0, 10))}`,
+    descricao: `Concluiu o treino ${e.nome_divisao} · ${formatData(noEstudio(e.finalizado_em))}`,
     href: `/professor/alunos/${e.aluno_id}?aba=treino#execucoes`,
     rotulo: "Treino",
     tom: "sucesso" as const,

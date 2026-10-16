@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CampoForm } from "@/components/ui-extra/campo-form";
+import { comRede } from "@/lib/acoes";
 import { criarAvaliacao } from "@/lib/acoes-acompanhamento";
 import { hojeISO } from "@/lib/financeiro";
 import {
@@ -56,7 +57,7 @@ export function AvaliacaoForm({
     resolver: zodResolver(avaliacaoSchema),
     defaultValues: {
       data: hojeISO(),
-      altura: alturaPadrao != null ? String(alturaPadrao) : undefined,
+      altura: alturaPadrao != null ? String(alturaPadrao).replace(".", ",") : undefined,
     },
   });
 
@@ -66,7 +67,7 @@ export function AvaliacaoForm({
 
   async function onSubmit(values: AvaliacaoInput) {
     setSalvando(true);
-    const res = await criarAvaliacao(alunoId, values);
+    const res = await comRede(criarAvaliacao(alunoId, values));
     setSalvando(false);
     if (res.ok) {
       toast.success("Avaliação registrada.");

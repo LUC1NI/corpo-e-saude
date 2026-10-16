@@ -6,7 +6,9 @@ import Link from "@/components/ui-extra/link";
 import { PageEmpty } from "@/components/ui-extra/page-empty";
 import { requireUsuario } from "@/lib/auth";
 import { getAlunoAtual } from "@/lib/aluno";
-import { hojeISO } from "@/lib/financeiro";
+import { format } from "date-fns";
+
+import { hojeISO, noEstudio } from "@/lib/financeiro";
 import { getExecucoesDoAluno, getTreinosDoAluno } from "@/lib/treino";
 import { diaDaSemanaHoje } from "@/lib/treino-utils";
 import type { TreinoComTudo, TreinoExecucao } from "@/lib/tipos";
@@ -57,7 +59,8 @@ export default async function AlunoTreinoPage() {
   const diaHoje = diaDaSemanaHoje();
   const hoje = hojeISO();
   const concluidoHoje = execucoes.some((e) =>
-    e.finalizado_em.startsWith(hoje),
+    // finalizado_em é UTC: compara no fuso do estúdio (22h aqui já é "amanhã" em UTC).
+    format(noEstudio(e.finalizado_em), "yyyy-MM-dd") === hoje,
   );
 
   return (

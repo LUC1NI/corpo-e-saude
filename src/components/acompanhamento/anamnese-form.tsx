@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { CampoForm } from "@/components/ui-extra/campo-form";
+import { comRede } from "@/lib/acoes";
 import { salvarAnamnese } from "@/lib/acoes-acompanhamento";
 import { anamneseSchema, type AnamneseInput } from "@/lib/schemas";
 
@@ -36,6 +37,20 @@ export function AnamneseForm({
   const [salvando, setSalvando] = useState(false);
   // Com anamnese já salva, abre em modo leitura (mais fácil de bater o olho).
   const [editando, setEditando] = useState(!valoresIniciais);
+  // O que aparece no modo leitura: atualiza na hora ao salvar (sem esperar o refresh).
+  const [salvos, setSalvos] = useState(valoresIniciais);
+  const botaoEditarRef = useRef<HTMLButtonElement>(null);
+  const trocouModo = useRef(false);
+  useEffect(() => {
+    // Ao trocar de modo o botão clicado some; leva o foco para um lugar útil.
+    if (!trocouModo.current) return;
+    if (editando) document.getElementById("objetivos")?.focus();
+    else botaoEditarRef.current?.focus();
+  }, [editando]);
+  function mudarModo(v: boolean) {
+    trocouModo.current = true;
+    setEditando(v);
+  }
   const chaveRascunho = `anamnese-rascunho:${alunoId}`;
 
   const { register, handleSubmit, control, watch, reset } = useForm<
@@ -87,26 +102,28 @@ export function AnamneseForm({
 
   async function onSubmit(values: AnamneseInput) {
     setSalvando(true);
-    const res = await salvarAnamnese(alunoId, values);
+    const res = await comRede(salvarAnamnese(alunoId, values));
     setSalvando(false);
     if (res.ok) {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       localStorage.removeItem(chaveRascunho);
       toast.success("Anamnese salva.");
-      setEditando(false);
+      setSalvos(values);
+      mudarModo(false);
       router.refresh();
     } else {
       toast.error(res.erro);
     }
   }
 
-  if (!editando && valoresIniciais) {
+  if (!editando && salvos) {
     const itens: [string, string | undefined][] = [
-      ["Objetivos", valoresIniciais.objetivos],
-      ["Histórico de saúde", valoresIniciais.historico_saude],
-      ["Lesões e restrições", valoresIniciais.lesoes_restricoes],
-      ["Medicação", valoresIniciais.medicacao],
-      ["Rotina e disponibilidade", valoresIniciais.rotina_disponibilidade],
-      ["Nível de atividade", valoresIniciais.nivel_atividade ?? undefined],
+      ["Objetivos", salvos.objetivos],
+      ["Histórico de saúde", salvos.historico_saude],
+      ["Lesões e restrições", salvos.lesoes_restricoes],
+      ["Medicação", salvos.medicacao],
+      ["Rotina e disponibilidade", salvos.rotina_disponibilidade],
+      ["Nível de atividade", salvos.nivel_atividade ?? undefined],
     ];
     return (
       <div className="space-y-4">
@@ -120,7 +137,7 @@ export function AnamneseForm({
             </div>
           ))}
         </dl>
-        <Button type="button" variant="outline" onClick={() => setEditando(true)}>
+        <Button ref={botaoEditarRef} type="button" variant="outline" onClick={() => mudarModo(true)}>
           <Pencil className="size-4" />
           Editar anamnese
         </Button>
@@ -180,7 +197,7 @@ export function AnamneseForm({
         </CampoForm>
       </div>
 
-      <CampoForm label="Nível de atividade">
+      <CampoForm label="Nível de atividade" htmlFor="nivel_atividade">
         <Controller
           control={control}
           name="nivel_atividade"
@@ -195,7 +212,7 @@ export function AnamneseForm({
                 ...Object.fromEntries(NIVEIS.map((n) => [n, n])),
               }}
             >
-              <SelectTrigger className="w-full sm:w-64">
+              <SelectTrigger id="nivel_atividade" className="w-full sm:w-64">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -215,15 +232,19 @@ export function AnamneseForm({
         <Button type="submit" loading={salvando}>
           {salvando ? "Salvando…" : "Salvar anamnese"}
         </Button>
-        {valoresIniciais ? (
+        {salvos ? (
           <Button
             type="button"
             variant="ghost"
             disabled={salvando}
             onClick={() => {
-              localStorage.removeItem(chaveRascunho);
-              reset(valoresIniciais);
-              setEditando(false);
+              reset(salvos);
+              // reset dispara o autosave; cancela antes de apagar o rascunho.
+              setTimeout(() => {
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                localStorage.removeItem(chaveRascunho);
+              });
+              mudarModo(false);
             }}
           >
             Cancelar

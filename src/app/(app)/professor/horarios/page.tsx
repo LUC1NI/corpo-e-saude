@@ -137,7 +137,7 @@ export default async function HorariosPage() {
                   key={d}
                   className={cn(
                     "gap-2.5 p-4",
-                    ehHoje && "border-primary/40 bg-primary/[0.03]",
+                    ehHoje && "bg-primary/5 ring-2 ring-primary",
                   )}
                 >
                   <p className="text-sm font-semibold">
@@ -157,7 +157,7 @@ export default async function HorariosPage() {
                           key={h.id}
                           className={cn(
                             "flex items-center gap-2 rounded-lg border bg-card px-2.5 py-1.5",
-                            encerrada && "opacity-55",
+                            encerrada && "opacity-60",
                           )}
                         >
                           <span className="text-xs font-medium tabular-nums">

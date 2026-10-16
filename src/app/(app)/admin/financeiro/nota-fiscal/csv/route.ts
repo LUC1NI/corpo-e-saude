@@ -8,7 +8,7 @@ import { resolverMes } from "../../periodo";
 export const dynamic = "force-dynamic";
 
 const ROTULO_STATUS: Record<string, string> = {
-  aguardando_configuracao: "Aguardando API",
+  aguardando_configuracao: "Guardada (aguardando emissão)",
   processando: "Processando",
   autorizada: "Autorizada",
   erro: "Erro",

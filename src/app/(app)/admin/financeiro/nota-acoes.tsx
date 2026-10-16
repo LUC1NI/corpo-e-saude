@@ -33,7 +33,7 @@ export interface NotaResumo {
 const SELO: Record<StatusNota | "sem_nota", { rotulo: string; classe: string }> = {
   sem_nota: { rotulo: "Sem nota", classe: "bg-secondary text-muted-foreground" },
   aguardando_configuracao: {
-    rotulo: "Aguardando API",
+    rotulo: "Guardada",
     classe: "bg-slate-100 text-slate-700",
   },
   processando: { rotulo: "Processando", classe: "bg-sky-50 text-sky-700" },

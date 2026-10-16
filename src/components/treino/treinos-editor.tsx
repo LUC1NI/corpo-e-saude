@@ -70,6 +70,7 @@ import type {
 } from "@/lib/tipos";
 import { plural } from "@/lib/formato";
 import { comRede } from "@/lib/acoes";
+import { diaDaSemanaHoje } from "@/lib/treino-utils";
 import { cn } from "@/lib/utils";
 
 // ===========================================================================
@@ -635,7 +636,7 @@ function DivisaoBloco({
   exercicios: Exercicio[];
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border">
+    <div className="-mx-3 sm:mx-0 sm:overflow-hidden sm:rounded-xl sm:border">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-secondary/40 px-3 py-2.5 sm:px-4">
         <div className="min-w-0 flex-1 basis-40">
           <p className="text-sm font-semibold">
@@ -699,7 +700,13 @@ function DivisaoBloco({
         </p>
       ) : (
         <>
-          {/* Cabeçalho das colunas (desktop). Mesma grade em todas as divisões. */}
+          {/* Cabeçalho das colunas: no celular uma vez só (não em cada exercício). */}
+          <div aria-hidden className="grid grid-cols-4 gap-x-2 px-3 pt-2.5 pb-0.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase sm:hidden">
+            <span>Séries</span>
+            <span>Reps</span>
+            <span>Carga</span>
+            <span>Desc.</span>
+          </div>
           <div aria-hidden className={cn(GRADE_EXERCICIO, "hidden px-4 pt-3 pb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase sm:grid")}>
             <span>Exercício</span>
             <span>Séries</span>
@@ -742,9 +749,8 @@ function DivisaoBloco({
                     </div>
                     <div className="flex shrink-0 items-center sm:hidden">{acoes}</div>
                   </div>
-                  {CAMPOS_INLINE.map(([campo, rotulo, curto]) => (
+                  {CAMPOS_INLINE.map(([campo, rotulo]) => (
                     <div key={campo} className="min-w-0">
-                      <span aria-hidden className="mb-0.5 block text-[11px] font-medium text-muted-foreground sm:hidden">{curto}</span>
                       <CelulaEditavel key={`${ex.id}-${ex[campo] ?? ""}`} item={ex} campo={campo} rotulo={rotulo} alunoId={alunoId} />
                     </div>
                   ))}
@@ -774,6 +780,12 @@ function FichaCard({
   /** Rota para onde ir ao excluir (usado na página do próprio treino-modelo). */
   redirecionarAoExcluir?: string;
 }) {
+  // Uma divisão por vez (abas A/B/C): no celular a ficha inteira empilhada ficava enorme.
+  const [ativaId, setAtivaId] = useState(() => {
+    const hoje = diaDaSemanaHoje();
+    return (ficha.divisoes.find((d) => d.dias_semana.includes(hoje)) ?? ficha.divisoes[0])?.id;
+  });
+  const ativa = ficha.divisoes.find((d) => d.id === ativaId) ?? ficha.divisoes[0];
   return (
     <Card className="gap-4 p-3 sm:p-5">
       <div className="flex items-start justify-between gap-3">
@@ -820,14 +832,31 @@ function FichaCard({
             Nenhuma divisão ainda. Adicione o Treino A, B, C…
           </p>
         ) : (
-          ficha.divisoes.map((d) => (
-            <DivisaoBloco
-              key={d.id}
-              alunoId={alunoId}
-              divisao={d}
-              exercicios={exercicios}
-            />
-          ))
+          <>
+            {ficha.divisoes.length > 1 ? (
+              <div role="tablist" aria-label="Divisões do treino" className="flex gap-1 overflow-x-auto rounded-xl bg-muted p-1">
+                {ficha.divisoes.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={d.id === ativa?.id}
+                    onClick={() => setAtivaId(d.id)}
+                    className={cn(
+                      "min-h-11 min-w-12 shrink-0 rounded-lg px-3 text-sm font-medium transition-colors sm:min-h-9",
+                      d.id === ativa?.id ? "bg-card font-semibold shadow-sm" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {d.nome}
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">{d.exercicios.length}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {ativa ? (
+              <DivisaoBloco key={ativa.id} alunoId={alunoId} divisao={ativa} exercicios={exercicios} />
+            ) : null}
+          </>
         )}
 
         <DivisaoDialog
@@ -996,7 +1025,8 @@ export function TreinosEditor({
   return (
     <div className="space-y-4">
       {!modoModelo && treinos.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        // Celular: os dois botões dividem a largura; computador: à direita.
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
           <AplicarModeloDialog alunoId={alunoId} modelos={modelos} />
           <FichaDialog
             alunoId={alunoId}

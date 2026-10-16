@@ -49,8 +49,8 @@ export default async function NotaFiscalPage({
   const aviso =
     s.tipo === "ativa"
       ? s.ambiente === "producao"
-        ? { icone: CheckCircle2, tom: "border-emerald-200 bg-emerald-50 text-emerald-900", texto: "Produção: as notas têm valor fiscal." }
-        : { icone: FlaskConical, tom: "border-sky-200 bg-sky-50 text-sky-900", texto: "Homologação: notas de teste, sem valor fiscal." }
+        ? { icone: CheckCircle2, tom: "border-emerald-200 bg-emerald-50 text-emerald-900", texto: "Valendo: as notas têm valor fiscal." }
+        : { icone: FlaskConical, tom: "border-sky-200 bg-sky-50 text-sky-900", texto: "Modo teste: as notas não têm valor fiscal." }
       : s.tipo === "simulacao"
         ? { icone: FlaskConical, tom: "border-violet-200 bg-violet-50 text-violet-900", texto: "Modo simulação (só no desenvolvimento): as notas são autorizadas de mentira para testar as telas." }
         : { icone: AlertTriangle, tom: "border-amber-200 bg-amber-50 text-amber-900", texto: s.motivo };
@@ -59,7 +59,7 @@ export default async function NotaFiscalPage({
     <>
       <PageHeader
         titulo="Nota fiscal"
-        subtitulo="Configuração da NFS-e e relatório mensal para o contador."
+        subtitulo="Configuração e relatório mensal para o contador."
       />
 
       <div
@@ -75,9 +75,8 @@ export default async function NotaFiscalPage({
           <CardHeader>
             <CardTitle>Configuração</CardTitle>
             <CardDescription>
-              O token da Focus NFe e o certificado A1 não ficam aqui: o token é
-              um segredo do servidor e o certificado vai direto no painel da
-              Focus.
+              Os dados abaixo vêm do contador. A chave do emissor e o
+              certificado digital são instalados pelo suporte, não aqui.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -87,7 +86,7 @@ export default async function NotaFiscalPage({
               <PageEmpty
                 icone={AlertTriangle}
                 titulo="Configuração não encontrada"
-                descricao="Rode as migrations do banco (npm run db:migrate)."
+                descricao="Fale com o suporte do sistema."
               />
             )}
           </CardContent>

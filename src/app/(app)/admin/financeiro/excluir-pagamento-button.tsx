@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { comRede } from "@/lib/acoes";
 import { excluirPagamento } from "@/lib/acoes-financeiro";
 
 export function ExcluirPagamentoButton({
@@ -28,7 +29,7 @@ export function ExcluirPagamentoButton({
 
   async function excluir() {
     setCarregando(true);
-    const res = await excluirPagamento(pagamentoId);
+    const res = await comRede(excluirPagamento(pagamentoId));
     setCarregando(false);
     if (res.ok) {
       toast.success("Cobrança excluída.");

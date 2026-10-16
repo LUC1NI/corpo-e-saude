@@ -87,7 +87,9 @@ export async function AulasDoDia({
   // Hoje: a de agora e as próximas primeiro; as que acabaram vão para o fim
   // (continuam lá para lançar presença atrasada).
   const acabou = (a: (typeof aulasDia)[number]) => ehHoje && a.hora_fim.slice(0, 5) <= agora;
-  const visiveis = [...lista.filter((a) => !acabou(a)), ...lista.filter(acabou)];
+  const proximas = lista.filter((a) => !acabou(a));
+  const passadas = lista.filter(acabou);
+  const visiveis = [...proximas, ...passadas];
   const presentesNoDia = new Set(presDia.map((p) => `${p.aluno_id}|${p.hora}`)).size;
 
   return (
@@ -114,14 +116,25 @@ export async function AulasDoDia({
           }
         />
       ) : (
-        <ul className="mx-4 mb-2 divide-y rounded-xl border sm:mx-6">
-          {visiveis.map((a) => (
+        <div className="mb-2 space-y-3">
+          {[
+            { titulo: null, aulas: proximas },
+            // Separador: sem ele a ordem 18h, 19h, 06h, 07h parecia bagunçada.
+            { titulo: proximas.length > 0 ? "Já passaram" : null, aulas: passadas },
+          ]
+            .filter((g) => g.aulas.length > 0)
+            .map((g, gi) => (
+              <div key={gi}>
+                {g.titulo ? (
+                  <p className="px-4 pb-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase sm:px-6">{g.titulo}</p>
+                ) : null}
+                <ul className="divide-y border-y sm:mx-6 sm:rounded-xl sm:border">
+                  {g.aulas.map((a) => (
             <li
               key={a.id}
               className={cn(
-                "flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3",
+                "flex items-center gap-x-3 px-4 py-3",
                 a.emAndamento && "bg-primary/5",
-                acabou(a) && a.presentes.length === 0 && "opacity-90",
               )}
             >
               <div className="min-w-0 flex-1">
@@ -131,8 +144,12 @@ export async function AulasDoDia({
                     <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">agora</span>
                   ) : null}
                 </p>
+                {/* Quem é da aula, para bater o olho sem abrir. */}
                 <p className="truncate text-sm text-muted-foreground">
-                  {professorId ? "" : `${a.professores?.nome ?? "-"} · `}
+                  {professorId ? "" : `${a.professores?.nome.split(" ")[0] ?? "-"} · `}
+                  {a.alunos.length > 0 ? a.alunos.map((x) => x.nome.split(" ")[0]).join(", ") : "sem aluno fixo"}
+                </p>
+                <p className={cn("text-xs tabular-nums", a.presentes.length > 0 ? "text-emerald-700" : "text-muted-foreground")}>
                   {a.presentes.length > a.alunos.length
                     ? `${a.presentes.length} presentes · ${a.alunos.length} na aula`
                     : `${a.presentes.length} de ${a.alunos.length} presentes`}
@@ -148,8 +165,11 @@ export async function AulasDoDia({
                 presentes={a.presentes}
               />
             </li>
-          ))}
-        </ul>
+                  ))}
+                </ul>
+              </div>
+            ))}
+        </div>
       )}
       {vazias > 0 ? (
         <div className="px-6 pb-5">

@@ -67,13 +67,12 @@ export function ExecucoesLista({
     );
   }
 
-  return (
-    <ul className="space-y-3">
-      {execucoes.map((e) => {
+  // Os 3 últimos à vista; o resto atrás de "Ver mais" (no celular a lista ficava enorme).
+  const item = (e: TreinoExecucao) => {
         const completo = e.exercicios_feitos >= e.exercicios_previstos;
         const sensacao = e.sensacao ? SENSACOES[e.sensacao] : null;
         return (
-          <li key={e.id} className="rounded-2xl border bg-card p-4">
+          <li key={e.id} className="p-4">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
               <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
                 {e.nome_divisao}
@@ -159,7 +158,20 @@ export function ExecucoesLista({
             ) : null}
           </li>
         );
-      })}
-    </ul>
+  };
+  const visiveis = execucoes.slice(0, 3);
+  const resto = execucoes.slice(3);
+  return (
+    <div className="space-y-2">
+      <ul className="divide-y rounded-2xl border bg-card">{visiveis.map(item)}</ul>
+      {resto.length > 0 ? (
+        <details className="group">
+          <summary className="flex min-h-11 cursor-pointer items-center justify-center rounded-xl text-sm font-semibold text-primary select-none group-open:hidden hover:bg-muted">
+            Ver mais {resto.length} {resto.length === 1 ? "treino" : "treinos"}
+          </summary>
+          <ul className="divide-y rounded-2xl border bg-card">{resto.map(item)}</ul>
+        </details>
+      ) : null}
+    </div>
   );
 }

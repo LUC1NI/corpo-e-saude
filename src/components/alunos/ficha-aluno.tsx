@@ -229,7 +229,7 @@ async function AbaFinanceiro({ alunoId, nome, hoje, tipo }: { alunoId: string; n
             {pagamentos.map((p) => {
               const efetivo = p.status === "pendente" && p.vencimento < hoje ? "vencido" : p.status;
               return (
-                <li key={p.id} className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-2 py-2">
+                <li key={p.id} className="flex min-h-16 flex-wrap items-center gap-x-2 gap-y-2 py-2">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{formatMesAno(p.competencia)}</p>
                     <p className="text-sm text-muted-foreground">
@@ -238,19 +238,28 @@ async function AbaFinanceiro({ alunoId, nome, hoje, tipo }: { alunoId: string; n
                         : `Vence ${formatDiaMes(p.vencimento)}`}
                     </p>
                   </div>
-                  <span className="font-medium tabular-nums">{formatBRL(p.valor)}</span>
-                  <span className="flex w-20 justify-end">
+                  {/* Valor e situação empilhados à direita: o mês pago cabe numa linha só no celular. */}
+                  <span className="flex flex-col items-end gap-1">
+                    <span className="font-medium tabular-nums">{formatBRL(p.valor)}</span>
                     <StatusPagamento status={efetivo} />
                   </span>
                   {p.status !== "pago" ? (
                     <span className="flex w-full items-center justify-end gap-1 sm:w-auto">
-                      <BaixaButton pagamentoId={p.id} aluno={nome} competencia={p.competencia} valor={Number(p.valor)} />
+                      <BaixaButton
+                        pagamentoId={p.id}
+                        aluno={nome}
+                        competencia={p.competencia}
+                        valor={Number(p.valor)}
+                        rotulo={`Recebi ${formatBRL(Number(p.valor))}`}
+                      />
                       <ExcluirPagamentoButton pagamentoId={p.id} />
                     </span>
                   ) : (
-                    <span className="flex w-full justify-end sm:w-auto">
-                      <DesfazerBaixaButton pagamentoId={p.id} descricao={`A mensalidade de ${formatMesAno(p.competencia)} (${formatBRL(p.valor)})`} />
-                    </span>
+                    <DesfazerBaixaButton
+                      compacto
+                      pagamentoId={p.id}
+                      descricao={`A mensalidade de ${formatMesAno(p.competencia)} (${formatBRL(p.valor)})`}
+                    />
                   )}
                 </li>
               );
@@ -286,28 +295,20 @@ async function AbaTreino({ alunoId, online }: { alunoId: string; online: boolean
   ]);
   return (
     <>
-      <Card id="treino">
-        <CardHeader>
-          <CardTitle>Treino</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {online ? (
-            <TreinosEditor alunoId={alunoId} treinos={treinos} exercicios={exercicios} modelos={modelos} />
-          ) : (
-            <TreinoPresencial alunoId={alunoId} treinos={treinos} exercicios={exercicios} modelos={modelos} />
-          )}
-        </CardContent>
-      </Card>
+      {/* Sem card em volta: a ficha e a lista já são cards (evita card dentro de card no celular). */}
+      <section id="treino" className="space-y-3">
+        <h2 className="font-heading text-lg font-bold">Treino</h2>
+        {online ? (
+          <TreinosEditor alunoId={alunoId} treinos={treinos} exercicios={exercicios} modelos={modelos} />
+        ) : (
+          <TreinoPresencial alunoId={alunoId} treinos={treinos} exercicios={exercicios} modelos={modelos} />
+        )}
+      </section>
       {online ? (
-        <Card id="execucoes">
-          <CardHeader>
-            <CardTitle>Treinos feitos pelo app</CardTitle>
-            <CardDescription>Duração, exercícios concluídos e como o aluno se sentiu.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ExecucoesLista execucoes={execucoes} />
-          </CardContent>
-        </Card>
+        <section id="execucoes" className="space-y-3">
+          <h2 className="font-heading text-lg font-bold">Treinos feitos pelo app</h2>
+          <ExecucoesLista execucoes={execucoes} />
+        </section>
       ) : null}
     </>
   );

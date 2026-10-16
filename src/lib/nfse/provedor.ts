@@ -176,12 +176,12 @@ export type SituacaoEmissao =
 export function situacaoEmissao(config: ConfigFiscal | null): SituacaoEmissao {
   const token = process.env.FOCUS_NFE_TOKEN;
   if (!config?.ativo) {
-    return { tipo: "desativada", motivo: "Emissão desligada na configuração." };
+    return { tipo: "desativada", motivo: "Emissão desligada: as notas ficam guardadas e saem todas de uma vez quando você ligar." };
   }
   if (!token) {
     return process.env.NODE_ENV !== "production"
       ? { tipo: "simulacao" }
-      : { tipo: "desativada", motivo: "Emissão desativada: token da API não configurado." };
+      : { tipo: "desativada", motivo: "Emissão ainda não ativada pelo suporte: as notas ficam guardadas e saem depois, todas de uma vez." };
   }
   return { tipo: "ativa", ambiente: config.ambiente };
 }

@@ -22,15 +22,30 @@ import { desfazerBaixa } from "@/lib/acoes-financeiro";
 import { cn } from "@/lib/utils";
 
 /** Desfaz um "Recebi" a qualquer momento (o aviso de 8 s não é o único caminho). */
-export function DesfazerBaixaButton({ pagamentoId, descricao }: { pagamentoId: string; descricao: string }) {
+export function DesfazerBaixaButton({
+  pagamentoId,
+  descricao,
+  compacto = false,
+}: {
+  pagamentoId: string;
+  descricao: string;
+  /** Só o ícone (linha da ficha do aluno: cabe na mesma linha no celular). */
+  compacto?: boolean;
+}) {
   const router = useRouter();
   const [ocupado, setOcupado] = useState(false);
   return (
     <AlertDialog>
-      <AlertDialogTrigger className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "min-h-11 text-muted-foreground sm:min-h-8")}>
-        <Undo2 className="size-4" />
-        Desfazer
-      </AlertDialogTrigger>
+      {compacto ? (
+        <AlertDialogTrigger aria-label="Desfazer recebimento" title="Desfazer recebimento" className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "text-muted-foreground")}>
+          <Undo2 className="size-4" />
+        </AlertDialogTrigger>
+      ) : (
+        <AlertDialogTrigger className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "min-h-11 text-muted-foreground sm:min-h-8")}>
+          <Undo2 className="size-4" />
+          Desfazer
+        </AlertDialogTrigger>
+      )}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Desfazer o recebimento?</AlertDialogTitle>

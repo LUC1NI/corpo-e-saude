@@ -19,6 +19,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { CampoForm } from "@/components/ui-extra/campo-form";
+import { comRede } from "@/lib/acoes";
 import { salvarConfigFiscal } from "@/lib/acoes-nfse";
 import type { ConfigFiscal } from "@/lib/nfse/regras";
 import { configFiscalSchema, type ConfigFiscalInput } from "@/lib/schemas";
@@ -39,7 +40,7 @@ const NATUREZAS: Record<string, string> = {
   "112": "112 · Retido por instituição financeira",
 };
 
-const AMBIENTES = { homologacao: "Homologação (testes)", producao: "Produção (vale de verdade)" };
+const AMBIENTES = { homologacao: "Teste (sem valor fiscal)", producao: "Valendo (nota de verdade)" };
 const APIS = {
   nfse: "Municipal (Mafra hoje)",
   nfsen: "Nacional",
@@ -95,7 +96,7 @@ export function ConfigFiscalForm({ config }: { config: ConfigFiscal }) {
 
   async function onSubmit(values: ConfigFiscalInput) {
     setSalvando(true);
-    const res = await salvarConfigFiscal(values);
+    const res = await comRede(salvarConfigFiscal(values));
     setSalvando(false);
     if (res.ok) {
       toast.success("Configuração salva.");
@@ -131,12 +132,12 @@ export function ConfigFiscalForm({ config }: { config: ConfigFiscal }) {
         {interruptor(
           "ativo",
           "Emissão ligada",
-          "Desligada, as notas ficam registradas como Aguardando API.",
+          "Desligada: as notas ficam guardadas e saem todas de uma vez quando você ligar.",
         )}
         {interruptor(
           "emitir_automaticamente_na_baixa",
-          "Emitir ao confirmar pagamento",
-          "Cada baixa de mensalidade gera a nota sozinha.",
+          "Nota automática ao receber",
+          "Ao marcar uma mensalidade como recebida, a nota sai sozinha (com a emissão ligada).",
         )}
       </div>
 

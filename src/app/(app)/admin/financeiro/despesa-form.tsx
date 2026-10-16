@@ -2,7 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,13 @@ export function DespesaForm({
   const [valor, setValor] = useState("");
   const [data, setData] = useState(hojeISO());
   const [salvando, setSalvando] = useState(false);
+  // Celular: formulário recolhido até tocar em "Lançar despesa" (ou vir do "+ Despesa" do painel).
+  const [aberto, setAberto] = useState(false);
+  useEffect(() => {
+    // O hash só existe no navegador: ler depois de hidratar evita diferença com o HTML do servidor.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (window.location.hash === "#despesa") setAberto(true);
+  }, []);
 
   async function lancar() {
     // Sem categoria a despesa some dos relatórios por tipo: obrigamos escolher.
@@ -60,7 +67,15 @@ export function DespesaForm({
   }
 
   return (
-    <div className="grid items-end gap-3 sm:grid-cols-[1fr_auto_auto_auto_auto]">
+    <>
+    {!aberto ? (
+      <Button type="button" variant="outline" className="w-full sm:hidden" onClick={() => setAberto(true)}>
+        <Plus className="size-4" />
+        Lançar despesa
+      </Button>
+    ) : null}
+    <div className={`${aberto ? "grid" : "hidden"} grid-cols-2 items-end gap-3 sm:grid sm:grid-cols-[1fr_auto_auto_auto_auto]`}>
+      <div className="col-span-2 sm:col-span-1">
       <CampoForm label="Descrição" htmlFor="desc">
         <Input
           id="desc"
@@ -69,6 +84,8 @@ export function DespesaForm({
           placeholder="Ex.: Aluguel de junho"
         />
       </CampoForm>
+      </div>
+      <div className="col-span-2 sm:col-span-1">
       <CampoForm label="Categoria" htmlFor="cat" obrigatorio>
         <Select
           value={categoriaId}
@@ -90,6 +107,7 @@ export function DespesaForm({
           </SelectContent>
         </Select>
       </CampoForm>
+      </div>
       <CampoForm label="Valor (R$)" htmlFor="val">
         <Input
           id="val"
@@ -98,7 +116,7 @@ export function DespesaForm({
           value={valor}
           onChange={(e) => setValor(e.target.value)}
           placeholder="0,00"
-          className="w-28"
+          className="w-full sm:w-28"
         />
       </CampoForm>
       <CampoForm label="Data" htmlFor="dt">
@@ -107,13 +125,14 @@ export function DespesaForm({
           type="date"
           value={data}
           onChange={(e) => setData(e.target.value)}
-          className="w-40"
+          className="w-full sm:w-40"
         />
       </CampoForm>
-      <Button type="button" onClick={lancar} loading={salvando}>
+      <Button type="button" onClick={lancar} loading={salvando} className="col-span-2 sm:col-span-1">
         <Plus className="size-4" />
         {salvando ? "Lançando…" : "Lançar"}
       </Button>
     </div>
+    </>
   );
 }

@@ -14,10 +14,9 @@ import {
 } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui-extra/page-header";
 import { StatCard } from "@/components/ui-extra/stat-card";
-import { TabelaResponsiva } from "@/components/ui-extra/tabela-responsiva";
 import { requireUsuario } from "@/lib/auth";
 import { agruparPorAluno, type CobrancaAberta } from "@/lib/cobranca";
-import { formatBRL, formatData, formatMesExtenso, plural } from "@/lib/formato";
+import { formatBRL, formatDiaMes, formatMesExtenso, plural } from "@/lib/formato";
 import { hojeISO } from "@/lib/financeiro";
 import { executarRenovacao } from "@/lib/renovacao";
 import { createClient } from "@/lib/supabase/server";
@@ -174,31 +173,21 @@ export default async function FinanceiroPage() {
               Nenhuma despesa lançada neste mês.
             </p>
           ) : (
-            <div className="overflow-hidden rounded-lg border p-3 sm:p-0">
-              <TabelaResponsiva
-                dados={despesas}
-                getKey={(d) => d.id}
-                colunas={[
-                  {
-                    cabecalho: "Descrição",
-                    principal: true,
-                    celula: (d) => d.descricao,
-                  },
-                  {
-                    cabecalho: "Categoria",
-                    celula: (d) => d.categorias?.nome ?? "-",
-                  },
-                  { cabecalho: "Data", celula: (d) => formatData(d.data) },
-                  { cabecalho: "Valor", celula: (d) => formatBRL(d.valor) },
-                  {
-                    cabecalho: "Ação",
-                    alinhar: "right",
-                    semRotuloMobile: true,
-                    celula: (d) => <ExcluirDespesaButton id={d.id} />,
-                  },
-                ]}
-              />
-            </div>
+            // Uma linha por despesa (no celular a tabela virava um card de 4 linhas cada).
+            <ul className="-mx-4 divide-y border-t sm:mx-0 sm:rounded-lg sm:border">
+              {despesas.map((d) => (
+                <li key={d.id} className="flex min-h-14 items-center gap-3 px-4 py-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{d.descricao}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {d.categorias?.nome ?? "Sem categoria"} · {formatDiaMes(d.data)}
+                    </p>
+                  </div>
+                  <span className="font-heading font-bold whitespace-nowrap tabular-nums">{formatBRL(d.valor)}</span>
+                  <ExcluirDespesaButton id={d.id} />
+                </li>
+              ))}
+            </ul>
           )}
         </CardContent>
       </Card>

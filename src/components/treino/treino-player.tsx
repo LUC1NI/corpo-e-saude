@@ -257,12 +257,12 @@ export function TreinoPlayer({
   // ---------------------------------------------------------------- resumo
   if (fase === "resumo") {
     return (
-      <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
+      <div role="dialog" aria-modal="true" aria-label="Resumo do treino" className="fixed inset-0 z-50 overflow-y-auto bg-background">
         <div className="mx-auto flex min-h-full w-full max-w-md flex-col p-5">
           <button
             type="button"
             onClick={() => setFase("treinando")}
-            className="inline-flex items-center gap-1.5 self-start text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <ChevronLeft className="size-4" />
             Voltar ao treino

@@ -31,6 +31,8 @@ export function LoginForm({ mensagemInicial }: { mensagemInicial?: string }) {
               autoComplete="email"
               placeholder="voce@exemplo.com"
               required
+              aria-invalid={erro ? true : undefined}
+              aria-describedby={erro ? "erro-login" : undefined}
             />
           </div>
           <div className="space-y-2">
@@ -40,11 +42,14 @@ export function LoginForm({ mensagemInicial }: { mensagemInicial?: string }) {
               name="senha"
               autoComplete="current-password"
               required
+              aria-invalid={erro ? true : undefined}
+              aria-describedby={erro ? "erro-login" : undefined}
             />
           </div>
 
           {erro ? (
             <p
+              id="erro-login"
               role="alert"
               className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
             >

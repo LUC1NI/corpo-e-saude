@@ -39,6 +39,8 @@ export interface Plano {
   valor: number;
   periodicidade: Periodicidade;
   duracao_meses: number | null;
+  /** null = serve para presencial e online. */
+  tipo_aluno: TipoAluno | null;
   ativo: boolean;
   criado_em: string;
 }

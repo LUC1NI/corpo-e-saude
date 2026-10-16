@@ -39,6 +39,7 @@ import type {
   AvaliacaoFisica,
   Periodicidade,
   StatusPagamento as TStatusPagamento,
+  TipoAluno,
 } from "@/lib/tipos";
 
 interface PagamentoAluno {
@@ -140,7 +141,7 @@ export async function FichaAluno({
       <AbasFicha base={base} atual={aba} abas={abas} />
 
       <div className="space-y-6">
-        {aba === "financeiro" ? <AbaFinanceiro alunoId={id} nome={aluno.nome} hoje={hoje} /> : null}
+        {aba === "financeiro" ? <AbaFinanceiro alunoId={id} nome={aluno.nome} hoje={hoje} tipo={aluno.tipo} /> : null}
         {aba === "saude" ? <AbaSaude alunoId={id} /> : null}
         {aba === "treino" ? <AbaTreino alunoId={id} online={online} /> : null}
         {aba === "horarios" ? (
@@ -169,10 +170,15 @@ export async function FichaAluno({
   );
 }
 
-async function AbaFinanceiro({ alunoId, nome, hoje }: { alunoId: string; nome: string; hoje: string }) {
+async function AbaFinanceiro({ alunoId, nome, hoje, tipo }: { alunoId: string; nome: string; hoje: string; tipo: TipoAluno }) {
   const supabase = await createClient();
   const [{ data: planosData }, { data: matriculaData }, { data: pagamentosData }] = await Promise.all([
-    supabase.from("planos").select("id, nome, valor, periodicidade").eq("ativo", true).order("nome"),
+    supabase
+      .from("planos")
+      .select("id, nome, valor, periodicidade")
+      .eq("ativo", true)
+      .or(`tipo_aluno.is.null,tipo_aluno.eq.${tipo}`)
+      .order("nome"),
     supabase
       .from("matriculas")
       .select("id, data_proxima_cobranca, renovacao_automatica, planos(nome, valor, periodicidade)")

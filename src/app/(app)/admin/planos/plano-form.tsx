@@ -47,6 +47,7 @@ export function PlanoForm({
       descricao: "",
       periodicidade: "mensal",
       ativo: true,
+      tipo_aluno: "ambos",
       ...valoresIniciais,
     },
   });
@@ -131,6 +132,38 @@ export function PlanoForm({
           min="1"
           {...register("duracao_meses")}
           placeholder="Ex.: 3"
+        />
+      </CampoForm>
+
+      <CampoForm label="Para quem é o plano" dica="O cadastro de aluno mostra só os planos do tipo escolhido.">
+        <Controller
+          control={control}
+          name="tipo_aluno"
+          render={({ field }) => (
+            <div role="radiogroup" aria-label="Para quem é o plano" className="inline-flex flex-wrap gap-1 rounded-xl bg-muted p-1">
+              {(
+                [
+                  ["presencial", "Presencial"],
+                  ["online", "Online"],
+                  ["ambos", "Os dois"],
+                ] as const
+              ).map(([valor, rotulo]) => (
+                <button
+                  key={valor}
+                  type="button"
+                  role="radio"
+                  aria-checked={field.value === valor}
+                  onClick={() => field.onChange(valor)}
+                  className={cn(
+                    "min-h-11 rounded-lg px-4 text-sm font-medium transition-colors sm:min-h-9",
+                    field.value === valor ? "bg-card font-semibold shadow-sm" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {rotulo}
+                </button>
+              ))}
+            </div>
+          )}
         />
       </CampoForm>
 

@@ -96,7 +96,7 @@ export function CadastroRapido({
 }: {
   modo: "admin" | "professor";
   professores: { id: string; nome: string }[];
-  planos: { id: string; nome: string; valor: number; periodicidade: string }[];
+  planos: { id: string; nome: string; valor: number; periodicidade: string; tipo_aluno?: string | null }[];
   horarios: HorarioOpcao[];
   professorFixoId?: string;
   destinoBase: string;
@@ -143,7 +143,9 @@ export function CadastroRapido({
   const diasSemHorario = hora
     ? dias.filter((d) => !doProfessor.some((h) => h.dia_semana === d && h.hora_inicio.slice(0, 5) === hora))
     : [];
-  const plano = planos.find((p) => p.id === planoId);
+  // Só os planos do tipo escolhido (sem tipo = serve para os dois).
+  const planosDoTipo = planos.filter((p) => !p.tipo_aluno || p.tipo_aluno === tipo);
+  const plano = planosDoTipo.find((p) => p.id === planoId);
 
   function alternarDia(d: number) {
     setDias((atual) => (atual.includes(d) ? atual.filter((x) => x !== d) : [...atual, d].sort()));
@@ -163,7 +165,7 @@ export function CadastroRapido({
       email,
       tipo,
       professor_id: modo === "admin" ? professorId : undefined,
-      plano_id: modo === "admin" ? planoId : undefined,
+      plano_id: modo === "admin" ? plano?.id : undefined,
       data_inicio: inicio,
       horario_ids: tipo === "presencial" ? escolhidos.map((h) => h.id) : [],
       gerar_acesso: acessoAgora,
@@ -341,7 +343,7 @@ export function CadastroRapido({
       {modo === "admin" ? (
         <Secao titulo="Plano">
           <div className="grid gap-2">
-            {planos.map((p) => (
+            {planosDoTipo.map((p) => (
               <button
                 key={p.id}
                 type="button"
@@ -358,8 +360,10 @@ export function CadastroRapido({
                 </span>
               </button>
             ))}
-            {planos.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum plano ativo. Cadastre em Planos.</p>
+            {planosDoTipo.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhum plano ativo para aluno {tipo}. Cadastre em Planos.
+              </p>
             ) : null}
           </div>
           {plano ? (

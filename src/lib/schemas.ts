@@ -78,6 +78,8 @@ export const planoSchema = z.object({
     z.coerce.number().int().positive().optional(),
   ),
   ativo: z.boolean().default(true),
+  /** Para quem o plano serve; "ambos" vira null no banco. */
+  tipo_aluno: z.enum(["presencial", "online", "ambos"]).default("ambos"),
 });
 
 export type PlanoInput = z.infer<typeof planoSchema>;

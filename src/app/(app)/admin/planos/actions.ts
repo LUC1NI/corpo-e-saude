@@ -15,6 +15,7 @@ function dadosPlano(input: PlanoInput) {
     periodicidade: input.periodicidade,
     duracao_meses: input.duracao_meses ?? null,
     ativo: input.ativo,
+    tipo_aluno: input.tipo_aluno === "ambos" ? null : input.tipo_aluno,
   };
 }
 

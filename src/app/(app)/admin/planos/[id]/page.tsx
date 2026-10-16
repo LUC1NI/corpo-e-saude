@@ -37,6 +37,7 @@ export default async function EditarPlanoPage({
           periodicidade: plano.periodicidade,
           duracao_meses: plano.duracao_meses ?? undefined,
           ativo: plano.ativo,
+          tipo_aluno: plano.tipo_aluno ?? "ambos",
         }}
       />
     </>

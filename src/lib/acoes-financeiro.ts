@@ -54,12 +54,18 @@ export async function criarMatricula(
     );
   }
 
-  const { data: plano } = await supabase
-    .from("planos")
-    .select("valor, periodicidade")
-    .eq("id", parsed.data.plano_id)
-    .maybeSingle();
+  const [{ data: plano }, { data: aluno }] = await Promise.all([
+    supabase
+      .from("planos")
+      .select("valor, periodicidade, tipo_aluno")
+      .eq("id", parsed.data.plano_id)
+      .maybeSingle(),
+    supabase.from("alunos").select("tipo").eq("id", alunoId).maybeSingle(),
+  ]);
   if (!plano) return falha("Plano não encontrado.");
+  if (plano.tipo_aluno && aluno && plano.tipo_aluno !== aluno.tipo) {
+    return falha(`Este plano é só para aluno ${plano.tipo_aluno}.`);
+  }
 
   const periodicidade = plano.periodicidade as Periodicidade;
   const proxima = proximaCobranca(parsed.data.data_inicio, periodicidade);

@@ -50,6 +50,7 @@ Controla login e papel de cada pessoa no sistema.
 - `periodicidade` — `mensal` | `trimestral` | `semestral` | `anual`
 - `duracao_meses`
 - `ativo` (bool)
+- `tipo_aluno` — `presencial` | `online` | null (null = serve para os dois). O cadastro de aluno só oferece os planos do tipo escolhido; o servidor recusa matrícula em plano de outro tipo. *(adicionado em out/2026)*
 
 ### `matriculas`
 Vínculo do aluno a um plano. É o que sustenta a **renovação automática**.

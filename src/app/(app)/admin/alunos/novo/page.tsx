@@ -9,7 +9,7 @@ export default async function NovoAlunoPage() {
   const supabase = await createClient();
   const [{ data: profs }, { data: planos }, horarios] = await Promise.all([
     supabase.from("professores").select("id, nome").eq("ativo", true).order("nome"),
-    supabase.from("planos").select("id, nome, valor, periodicidade").eq("ativo", true).order("valor"),
+    supabase.from("planos").select("id, nome, valor, periodicidade, tipo_aluno").eq("ativo", true).order("valor"),
     horariosComOcupacao(supabase),
   ]);
 
@@ -19,7 +19,7 @@ export default async function NovoAlunoPage() {
       <CadastroRapido
         modo="admin"
         professores={(profs ?? []) as { id: string; nome: string }[]}
-        planos={(planos ?? []) as { id: string; nome: string; valor: number; periodicidade: string }[]}
+        planos={(planos ?? []) as { id: string; nome: string; valor: number; periodicidade: string; tipo_aluno: string | null }[]}
         horarios={horarios}
         destinoBase="/admin/alunos"
       />
